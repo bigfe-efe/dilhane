@@ -118,8 +118,15 @@ export function listenOnce(lang: Lang, timeoutMs = 10000): { promise: Promise<Re
 /** Karşılaştırma öncesi metni sadeleştirir: noktalama, boşluk, büyük/küçük harf. */
 export function normalize(text: string, lang: Lang): string {
   let t = text.trim().toLowerCase()
-  // Japonca ve Latin noktalama
-  t = t.replace(/[。、！？「」『』・…,.!?;:'"()\[\]{}‐-]/g, '')
+  // Japonca ve Latin noktalama.
+  // Tam genişlikli biçimler (．，！？), tipografik tırnaklar ve 〜/～ de burada:
+  // Japonca klavyeyle yazarken bunlar kolayca çıkıyor ve iki taraf arasında
+  // yapay uyuşmazlık yaratıyordu. ー (uzatma çizgisi) BİLEREK dışarıda —
+  // o noktalama değil, sesin parçası.
+  t = t.replace(
+    /[。、！？「」『』・…，．；：〜～‘’“”–—,.!?;:'\"()\[\]{}‐-]/g,
+    '',
+  )
   if (lang === 'ja') {
     // Katakana → hiragana, tam genişlikli boşlukları temizle
     t = t.replace(/[ァ-ヶ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x60))

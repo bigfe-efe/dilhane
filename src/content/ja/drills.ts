@@ -33,6 +33,22 @@ function options(correct: string, distractors: string[]): { opts: string[]; answ
   return { opts, answer: opts.indexOf(correct) }
 }
 
+/**
+ * Çeldirici havuzu yetersizse soruyu DÜŞÜRME, şık sayısını azalt.
+ *
+ * Önceden `d.length < 3` olunca soru atlanıyordu; havuzu küçük bir ders
+ * beklenenden az soru üretebilirdi. Akla gelen çözüm eksik çeldiriciyi genel
+ * kelime havuzundan tamamlamak — ama bu YANLIŞ olurdu: dışarıdan gelen şık,
+ * öğrencinin hiç görmediği için elenebilir ve soru ölçmeyi bırakır. Bu
+ * uygulamanın kuralı "şıklar yalnızca öğrenilmiş kümeden gelir".
+ *
+ * Doğrusu daha az şıkla sormak: iki şıklı soru, kolay bir soru olsa da
+ * dürüsttür; havuz büyüdükçe kendiliğinden dörde çıkar.
+ */
+function enoughOptions(distractors: string[]): boolean {
+  return distractors.length >= 1
+}
+
 /** Aynı listede tekrar etmeyen, doğrudan farklı `count` tane çeldirici. */
 function pickDistractors(correct: string, pool: string[], count = 3): string[] {
   const out: string[] = []
@@ -68,7 +84,7 @@ export function vocabDrill(ids: string[], seenIds: string[] = [], max = 14): Exe
       w.term,
       pool.filter((p) => p && p.tr !== w.tr).map((p) => p!.term),
     )
-    if (d.length < 3) continue
+    if (!enoughOptions(d)) continue
     const { opts, answer } = options(w.term, d)
     mcqs.push(mcq(`“${w.tr}” hangisi?`, opts, answer, w.reading !== w.term ? `${w.term} = ${w.reading}` : undefined, 'vocab'))
   }
@@ -80,7 +96,7 @@ export function vocabDrill(ids: string[], seenIds: string[] = [], max = 14): Exe
       w.tr,
       pool.filter((p) => p && p.term !== w.term).map((p) => p!.tr),
     )
-    if (d.length < 3) continue
+    if (!enoughOptions(d)) continue
     const { opts, answer } = options(w.tr, d)
     mcqs.push(mcq(`「${w.term}」 ne demek?`, opts, answer, w.reading !== w.term ? `Okunuşu: ${w.reading}` : undefined, 'vocab'))
   }
@@ -131,7 +147,7 @@ export function kanjiDrill(chars: string[], seenChars: string[] = [], max = 20):
       meaning,
       pool.filter((p) => p && p.char !== k.char).map((p) => p!.meaningsTr[0]),
     )
-    if (d.length < 3) continue
+    if (!enoughOptions(d)) continue
     const { opts, answer } = options(meaning, d)
     out.push(mcq(`「${k.char}」 ne demek?`, opts, answer, `${k.strokes} çizgi`, 'reading'))
   }
@@ -144,7 +160,7 @@ export function kanjiDrill(chars: string[], seenChars: string[] = [], max = 20):
       k.char,
       pool.filter((p) => p && p.meaningsTr[0] !== meaning).map((p) => p!.char),
     )
-    if (d.length < 3) continue
+    if (!enoughOptions(d)) continue
     const { opts, answer } = options(k.char, d)
     out.push(mcq(`“${meaning}” hangi kanji ile yazılır?`, opts, answer, undefined, 'reading'))
   }
@@ -157,7 +173,7 @@ export function kanjiDrill(chars: string[], seenChars: string[] = [], max = 20):
   ]
   for (const w of shuffle(words).slice(0, Math.ceil(max * 0.3))) {
     const d = pickDistractors(w.reading, readingPool)
-    if (d.length < 3) continue
+    if (!enoughOptions(d)) continue
     const { opts, answer } = options(w.reading, d)
     out.push(mcq(`「${w.term}」 nasıl okunur?`, opts, answer, `${w.term} = ${w.tr}`, 'reading'))
   }
@@ -324,7 +340,7 @@ export function conjugationDrill(verbs: ConjugationTarget[], forms: string[], ma
     }
 
     const d = pickDistractors(item.term, item.others)
-    if (d.length < 3) return
+    if (!enoughOptions(d)) return
     const { opts, answer } = options(item.term, d)
     out.push({
       id: did(),

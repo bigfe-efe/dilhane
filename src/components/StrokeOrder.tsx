@@ -32,6 +32,8 @@ export function StrokeOrder({
   const paths = useRef<(SVGPathElement | null)[]>([])
   const tip = useRef<SVGCircleElement>(null)
   const raf = useRef<number | null>(null)
+  /** Animasyon bitince ucu söndüren zamanlayıcı — durdurulurken iptal edilmeli */
+  const tipTimer = useRef<number | null>(null)
 
   useEffect(() => {
     let alive = true
@@ -54,6 +56,8 @@ export function StrokeOrder({
   const stop = useCallback(() => {
     if (raf.current !== null) cancelAnimationFrame(raf.current)
     raf.current = null
+    if (tipTimer.current !== null) clearTimeout(tipTimer.current)
+    tipTimer.current = null
     setPlaying(false)
     if (tip.current) tip.current.style.opacity = '0'
   }, [])
@@ -111,7 +115,8 @@ export function StrokeOrder({
         if (i >= g.strokes.length) {
           raf.current = null
           setPlaying(false)
-          window.setTimeout(() => {
+          tipTimer.current = window.setTimeout(() => {
+            tipTimer.current = null
             if (tip.current) tip.current.style.opacity = '0'
           }, 450)
           return

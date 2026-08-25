@@ -93,21 +93,27 @@ function Mcq({
     finish(i === ex.answer)
   }
 
-  // 1–4 tuşlarıyla şık seçme
+  // 1–4 tuşlarıyla şık seçme.
+  //
+  // Bağımlılık dizisi ŞART: dizisiz hâlinde dinleyici her yeniden çizimde
+  // sökülüp yeniden takılıyordu. `ex` burada sabittir — ExerciseView bileşeni
+  // alıştırma başına `key` verdiği için soru değişince bu bileşen komple
+  // yeniden kurulur, dolayısıyla bayat kapanış riski yok.
   useEffect(() => {
+    if (picked !== null) return // cevap verildi, dinlemeye gerek yok
     const onKey = (e: KeyboardEvent) => {
-      if (picked !== null) return
       const el = document.activeElement
       if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) return
       const n = Number(e.key)
       if (n >= 1 && n <= ex.options.length) {
         e.preventDefault()
-        choose(n - 1)
+        setPicked(n - 1)
+        finish(n - 1 === ex.answer)
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  })
+  }, [picked, ex, finish])
 
   return (
     <div className="stack-sm">

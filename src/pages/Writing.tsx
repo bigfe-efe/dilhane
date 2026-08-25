@@ -14,7 +14,7 @@ const PROMPTS: Record<Lang, { title: string; prompt: string; minWords: number; r
     {
       title: 'Kendini tanıt',
       prompt: 'Kendini Japonca tanıt: adın, nereli olduğun, mesleğin, sevdiğin bir şey. En az 5 cümle.',
-      minWords: 20,
+      minWords: 45,
       rubric: [
         'は konu ekini doğru kullandın mı?',
         'Her cümleyi です ile bitirdin mi?',
@@ -25,7 +25,7 @@ const PROMPTS: Record<Lang, { title: string; prompt: string; minWords: number; r
     {
       title: 'Günlük rutinin',
       prompt: 'Sabahtan akşama günlük rutinini anlat. Zaman ifadeleri ve en az 6 farklı fiil kullan.',
-      minWords: 30,
+      minWords: 55,
       rubric: [
         'Bütün fiilleri ます biçiminde çektin mi?',
         'を, に, で edatlarını doğru yerlerde kullandın mı?',
@@ -36,7 +36,7 @@ const PROMPTS: Record<Lang, { title: string; prompt: string; minWords: number; r
     {
       title: 'Odanı betimle',
       prompt: 'Odanı Japonca betimle. En az 4 sıfat ve 3 tane あります/います cümlesi kullan.',
-      minWords: 30,
+      minWords: 55,
       rubric: [
         'い-sıfat ve na-sıfatları doğru çektin mi?',
         'Cansız için あります, canlı için います kullandın mı?',
@@ -47,7 +47,7 @@ const PROMPTS: Record<Lang, { title: string; prompt: string; minWords: number; r
     {
       title: 'Günün nasıl geçti?',
       prompt: 'Bugün ne yaptığını Japonca anlat. ました biçimini kullan.',
-      minWords: 30,
+      minWords: 55,
       rubric: [
         'Fiilleri ました / ませんでした biçiminde çektin mi?',
         'Zaman ifadeleri kullandın mı (今日, 朝, 夜)?',
@@ -58,7 +58,7 @@ const PROMPTS: Record<Lang, { title: string; prompt: string; minWords: number; r
     {
       title: 'Ailen',
       prompt: 'Aileni tanıt. Kaç kişiler, ne iş yapıyorlar, nasıl insanlar?',
-      minWords: 30,
+      minWords: 55,
       rubric: [
         'Aile üyeleri için doğru kelimeyi seçtin mi (kendi ailen için 父/母, başkasının ailesi için お父さん/お母さん)?',
         'Kişi sayarken 人 sayacını kullandın mı?',
@@ -69,7 +69,7 @@ const PROMPTS: Record<Lang, { title: string; prompt: string; minWords: number; r
     {
       title: 'Sevdiğin yer',
       prompt: 'Sevdiğin bir yeri betimle: nerede, nasıl, neden seviyorsun?',
-      minWords: 40,
+      minWords: 70,
       rubric: [
         'あります / います ayrımını doğru yaptın mı?',
         'En az 4 sıfat kullandın mı?',
@@ -80,7 +80,7 @@ const PROMPTS: Record<Lang, { title: string; prompt: string; minWords: number; r
     {
       title: 'Gelecek planların',
       prompt: 'Önümüzdeki yıl ne yapmak istiyorsun? たい biçimini kullan.',
-      minWords: 40,
+      minWords: 70,
       rubric: [
         'たいです yapısını doğru kurdun mu?',
         'Olumsuz istek (たくない) de kullandın mı?',
