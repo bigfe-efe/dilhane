@@ -41,8 +41,15 @@ const GROUPS: { title: string; note?: string; items: Tool[] }[] = [
       {
         to: '/kana-kurallar',
         glyph: '則',
-        title: 'Özel kurallar',
-        sub: 'Küçük っ, uzun ünlü, ん ve は→wa',
+        title: 'Hiragana dilbilgisi',
+        sub: 'Dakuten, küçük っ, uzun ünlü, ん, は→wa, yōon',
+        stages: ['hiragana', 'katakana'],
+      },
+      {
+        to: '/kural-testi',
+        glyph: '筆',
+        title: 'Kural okuma testi',
+        sub: 'Okunuşu şıksız yaz',
         stages: ['hiragana', 'katakana'],
       },
       { to: '/yazi-sistemi', icon: 'book', title: 'Yazı sistemi', sub: 'Üç alfabe, yazı yönü, çizgi sırası' },

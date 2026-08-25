@@ -15,7 +15,8 @@ import { ROADMAP, buildPlan } from '@/content/ja/roadmap'
 /** Ana sayfadaki kısayollar — tamamı Çalış sekmesinde. */
 const QUICK: { to: string; glyph: string; title: string; sub: string }[] = [
   { to: '/kana/hiragana', glyph: 'あ', title: 'Hiragana', sub: 'Tablo' },
-  { to: '/kana-kurallar', glyph: '則', title: 'Özel kurallar', sub: 'っ, uzun ünlü, ん' },
+  { to: '/kana-kurallar', glyph: '則', title: 'Hiragana dilbilgisi', sub: 'Yazı sistemi kuralları' },
+  { to: '/kural-testi', glyph: '筆', title: 'Kural testi', sub: 'Okunuşu yaz' },
   { to: '/kana-test', glyph: '試', title: 'Kendi testin', sub: 'Harfleri sen seç' },
   { to: '/kana-kelime', glyph: '読', title: 'Kelime okuma', sub: 'Hece hece sök' },
 ]

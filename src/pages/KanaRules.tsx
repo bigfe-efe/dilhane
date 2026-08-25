@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Chips, SpeakBtn, TopBar } from '@/components/ui'
 import { Icon } from '@/components/icons'
 import { KANA_RULES, MORA_PRINCIPLE, type KanaRule, type RuleExample } from '@/content/ja/kana-rules'
@@ -17,11 +17,19 @@ import { KANA_RULES, MORA_PRINCIPLE, type KanaRule, type RuleExample } from '@/c
 export default function KanaRulesPage() {
   const [filtre, setFiltre] = useState('hepsi')
 
+  // Kural testinin sonucundan "bu kuralı oku" ile gelinince doğrudan o kurala
+  // açılsın — kullanıcı listede aramasın.
+  const [params] = useSearchParams()
+  const istenen = params.get('k')
+  useEffect(() => {
+    if (istenen && KANA_RULES.some((r) => r.id === istenen)) setFiltre(istenen)
+  }, [istenen])
+
   const gorunen = filtre === 'hepsi' ? KANA_RULES : KANA_RULES.filter((r) => r.id === filtre)
 
   return (
     <>
-      <TopBar title="Özel kurallar" sub="Harfleri bilmenin yetmediği yerler" back="/kana/hiragana" />
+      <TopBar title="Hiragana dilbilgisi" sub="Yazı sisteminin kuralları" back="/calis" />
 
       <div className="page stack-lg lang-ja">
         {/* Bütün kuralların dayandığı ilke */}
@@ -54,14 +62,18 @@ export default function KanaRulesPage() {
           <RuleCard key={r.id} rule={r} />
         ))}
 
-        <div className="card stack-sm">
+        <div className="card card--accent stack-sm">
           <div className="card-title">Şimdi dene</div>
-          <div className="card-sub">
-            Kural okumakla oturmaz; kelime sökerken oturur. Bu kuralların hepsi kelime okuma alıştırmasında ve
-            bitirme sınavının “Özel kurallar” bölümünde çıkıyor.
+          <div className="card-sub" style={{ lineHeight: 1.6 }}>
+            Kural okumakla oturmaz; kelime sökerken oturur. Kural okuma testinde kelimeyi görür, okunuşunu
+            <b> şıksız yazarsın</b> — sonunda hangi kuralda düştüğün tek tek çıkar.
           </div>
           <div className="row" style={{ flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
-            <Link to="/kana-kelime" className="btn btn--sm">
+            <Link to="/kural-testi" className="btn btn--sm btn--primary">
+              Kural okuma testi
+              <Icon name="right" size={14} />
+            </Link>
+            <Link to="/kana-kelime" className="btn btn--sm btn--ghost">
               Kelime okuma
               <Icon name="right" size={14} />
             </Link>

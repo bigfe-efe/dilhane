@@ -8,6 +8,7 @@ import KanaQuizPage from '@/pages/KanaQuiz'
 import HiraganaExamPage from '@/pages/HiraganaExam'
 import RoadmapPage from '@/pages/Roadmap'
 import KanaRulesPage from '@/pages/KanaRules'
+import KanaRuleTestPage from '@/pages/KanaRuleTest'
 import PracticePage from '@/pages/Practice'
 import KanaWordsPage from '@/pages/KanaWords'
 import LeechesPage from '@/pages/Leeches'
@@ -59,6 +60,7 @@ export default function App() {
         <Route path="/n5" element={<N5Page />} />
         <Route path="/kana/:type" element={<KanaPage />} />
         <Route path="/kana-kurallar" element={<KanaRulesPage />} />
+        <Route path="/kural-testi" element={<KanaRuleTestPage />} />
         <Route path="/kana-hiz" element={<KanaSpeedPage />} />
         <Route path="/kana-test" element={<KanaQuizPage />} />
         <Route path="/hiragana-sinav" element={<HiraganaExamPage />} />

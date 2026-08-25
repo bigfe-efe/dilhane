@@ -44,6 +44,30 @@ export const MORA_PRINCIPLE = {
 
 export const KANA_RULES: KanaRule[] = [
   {
+    id: 'dakuten',
+    short: 'Dakuten ゛゜',
+    glyph: '゛',
+    title: 'Dakuten ve handakuten — sesi kalınlaştıran işaretler',
+    rule: 'Sağ üste konan iki çentik (゛) sessizi tonlu yapar; küçük daire (゜) yalnızca は satırına gelir ve h sesini p yapar.',
+    body: [
+      'Ezberlenecek 25 yeni karakter yok — ezberlenecek DÖRT kural var. İşaret geldiğinde ses şöyle değişir:',
+      'か→が (k→g) · さ→ざ (s→z) · た→だ (t→d) · は→ば (h→b)',
+      'Handakuten (゜) tek bir satıra gelir: は→ぱ (h→p). Başka hiçbir satırda kullanılmaz.',
+      'Kuralı bilirsen tablo kendiliğinden çıkar: き’nin dakutenlisi ぎ’dir, ezberlemeye gerek yok.',
+      'İki istisna okunuşta: し→じ "ji" olur ("zi" değil), ち→ぢ da "ji" okunur. Aynı şekilde つ→づ "zu" olur, す→ず gibi. Yani ji ve zu seslerinin İKİ yazımı vardır — ama じ ve ず çok daha yaygındır; ぢ/づ yalnızca birleşik kelimelerde ve az sayıda sözcükte görülür.',
+    ],
+    examples: [
+      { kana: 'かぎ', reading: 'kagi', tr: 'anahtar', vs: { kana: 'かき', reading: 'kaki', tr: 'Trabzon hurması' } },
+      { kana: 'だいがく', reading: 'daigaku', tr: 'üniversite' },
+      { kana: 'ざっし', reading: 'zasshi', tr: 'dergi' },
+      { kana: 'でんわ', reading: 'denwa', tr: 'telefon' },
+      { kana: 'えんぴつ', reading: 'enpitsu', tr: 'kurşun kalem — ぴ handakutenli' },
+      { kana: 'さんぽ', reading: 'sanpo', tr: 'yürüyüş' },
+    ],
+    pitfall:
+      'İşareti gözden kaçırmak. かき (hurma) ile かぎ (anahtar) arasındaki tek fark iki minik çentiktir; küçük puntoda kolayca atlanır. Bir de ぱ/ば ayrımı: daire mi çentik mi, dikkatle bak.',
+  },
+  {
     id: 'sokuon',
     short: 'Küçük っ',
     glyph: 'っ',
@@ -205,4 +229,67 @@ export const KANA_RULES: KanaRule[] = [
     pitfall:
       'Duyduğun gibi yazmaya çalışmak. "des" diye duyarsın ama yazımı hep です’dir — yazarken hecenin tamamını yazacaksın.',
   },
+  {
+    id: 'yazim',
+    short: 'Yazım düzeni',
+    glyph: '。',
+    title: 'Boşluk yok, noktalama farklı',
+    rule: 'Japoncada kelimeler arasına boşluk konmaz; nokta 。 virgül 、 biçimindedir.',
+    body: [
+      'Cümle boşluksuz yazılır. Nerede bitip nerede başladığını yazı türü söyler: kanji genelde kelimenin gövdesi, hiragana ekler ve bağlantılardır. Sen henüz kanji bilmediğin için tamamı hiragana metinler zor görünür — normal, kanji öğrendikçe okumak KOLAYLAŞIR.',
+      'Nokta 。 (maru) ve virgül 、 (ten) Latin karşılıklarından farklı çizilir ve karenin sol altına oturur.',
+      'Soru işareti genelde kullanılmaz: soruyu か eki belirtir. 「わかりますか。」 cümlesi soru cümlesidir ama sonunda nokta vardır.',
+      'Tırnak yerine köşeli ayraç kullanılır: 「…」',
+      'Uzatma çizgisi ー yalnızca katakanada kullanılır; hiraganada uzatma ünlüyü tekrar yazarak yapılır.',
+    ],
+    examples: [
+      { kana: 'わたしはがくせいです。', reading: 'watashi wa gakusei desu', tr: 'Ben öğrenciyim — boşluk yok, sonda 。' },
+      { kana: 'わかりますか。', reading: 'wakarimasu ka', tr: 'Anlıyor musun? — soru işareti yok, か var' },
+      { kana: 'ねこ、いぬ、とり', reading: 'neko, inu, tori', tr: 'kedi, köpek, kuş — virgül 、' },
+    ],
+    pitfall:
+      'Boşluksuz metni gözle bölememek. Çözüm ezber değil, alışkanlık: hece hece oku, tanıdık kelimeyi yakaladığında orada böl. Kanji öğrendikçe bu iş kendiliğinden kolaylaşır.',
+  },
 ]
+
+// ————————————————————————— Okuma testi havuzu —————————————————————————
+
+/**
+ * Kural okuma testinin soruları.
+ *
+ * Havuz doğrudan yukarıdaki ÖRNEKLERDEN üretiliyor — ayrı bir liste tutmak
+ * ikisinin zamanla ayrışmasına yol açardı. Karşılaştırma çiftleri (vs) de
+ * havuza giriyor: きって/きて ikilisinin ikisini de sormak, kuralı tek yönlü
+ * ezberlemeyi engelliyor.
+ *
+ * Her sorunun hangi kurala ait olduğu saklanıyor; sonuçta "uzun ünlüde 2/5"
+ * gibi kural bazlı döküm çıkarılabiliyor.
+ */
+export interface RuleTestItem {
+  kana: string
+  reading: string
+  tr: string
+  ruleId: string
+  ruleShort: string
+}
+
+export const RULE_TEST_POOL: RuleTestItem[] = (() => {
+  const out: RuleTestItem[] = []
+  const gorulen = new Set<string>()
+  const ekle = (kana: string, reading: string, tr: string, r: KanaRule) => {
+    // Aynı kelime birden çok kuralda örnek olabiliyor (ざっし hem dakuten hem
+    // sokuon). İlk geçtiği kurala bağlanıyor, iki kez sorulmuyor.
+    if (gorulen.has(kana)) return
+    gorulen.add(kana)
+    out.push({ kana, reading, tr, ruleId: r.id, ruleShort: r.short })
+  }
+  for (const r of KANA_RULES) {
+    // Yazım kuralı kartındaki örnekler cümle; okunuşu yazdırmak için uygun değil
+    if (r.id === 'yazim') continue
+    for (const ex of r.examples) {
+      ekle(ex.kana, ex.reading, ex.tr, r)
+      if (ex.vs) ekle(ex.vs.kana, ex.vs.reading, ex.vs.tr, r)
+    }
+  }
+  return out
+})()

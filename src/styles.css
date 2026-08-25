@@ -2185,3 +2185,21 @@ ul.tight li {
   line-height: 1.55;
   color: var(--text);
 }
+
+/* Kural okuma testi — kelime büyük olmalı, küçük っ ve uzun ünlü ancak o zaman
+   fark edilir. Testin ölçtüğü şey tam olarak bu ayrıntıları görmek. */
+.ruletest-word {
+  font-size: clamp(2.6rem, 11vw, 4.2rem);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  line-height: 1.25;
+  text-align: center;
+  margin: 8px 0;
+  word-break: keep-all;
+}
+.ruletest-word-sm {
+  font-size: 1.6rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  flex: none;
+}
