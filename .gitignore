@@ -1,0 +1,32 @@
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# API anahtarları — asla yüklenmez
+.env
+.env.local
+
+# Üretilmiş ses dosyaları büyük olabilir; istersen bu satırı sil
+# public/audio/*.mp3
+
+# Capacitor
+android/
+ios/
+.gradle/
+
+# Kisisel ayarlar ve makineye ozgu dosyalar
+wallpaper/prefs.json
+tsconfig.tsbuildinfo
+.claude/
+
+# Editör
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store

@@ -1,0 +1,155 @@
+import type { KanjiChar } from '@/types'
+
+// JLPT N5 kanji seti (~103 karakter).
+// Kompakt satır biçimi, elle bakımı kolay olsun diye tercih edildi:
+//   [karakter, çizgi, sınıf, TR anlamlar, EN anlamlar, on'yomi, kun'yomi, örnek kelimeler]
+// Çoklu değerler "|" ile, örnek kelimeler "terim;okunuş;türkçe" biçiminde ayrılır.
+
+type Row = [string, number, number, string, string, string, string, string]
+
+const ROWS: Row[] = [
+  ['日', 4, 1, 'gün|güneş|Japonya', 'day|sun', 'ニチ|ジツ', 'ひ|-び|-か', '日本;にほん;Japonya|今日;きょう;bugün|日曜日;にちようび;pazar'],
+  ['一', 1, 1, 'bir', 'one', 'イチ|イツ', 'ひと-', '一つ;ひとつ;bir tane|一人;ひとり;bir kişi|一月;いちがつ;ocak'],
+  ['二', 2, 1, 'iki', 'two', 'ニ', 'ふた-', '二つ;ふたつ;iki tane|二人;ふたり;iki kişi|二月;にがつ;şubat'],
+  ['三', 3, 1, 'üç', 'three', 'サン', 'みっ-', '三つ;みっつ;üç tane|三日;みっか;ayın 3\'ü|三月;さんがつ;mart'],
+  ['四', 5, 1, 'dört', 'four', 'シ', 'よん|よっ-', '四つ;よっつ;dört tane|四月;しがつ;nisan|四時;よじ;saat 4'],
+  ['五', 4, 1, 'beş', 'five', 'ゴ', 'いつ-', '五つ;いつつ;beş tane|五月;ごがつ;mayıs|五分;ごふん;beş dakika'],
+  ['六', 4, 1, 'altı', 'six', 'ロク', 'むっ-', '六つ;むっつ;altı tane|六月;ろくがつ;haziran|六時;ろくじ;saat 6'],
+  ['七', 2, 1, 'yedi', 'seven', 'シチ', 'なな|なな-', '七つ;ななつ;yedi tane|七月;しちがつ;temmuz|七時;しちじ;saat 7'],
+  ['八', 2, 1, 'sekiz', 'eight', 'ハチ', 'やっ-', '八つ;やっつ;sekiz tane|八月;はちがつ;ağustos|八時;はちじ;saat 8'],
+  ['九', 2, 1, 'dokuz', 'nine', 'キュウ|ク', 'ここの-', '九つ;ここのつ;dokuz tane|九月;くがつ;eylül|九時;くじ;saat 9'],
+  ['十', 2, 1, 'on', 'ten', 'ジュウ', 'とお', '十;じゅう;on|十日;とおか;ayın 10\'u|十分;じゅっぷん;on dakika'],
+  ['百', 6, 1, 'yüz (100)', 'hundred', 'ヒャク', '', '百;ひゃく;100|三百;さんびゃく;300|八百屋;やおや;manav'],
+  ['千', 3, 1, 'bin (1000)', 'thousand', 'セン', 'ち', '千;せん;1000|三千;さんぜん;3000|千円;せんえん;1000 yen'],
+  ['万', 3, 2, 'on bin', 'ten thousand', 'マン|バン', '', '一万;いちまん;10.000|万年筆;まんねんひつ;dolma kalem'],
+  ['円', 4, 1, 'yen|daire', 'yen|circle', 'エン', 'まる-い', '百円;ひゃくえん;100 yen|円い;まるい;yuvarlak'],
+  ['時', 10, 2, 'saat|zaman', 'time|hour', 'ジ', 'とき', '時間;じかん;zaman/saat|何時;なんじ;saat kaç|時々;ときどき;bazen'],
+  ['分', 4, 2, 'dakika|bölmek|anlamak', 'minute|divide|understand', 'ブン|フン|プン', 'わ-かる|わ-ける', '五分;ごふん;5 dakika|分かる;わかる;anlamak|自分;じぶん;kendi'],
+  ['半', 5, 2, 'yarım', 'half', 'ハン', 'なか-ば', '半分;はんぶん;yarısı|二時半;にじはん;2 buçuk|半年;はんとし;yarım yıl'],
+  ['上', 3, 1, 'üst|yukarı', 'above|up', 'ジョウ', 'うえ|あ-がる|のぼ-る', '上;うえ;üst|上手;じょうず;usta/iyi|上がる;あがる;yükselmek'],
+  ['下', 3, 1, 'alt|aşağı', 'below|down', 'カ|ゲ', 'した|さ-がる|くだ-さい', '下;した;alt|下手;へた;beceriksiz|地下;ちか;yer altı'],
+  ['中', 4, 1, 'iç|orta', 'inside|middle', 'チュウ', 'なか', '中;なか;iç|中国;ちゅうごく;Çin|一日中;いちにちじゅう;bütün gün'],
+  ['大', 3, 1, 'büyük', 'big', 'ダイ|タイ', 'おお-きい', '大きい;おおきい;büyük|大学;だいがく;üniversite|大丈夫;だいじょうぶ;sorun yok'],
+  ['小', 3, 1, 'küçük', 'small', 'ショウ', 'ちい-さい|こ-', '小さい;ちいさい;küçük|小学校;しょうがっこう;ilkokul|小さな;ちいさな;küçük'],
+  ['月', 4, 1, 'ay (gökyüzü)|ay (takvim)', 'moon|month', 'ゲツ|ガツ', 'つき', '月;つき;ay|月曜日;げつようび;pazartesi|一か月;いっかげつ;bir ay'],
+  ['火', 4, 1, 'ateş', 'fire', 'カ', 'ひ', '火;ひ;ateş|火曜日;かようび;salı|花火;はなび;havai fişek'],
+  ['水', 4, 1, 'su', 'water', 'スイ', 'みず', '水;みず;su|水曜日;すいようび;çarşamba|水泳;すいえい;yüzme'],
+  ['木', 4, 1, 'ağaç|odun', 'tree|wood', 'モク|ボク', 'き', '木;き;ağaç|木曜日;もくようび;perşembe|木村;きむら;Kimura (soyadı)'],
+  ['金', 8, 1, 'altın|para', 'gold|money', 'キン|コン', 'かね', 'お金;おかね;para|金曜日;きんようび;cuma|金;きん;altın'],
+  ['土', 3, 1, 'toprak|zemin', 'earth|soil', 'ド|ト', 'つち', '土;つち;toprak|土曜日;どようび;cumartesi|土地;とち;arazi'],
+  ['曜', 18, 2, 'haftanın günü', 'weekday', 'ヨウ', '', '何曜日;なんようび;hangi gün|日曜日;にちようび;pazar'],
+  ['本', 5, 1, 'kitap|asıl|kök', 'book|origin', 'ホン', 'もと', '本;ほん;kitap|日本;にほん;Japonya|本当;ほんとう;gerçekten'],
+  ['人', 2, 1, 'insan|kişi', 'person', 'ジン|ニン', 'ひと', '人;ひと;insan|日本人;にほんじん;Japon|三人;さんにん;üç kişi'],
+  ['名', 6, 1, 'isim', 'name', 'メイ|ミョウ', 'な', '名前;なまえ;isim|有名;ゆうめい;ünlü|名字;みょうじ;soyadı'],
+  ['男', 7, 1, 'erkek', 'man|male', 'ダン|ナン', 'おとこ', '男;おとこ;erkek|男の子;おとこのこ;erkek çocuk|男性;だんせい;erkek (resmî)'],
+  ['女', 3, 1, 'kadın', 'woman|female', 'ジョ|ニョ', 'おんな|め', '女;おんな;kadın|女の子;おんなのこ;kız çocuk|女性;じょせい;kadın (resmî)'],
+  ['子', 3, 1, 'çocuk', 'child', 'シ|ス', 'こ', '子ども;こども;çocuk|男子;だんし;erkek öğrenci|椅子;いす;sandalye'],
+  ['学', 8, 1, 'öğrenim|çalışmak', 'study|learning', 'ガク', 'まな-ぶ', '学生;がくせい;öğrenci|大学;だいがく;üniversite|学ぶ;まなぶ;öğrenmek'],
+  ['校', 10, 1, 'okul', 'school', 'コウ', '', '学校;がっこう;okul|高校;こうこう;lise|校長;こうちょう;müdür'],
+  ['先', 6, 1, 'önce|ileri', 'previous|ahead', 'セン', 'さき', '先生;せんせい;öğretmen|先週;せんしゅう;geçen hafta|先に;さきに;önce'],
+  ['生', 5, 1, 'hayat|doğmak|ham', 'life|birth|raw', 'セイ|ショウ', 'い-きる|う-まれる|なま', '学生;がくせい;öğrenci|生まれる;うまれる;doğmak|一生;いっしょう;ömür boyu'],
+  ['年', 6, 1, 'yıl', 'year', 'ネン', 'とし', '今年;ことし;bu yıl|去年;きょねん;geçen yıl|一年;いちねん;bir yıl'],
+  ['何', 7, 2, 'ne|kaç', 'what|how many', 'カ', 'なに|なん', '何;なに;ne|何時;なんじ;saat kaç|何人;なんにん;kaç kişi'],
+  ['私', 7, 6, 'ben|özel', 'I|private', 'シ', 'わたし', '私;わたし;ben|私立;しりつ;özel (kurum)'],
+  ['今', 4, 2, 'şimdi', 'now', 'コン|キン', 'いま', '今;いま;şimdi|今日;きょう;bugün|今週;こんしゅう;bu hafta'],
+  ['出', 5, 1, 'çıkmak|çıkarmak', 'exit|put out', 'シュツ', 'で-る|だ-す', '出る;でる;çıkmak|出す;だす;çıkarmak|出口;でぐち;çıkış'],
+  ['入', 2, 1, 'girmek|koymak', 'enter|insert', 'ニュウ', 'はい-る|い-れる', '入る;はいる;girmek|入れる;いれる;içine koymak|入口;いりぐち;giriş'],
+  ['行', 6, 2, 'gitmek|yapmak', 'go|conduct', 'コウ|ギョウ', 'い-く|おこな-う', '行く;いく;gitmek|銀行;ぎんこう;banka|旅行;りょこう;seyahat'],
+  ['来', 7, 2, 'gelmek', 'come', 'ライ', 'く-る', '来る;くる;gelmek|来週;らいしゅう;gelecek hafta|来年;らいねん;gelecek yıl'],
+  ['帰', 10, 2, 'dönmek|eve gitmek', 'return home', 'キ', 'かえ-る', '帰る;かえる;eve dönmek|帰り;かえり;dönüş'],
+  ['食', 9, 2, 'yemek', 'eat|food', 'ショク', 'た-べる', '食べる;たべる;yemek|食事;しょくじ;yemek (öğün)|朝食;ちょうしょく;kahvaltı'],
+  ['飲', 12, 3, 'içmek', 'drink', 'イン', 'の-む', '飲む;のむ;içmek|飲み物;のみもの;içecek|飲食;いんしょく;yeme içme'],
+  ['見', 7, 1, 'görmek|bakmak', 'see|look', 'ケン', 'み-る|み-せる', '見る;みる;görmek|見せる;みせる;göstermek|意見;いけん;fikir'],
+  ['聞', 14, 2, 'duymak|sormak', 'hear|ask', 'ブン|モン', 'き-く', '聞く;きく;dinlemek/sormak|新聞;しんぶん;gazete|聞こえる;きこえる;duyulmak'],
+  ['話', 13, 2, 'konuşmak|hikâye', 'talk|story', 'ワ', 'はな-す|はなし', '話す;はなす;konuşmak|電話;でんわ;telefon|話;はなし;konuşma'],
+  ['読', 14, 2, 'okumak', 'read', 'ドク', 'よ-む', '読む;よむ;okumak|読書;どくしょ;kitap okuma'],
+  ['書', 10, 2, 'yazmak', 'write', 'ショ', 'か-く', '書く;かく;yazmak|辞書;じしょ;sözlük|図書館;としょかん;kütüphane'],
+  ['買', 12, 2, 'satın almak', 'buy', 'バイ', 'か-う', '買う;かう;satın almak|買い物;かいもの;alışveriş'],
+  ['会', 6, 2, 'buluşmak|toplantı', 'meet|society', 'カイ', 'あ-う', '会う;あう;buluşmak|会社;かいしゃ;şirket|会話;かいわ;diyalog'],
+  ['語', 14, 2, 'dil|kelime', 'language|word', 'ゴ', 'かた-る', '日本語;にほんご;Japonca|英語;えいご;İngilizce|単語;たんご;kelime'],
+  ['高', 10, 2, 'yüksek|pahalı', 'high|expensive', 'コウ', 'たか-い', '高い;たかい;yüksek/pahalı|高校;こうこう;lise|背が高い;せがたかい;uzun boylu'],
+  ['安', 6, 3, 'ucuz|huzurlu', 'cheap|peaceful', 'アン', 'やす-い', '安い;やすい;ucuz|安心;あんしん;içi rahat|不安;ふあん;endişe'],
+  ['新', 13, 2, 'yeni', 'new', 'シン', 'あたら-しい', '新しい;あたらしい;yeni|新聞;しんぶん;gazete|新幹線;しんかんせん;hızlı tren'],
+  ['古', 5, 2, 'eski', 'old (nesne)', 'コ', 'ふる-い', '古い;ふるい;eski|中古;ちゅうこ;ikinci el'],
+  ['長', 8, 2, 'uzun|şef', 'long|chief', 'チョウ', 'なが-い', '長い;ながい;uzun|社長;しゃちょう;şirket müdürü|長さ;ながさ;uzunluk'],
+  ['白', 5, 1, 'beyaz', 'white', 'ハク', 'しろ|しろ-い', '白い;しろい;beyaz|白;しろ;beyaz|面白い;おもしろい;ilginç/eğlenceli'],
+  ['山', 3, 1, 'dağ', 'mountain', 'サン', 'やま', '山;やま;dağ|富士山;ふじさん;Fuji Dağı|火山;かざん;yanardağ'],
+  ['川', 3, 1, 'nehir', 'river', 'セン', 'かわ', '川;かわ;nehir|小川;おがわ;dere'],
+  ['天', 4, 1, 'gökyüzü|cennet', 'heaven|sky', 'テン', '', '天気;てんき;hava durumu|天ぷら;てんぷら;tempura'],
+  ['気', 6, 1, 'ruh|hava|his', 'spirit|mood|air', 'キ|ケ', '', '元気;げんき;sağlıklı/enerjik|天気;てんき;hava|気持ち;きもち;his'],
+  ['雨', 8, 1, 'yağmur', 'rain', 'ウ', 'あめ', '雨;あめ;yağmur|大雨;おおあめ;sağanak|雨天;うてん;yağmurlu hava'],
+  ['電', 13, 2, 'elektrik', 'electricity', 'デン', '', '電車;でんしゃ;tren|電話;でんわ;telefon|電気;でんき;elektrik/ışık'],
+  ['車', 7, 1, 'araba|tekerlek', 'car|wheel', 'シャ', 'くるま', '車;くるま;araba|電車;でんしゃ;tren|自転車;じてんしゃ;bisiklet'],
+  ['駅', 14, 3, 'istasyon', 'station', 'エキ', '', '駅;えき;istasyon|東京駅;とうきょうえき;Tokyo garı'],
+  ['国', 8, 2, 'ülke', 'country', 'コク', 'くに', '国;くに;ülke|中国;ちゅうごく;Çin|外国;がいこく;yabancı ülke'],
+  ['外', 5, 2, 'dış', 'outside', 'ガイ', 'そと|ほか', '外;そと;dışarı|外国人;がいこくじん;yabancı|以外;いがい;dışında'],
+  ['前', 9, 2, 'ön|önce', 'front|before', 'ゼン', 'まえ', '前;まえ;ön/önce|名前;なまえ;isim|午前;ごぜん;öğleden önce'],
+  ['後', 9, 2, 'arka|sonra', 'behind|after', 'ゴ|コウ', 'あと|うし-ろ', '後で;あとで;sonra|後ろ;うしろ;arka|午後;ごご;öğleden sonra'],
+  ['右', 5, 1, 'sağ', 'right', 'ウ|ユウ', 'みぎ', '右;みぎ;sağ|右手;みぎて;sağ el'],
+  ['左', 5, 1, 'sol', 'left', 'サ', 'ひだり', '左;ひだり;sol|左手;ひだりて;sol el'],
+  ['東', 8, 2, 'doğu', 'east', 'トウ', 'ひがし', '東;ひがし;doğu|東京;とうきょう;Tokyo|東口;ひがしぐち;doğu çıkışı'],
+  ['西', 6, 2, 'batı', 'west', 'セイ|サイ', 'にし', '西;にし;batı|西口;にしぐち;batı çıkışı|関西;かんさい;Kansai'],
+  ['南', 9, 2, 'güney', 'south', 'ナン', 'みなみ', '南;みなみ;güney|南口;みなみぐち;güney çıkışı'],
+  ['北', 5, 2, 'kuzey', 'north', 'ホク', 'きた', '北;きた;kuzey|北海道;ほっかいどう;Hokkaido'],
+  ['口', 3, 1, 'ağız|giriş', 'mouth|opening', 'コウ', 'くち', '口;くち;ağız|入口;いりぐち;giriş|人口;じんこう;nüfus'],
+  ['目', 5, 1, 'göz|sıra eki', 'eye|ordinal', 'モク', 'め', '目;め;göz|一番目;いちばんめ;birinci|目的;もくてき;amaç'],
+  ['耳', 6, 1, 'kulak', 'ear', 'ジ', 'みみ', '耳;みみ;kulak'],
+  ['手', 4, 1, 'el', 'hand', 'シュ', 'て', '手;て;el|上手;じょうず;usta|手紙;てがみ;mektup'],
+  ['足', 7, 1, 'ayak|bacak|yetmek', 'foot|leg|suffice', 'ソク', 'あし|た-りる', '足;あし;ayak|足りる;たりる;yetmek|一足;いっそく;bir çift (ayakkabı)'],
+  ['力', 2, 1, 'güç', 'power', 'リョク|リキ', 'ちから', '力;ちから;güç|体力;たいりょく;fiziksel güç'],
+  ['立', 5, 1, 'ayakta durmak', 'stand', 'リツ', 'た-つ', '立つ;たつ;ayağa kalkmak|国立;こくりつ;devlet (kurumu)'],
+  ['休', 6, 1, 'dinlenmek|tatil', 'rest|holiday', 'キュウ', 'やす-む', '休む;やすむ;dinlenmek|休み;やすみ;tatil|昼休み;ひるやすみ;öğle arası'],
+  ['友', 4, 2, 'arkadaş', 'friend', 'ユウ', 'とも', '友だち;ともだち;arkadaş|親友;しんゆう;yakın dost'],
+  ['父', 4, 2, 'baba', 'father', 'フ', 'ちち|とう', '父;ちち;babam|お父さん;おとうさん;baba'],
+  ['母', 5, 2, 'anne', 'mother', 'ボ', 'はは|かあ', '母;はは;annem|お母さん;おかあさん;anne'],
+  ['兄', 5, 2, 'ağabey', 'older brother', 'キョウ', 'あに|にい', '兄;あに;ağabeyim|お兄さん;おにいさん;ağabey'],
+  ['姉', 8, 2, 'abla', 'older sister', 'シ', 'あね|ねえ', '姉;あね;ablam|お姉さん;おねえさん;abla'],
+  ['弟', 7, 2, 'küçük erkek kardeş', 'younger brother', 'ダイ|テイ', 'おとうと', '弟;おとうと;küçük erkek kardeş|兄弟;きょうだい;kardeşler'],
+  ['妹', 8, 2, 'küçük kız kardeş', 'younger sister', 'マイ', 'いもうと', '妹;いもうと;küçük kız kardeş|姉妹;しまい;kız kardeşler'],
+  ['毎', 6, 2, 'her', 'every', 'マイ', '', '毎日;まいにち;her gün|毎週;まいしゅう;her hafta|毎年;まいとし;her yıl'],
+  ['週', 11, 2, 'hafta', 'week', 'シュウ', '', '今週;こんしゅう;bu hafta|週末;しゅうまつ;hafta sonu|一週間;いっしゅうかん;bir hafta'],
+  ['間', 12, 2, 'ara|aralık', 'interval|between', 'カン|ケン', 'あいだ|ま', '時間;じかん;zaman|人間;にんげん;insan|間;あいだ;arası'],
+  ['午', 4, 2, 'öğle', 'noon', 'ゴ', '', '午前;ごぜん;öğleden önce|午後;ごご;öğleden sonra|正午;しょうご;öğlen 12'],
+  ['少', 4, 2, 'az', 'few|little', 'ショウ', 'すく-ない|すこ-し', '少し;すこし;biraz|少ない;すくない;az|少々;しょうしょう;azıcık'],
+  ['多', 6, 2, 'çok', 'many', 'タ', 'おお-い', '多い;おおい;çok|多分;たぶん;muhtemelen'],
+  ['早', 6, 1, 'erken|hızlı', 'early|fast', 'ソウ', 'はや-い', '早い;はやい;erken|早く;はやく;çabuk|早朝;そうちょう;sabahın erken saati'],
+  ['空', 8, 1, 'gökyüzü|boş', 'sky|empty', 'クウ', 'そら|あ-く', '空;そら;gökyüzü|空港;くうこう;havaalanı|空気;くうき;hava'],
+]
+
+function parseWords(s: string): KanjiChar['words'] {
+  if (!s) return []
+  return s.split('|').map((w) => {
+    const [term, reading, tr] = w.split(';')
+    return { term, reading, tr }
+  })
+}
+
+const split = (s: string): string[] => (s ? s.split('|') : [])
+
+export const KANJI_N5: KanjiChar[] = ROWS.map(([char, strokes, grade, tr, en, on, kun, words]) => ({
+  char,
+  strokes,
+  grade,
+  jlpt: 'N5' as const,
+  meaningsTr: split(tr),
+  meaningsEn: split(en),
+  on: split(on),
+  kun: split(kun),
+  words: parseWords(words),
+}))
+
+export const KANJI_BY_CHAR = new Map(KANJI_N5.map((k) => [k.char, k]))
+
+/** Konu bazlı kanji setleri — ders planı bunlara göre ilerler. */
+export const KANJI_SETS: { id: string; title: string; chars: string[] }[] = [
+  { id: 'sayilar', title: 'Sayılar', chars: ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '百', '千', '万', '円'] },
+  { id: 'gun-zaman', title: 'Gün ve zaman', chars: ['日', '月', '火', '水', '木', '金', '土', '曜', '時', '分', '半', '年', '今', '毎', '週', '間', '午', '前', '後'] },
+  { id: 'insan-aile', title: 'İnsan ve aile', chars: ['人', '私', '男', '女', '子', '名', '友', '父', '母', '兄', '姉', '弟', '妹'] },
+  { id: 'okul', title: 'Okul ve öğrenim', chars: ['学', '校', '先', '生', '本', '語', '読', '書', '聞', '話'] },
+  { id: 'fiiller', title: 'Temel fiiller', chars: ['行', '来', '帰', '食', '飲', '見', '買', '会', '出', '入', '立', '休'] },
+  { id: 'sifatlar', title: 'Sıfatlar', chars: ['大', '小', '高', '安', '新', '古', '長', '白', '多', '少', '早'] },
+  { id: 'yer-yon', title: 'Yer ve yön', chars: ['上', '下', '中', '外', '右', '左', '東', '西', '南', '北', '国', '駅'] },
+  { id: 'doga', title: 'Doğa ve hava', chars: ['山', '川', '天', '気', '雨', '空', '電', '車'] },
+  { id: 'vucut', title: 'Vücut', chars: ['口', '目', '耳', '手', '足', '力'] },
+  { id: 'sayi-ne', title: 'Soru ve diğer', chars: ['何'] },
+]

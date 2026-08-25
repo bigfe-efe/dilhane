@@ -1,0 +1,208 @@
+// Hiragana'nın "özel kuralları" — harfleri bilmenin yetmediği yerler.
+//
+// NEDEN AYRI BİR SAYFA:
+// Kana tablosu 46 karakteri öğretir ve insan "bitti" sanır. Oysa okumayı asıl
+// zorlaştıran şey tablo değil, tablonun anlatmadığı bir avuç kural: küçük っ,
+// uzun ünlü, ん'in kendi başına bir hece olması, ve は'nın ek olduğunda "wa"
+// okunması. Bitirme sınavında bunlar ayrı bir bölüm; o bölümde düşen birinin
+// gidebileceği bir yer olsun diye burası var.
+//
+// Hepsinin altında TEK bir ilke yatıyor: Japoncada her hece eşit uzunlukta
+// okunur. Küçük っ bir hecelik sessizlik, uzun ünlü iki hecelik ses, ん bir
+// hecelik burun sesidir. Bu ilkeyi anlayan dördünü birden anlar.
+
+export interface RuleExample {
+  kana: string
+  reading: string
+  tr: string
+  /** Karşılaştırma çifti — yanlış okunursa hangi kelimeye dönüşür */
+  vs?: { kana: string; reading: string; tr: string }
+}
+
+export interface KanaRule {
+  id: string
+  glyph: string
+  title: string
+  /** Süzgeç çipi için kısa ad — başlıktan türetmek çirkin sonuç veriyordu */
+  short: string
+  /** Tek cümlelik kural — kartın en tepesinde durur */
+  rule: string
+  body: string[]
+  examples: RuleExample[]
+  /** En sık yapılan hata */
+  pitfall: string
+}
+
+export const MORA_PRINCIPLE = {
+  title: 'Önce şunu anla: her hece eşit uzunluktadır',
+  body: [
+    'Türkçede heceler farklı uzunlukta olabilir; Japoncada olamaz. Her hece (mora) aynı süreyi kaplar — metronom gibi.',
+    'Aşağıdaki dört kuralın hepsi bunun sonucudur. Küçük っ bir hecelik sessizliktir. Uzun ünlü iki hecedir. ん tek başına bir hecedir. Bunları yutarsan kelime kısalır ve başka bir kelimeye dönüşür.',
+    'Okurken hece hece, eşit tempoda git. Acele etmek en sık yapılan hatadır.',
+  ],
+}
+
+export const KANA_RULES: KanaRule[] = [
+  {
+    id: 'sokuon',
+    short: 'Küçük っ',
+    glyph: 'っ',
+    title: 'Küçük っ — sessizin ikilenmesi',
+    rule: 'Küçük っ ses vermez; kendinden sonraki sessizi ikiler ve orada bir hecelik duraklama olur.',
+    body: [
+      'Normal boy つ (tsu) ile küçük boy っ farklı şeylerdir. Küçüğün kendi sesi yoktur.',
+      'Romajide sonraki sessiz harf iki kez yazılır: がっこう = ga-k-ko-u. Söylerken "gak" der gibi bir an durursun, sonra "kou" gelir.',
+      'Duraklama boşa geçen zaman değil, BİR HECE uzunluğunda. Yutarsan kelime yanlış olur.',
+    ],
+    examples: [
+      {
+        kana: 'きって',
+        reading: 'kitte',
+        tr: 'pul',
+        vs: { kana: 'きて', reading: 'kite', tr: 'gel (emir)' },
+      },
+      {
+        kana: 'おっと',
+        reading: 'otto',
+        tr: 'koca (eş)',
+        vs: { kana: 'おと', reading: 'oto', tr: 'ses' },
+      },
+      { kana: 'がっこう', reading: 'gakkou', tr: 'okul' },
+      { kana: 'ざっし', reading: 'zasshi', tr: 'dergi' },
+      { kana: 'きっぷ', reading: 'kippu', tr: 'bilet' },
+    ],
+    pitfall:
+      'Küçük っ’yi "tsu" diye okumak. Sesi yoktur — yalnızca sonraki sessizi ikiler. Bir de duraklamayı atlayıp "gakou" demek: bu başka bir kelime olur.',
+  },
+  {
+    id: 'uzun',
+    short: 'Uzun ünlü',
+    glyph: 'ー',
+    title: 'Uzun ünlü — iki hece boyu',
+    rule: 'Arka arkaya gelen ünlü, sesi İKİ hece boyunca uzatır. Uzunluk anlam değiştirir.',
+    body: [
+      'Uzatma ayrı bir işaretle değil, ünlüyü tekrar yazarak gösterilir: あ+あ, い+い, う+う.',
+      'İki tanesi düzensizdir ve ezberlenir: uzun "o" genelde お+う yazılır (こうこう), uzun "e" ise え+い (せんせい).',
+      'Katakana’da bunun yerine düz bir çizgi kullanılır: コーヒー.',
+    ],
+    examples: [
+      {
+        kana: 'おばあさん',
+        reading: 'obaasan',
+        tr: 'nine, yaşlı kadın',
+        vs: { kana: 'おばさん', reading: 'obasan', tr: 'teyze, hala' },
+      },
+      {
+        kana: 'おじいさん',
+        reading: 'ojiisan',
+        tr: 'dede',
+        vs: { kana: 'おじさん', reading: 'ojisan', tr: 'amca, dayı' },
+      },
+      {
+        kana: 'ゆうき',
+        reading: 'yuuki',
+        tr: 'cesaret',
+        vs: { kana: 'ゆき', reading: 'yuki', tr: 'kar' },
+      },
+      { kana: 'せんせい', reading: 'sensei', tr: 'öğretmen — "sensee" gibi duyulur' },
+      { kana: 'とうきょう', reading: 'toukyou', tr: 'Tokyo — iki uzun o birden' },
+    ],
+    pitfall:
+      'Uzunluğu yutmak. "obasan" ile "obaasan" arasındaki fark teyze ile nine farkıdır; kulağa küçük gelen bu uzunluk Japoncada anlamın kendisidir.',
+  },
+  {
+    id: 'n',
+    short: 'ん hecesi',
+    glyph: 'ん',
+    title: 'ん — tek başına bir hece',
+    rule: 'ん önceki harfe yapışmaz; kendi başına bir hece uzunluğundadır.',
+    body: [
+      'Türkçede "n" sessizi hecenin kuyruğuna takılır. Japoncada ん bağımsız bir moradır: ほん iki hecedir (ho-n), üç değil, bir buçuk değil.',
+      'Söylerken burnundan gelen sesi bir hece boyu tutarsın.',
+      'Bir de kural: hiçbir Japonca kelime ん ile BAŞLAMAZ. Bu yüzden kelime içinde gördüğün ん hep önceki heceden sonra gelir.',
+      'Sonraki sese göre kulağa "n", "m" ya da genizden "ng" gibi gelebilir — ama yazılışı hep ん’dir. Bu yüzden しんぶん hem "shinbun" hem "shimbun" yazılır.',
+    ],
+    examples: [
+      { kana: 'ほん', reading: 'hon', tr: 'kitap — 2 hece: ho-n' },
+      { kana: 'にほん', reading: 'nihon', tr: 'Japonya — 3 hece: ni-ho-n' },
+      { kana: 'しんぶん', reading: 'shinbun', tr: 'gazete — 4 hece: shi-n-bu-n' },
+      { kana: 'せんせい', reading: 'sensei', tr: 'öğretmen — 4 hece: se-n-se-i' },
+      { kana: 'あんない', reading: 'annai', tr: 'rehberlik, yol gösterme' },
+    ],
+    pitfall:
+      'ん’i önceki heceye yapıştırıp hece saymamak. Sınavda "kaç hece" sorusunda en çok buradan hata çıkar.',
+  },
+  {
+    id: 'particle',
+    short: 'は → wa',
+    glyph: 'は',
+    title: 'Ek olan は, へ, を farklı okunur',
+    rule: 'Bu üç karakter dilbilgisi eki olarak kullanıldığında yazıldığı gibi okunmaz: は→wa, へ→e, を→o.',
+    body: [
+      'Bu bir istisna değil, tarihsel bir kalıntı: yazım eski hâlinde donmuş, okunuş değişmiş.',
+      'Yalnızca EK olduklarında geçerli. Kelimenin içinde normal hece olarak geçerlerse normal okunurlar: はな "hana"dır, "wana" değil.',
+      'を neredeyse yalnızca ek olarak kullanılır, bu yüzden pratikte her zaman "o" okunur.',
+    ],
+    examples: [
+      {
+        kana: 'こんにちは',
+        reading: 'konnichiwa',
+        tr: 'merhaba — sondaki は ektir',
+        vs: { kana: 'はな', reading: 'hana', tr: 'çiçek — buradaki は normal hecedir' },
+      },
+      { kana: 'こんばんは', reading: 'konbanwa', tr: 'iyi akşamlar' },
+      { kana: 'わたしは がくせいです', reading: 'watashi wa gakusei desu', tr: 'Ben öğrenciyim' },
+      { kana: 'がっこうへ いきます', reading: 'gakkou e ikimasu', tr: 'Okula gidiyorum' },
+      { kana: 'ほんを よみます', reading: 'hon o yomimasu', tr: 'Kitap okuyorum' },
+    ],
+    pitfall:
+      'こんにちは’yı "konnichiha" okumak. Kelimenin sonundaki は aslında 今日は ("bugüne gelince…") cümlesinin konu ekidir ve "wa" okunur.',
+  },
+  {
+    id: 'yoon',
+    short: 'Küçük ゃゅょ',
+    glyph: 'ゃ',
+    title: 'Küçük ゃ ゅ ょ — birleşik sesler',
+    rule: 'Küçük yazılan ゃゅょ önceki karaktere yapışır ve onunla TEK hece olur.',
+    body: [
+      'きゃ tek hecedir (kya). Ama きや iki hecedir (ki-ya). Aradaki tek fark ikinci karakterin boyudur.',
+      'Yalnızca い ile biten karakterlerin arkasına gelir: き, し, ち, に, ひ, み, り ve bunların dakutenli hâlleri.',
+      'Yazarken küçük olanı karenin alt köşesine sıkıştır ki büyükten ayrılsın.',
+    ],
+    examples: [
+      {
+        kana: 'びょういん',
+        reading: 'byouin',
+        tr: 'hastane — 3 hece',
+        vs: { kana: 'びよういん', reading: 'biyouin', tr: 'kuaför — 4 hece' },
+      },
+      { kana: 'きょう', reading: 'kyou', tr: 'bugün — 2 hece: kyo-u' },
+      { kana: 'しゃしん', reading: 'shashin', tr: 'fotoğraf' },
+      { kana: 'りょこう', reading: 'ryokou', tr: 'seyahat' },
+      { kana: 'じゅぎょう', reading: 'jugyou', tr: 'ders' },
+    ],
+    pitfall:
+      'Küçüğü büyük sanıp iki hece okumak. びょういん (hastane) ile びよういん (kuaför) yalnızca bu boyutla ayrılır — yanlış okursan yanlış yere gidersin.',
+  },
+  {
+    id: 'devoicing',
+    short: 'Yutulan sesler',
+    glyph: 'す',
+    title: 'Yutulan u ve i sesleri',
+    rule: 'い ve う sesleri, iki tonsuz sessiz arasında ya da kelime sonunda neredeyse duyulmaz olur.',
+    body: [
+      'Yazım değişmez, yalnızca söyleyiş değişir. Bu yüzden okurken şaşırma: yazılan hece oradadır, sadece hafifçe söylenir.',
+      'En sık karşılaşacağın yer nezaket kalıplarıdır: です "des" gibi, ます "mas" gibi duyulur.',
+      'Hece hâlâ bir hece uzunluğundadır — yutulan sesin süresi kaybolmaz.',
+    ],
+    examples: [
+      { kana: 'です', reading: 'desu', tr: '“des” gibi duyulur' },
+      { kana: 'わかります', reading: 'wakarimasu', tr: '“wakarimas” gibi duyulur' },
+      { kana: 'すき', reading: 'suki', tr: 'sevmek — “ski” gibi duyulur' },
+      { kana: 'ひと', reading: 'hito', tr: 'insan — h neredeyse fısıltı' },
+      { kana: 'したい', reading: 'shitai', tr: 'yapmak istemek' },
+    ],
+    pitfall:
+      'Duyduğun gibi yazmaya çalışmak. "des" diye duyarsın ama yazımı hep です’dir — yazarken hecenin tamamını yazacaksın.',
+  },
+]

@@ -1,0 +1,2173 @@
+/* Dilhane — görsel sistem.
+   Japonca çalışma uygulaması. Koyu, sakin, tek vurgulu.
+
+   TASARIM İLKELERİ
+   1. İçerik parlar, arayüz susar. Japonca karakter sayfadaki en parlak şeydir;
+      kartlar, çizgiler ve etiketler arka plana çekilir.
+   2. Çerçeve yerine katman. Kutuları çizgiyle ayırmak yerine yüzey tonuyla
+      ayırıyoruz; kılcal çizgiler yalnızca gerektiğinde ve çok soluk.
+   3. Tek vurgu rengi. Pirinç sarısı (kintsugi'nin altın dokunuşu) yalnızca
+      etkileşim ve o anki durum için; her yerde kullanılırsa vurgu olmaktan çıkar.
+   4. Emoji yok. Simgeler tek çizgi dilinde SVG (bkz. components/icons.tsx);
+      emojinin biçimi işletim sistemine göre değişir ve arayüzü ucuzlatır. */
+
+:root {
+  /* Yüzeyler — saf siyah değil; saf siyah ekranda çukur görünür */
+  --bg: #0a0b0e;
+  --surface: #121419;
+  --surface-2: #171a21;
+  --surface-3: #1e222b;
+
+  /* Kılcal çizgiler — renk değil, ışık miktarı */
+  --line: rgba(255, 255, 255, 0.07);
+  --line-strong: rgba(255, 255, 255, 0.13);
+
+  /* Metin — saf beyaz değil; göz yormasın */
+  --text: #e9ebef;
+  --dim: #9aa2b0;
+  --faint: #646b79;
+
+  /* Tek vurgu: pirinç */
+  --accent: #c9a227;
+  --accent-soft: rgba(201, 162, 39, 0.12);
+  --accent-line: rgba(201, 162, 39, 0.32);
+
+  /* Durum renkleri — doygunluğu düşük, arayüzle kavga etmesin */
+  --ok: #6fbf8e;
+  --ok-soft: rgba(111, 191, 142, 0.12);
+  --warn: #d9a441;
+  --warn-soft: rgba(217, 164, 65, 0.12);
+  --bad: #d9736a;
+  --bad-soft: rgba(217, 115, 106, 0.12);
+
+  /* Eski adlar — özelleşmiş bloklar bunlara dayanıyor */
+  --bg-elev: var(--surface);
+  --bg-elev-2: var(--surface-2);
+  --line-soft: var(--line);
+  --text-dim: var(--dim);
+  --text-faint: var(--faint);
+  --ja: var(--accent);
+  --ja-dim: var(--accent-soft);
+  --lang: var(--accent);
+  --lang-dim: var(--accent-soft);
+  --ok-dim: var(--ok-soft);
+  --warn-dim: var(--warn-soft);
+  --bad-dim: var(--bad-soft);
+  --accent-dim: var(--accent-soft);
+
+  --r-sm: 8px;
+  --r: 12px;
+  --r-lg: 18px;
+
+  --nav-h: 66px;
+  --pad: 20px;
+
+  --ff: ui-sans-serif, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --ff-ja: 'Yu Gothic', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'MS Gothic', Meiryo, sans-serif;
+  --ff-mono: 'Cascadia Code', Consolas, 'SF Mono', ui-monospace, monospace;
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--ff);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior-y: none;
+}
+
+body {
+  padding-top: env(safe-area-inset-top);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Sayılar hizalansın — sayaçlar zıplamasın */
+.tabular,
+.topbar .sub,
+.stat-value {
+  font-variant-numeric: tabular-nums;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.011em;
+}
+
+h1 {
+  font-size: 1.4rem;
+}
+h2 {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+h3 {
+  font-size: 0.98rem;
+}
+
+p {
+  margin: 0 0 0.7em;
+}
+
+/* ————————————————————————— Yerleşim ————————————————————————— */
+
+.app {
+  min-height: 100vh;
+  padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 8px);
+}
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--pad);
+}
+
+.page--wide {
+  max-width: 1000px;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.stack-sm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.stack-lg {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.row-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.spacer {
+  flex: 1;
+}
+
+.grid {
+  display: grid;
+  gap: 10px;
+}
+.grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.grid-auto {
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+}
+.grid-kana {
+  grid-template-columns: repeat(auto-fill, minmax(62px, 1fr));
+}
+
+/* ————————————————————————— Üst çubuk ————————————————————————— */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px var(--pad);
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line);
+}
+.topbar h1 {
+  font-size: 1.06rem;
+  font-weight: 600;
+}
+.topbar .sub {
+  font-size: 0.76rem;
+  color: var(--faint);
+  margin-top: 1px;
+}
+
+.iconbtn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--dim);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.iconbtn:hover {
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+.iconbtn:active {
+  background: var(--surface-2);
+}
+
+/* ————————————————————————— Kartlar ————————————————————————— */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 15px;
+}
+
+.card--pad-lg {
+  padding: 22px;
+}
+
+.card--link {
+  display: block;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.08s;
+}
+.card--link:hover {
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+}
+.card--link:active {
+  transform: scale(0.995);
+}
+
+.card-title {
+  font-weight: 600;
+  font-size: 0.96rem;
+  letter-spacing: -0.008em;
+}
+.card-sub {
+  font-size: 0.82rem;
+  color: var(--dim);
+  line-height: 1.5;
+}
+
+.lang-ja {
+  --lang: var(--accent);
+  --lang-dim: var(--accent-soft);
+}
+
+/* Öne çıkan kart — sayfada en fazla bir tane */
+.railcard {
+  position: relative;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line);
+  background:
+    radial-gradient(120% 100% at 0% 0%, rgba(201, 162, 39, 0.09), transparent 58%),
+    var(--surface);
+  padding: 22px;
+  overflow: hidden;
+}
+
+/* ————————————————————————— Rozetler ————————————————————————— */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--dim);
+  font-size: 0.72rem;
+  font-weight: 550;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.badge--ja,
+.badge--accent {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+}
+.badge--ok {
+  color: var(--ok);
+  background: var(--ok-soft);
+  border-color: transparent;
+}
+.badge--warn {
+  color: var(--warn);
+  background: var(--warn-soft);
+  border-color: transparent;
+}
+.badge--bad {
+  color: var(--bad);
+  background: var(--bad-soft);
+  border-color: transparent;
+}
+
+/* ————————————————————————— Butonlar ————————————————————————— */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 17px;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 550;
+  font-size: 0.9rem;
+  letter-spacing: -0.005em;
+  cursor: pointer;
+  transition: transform 0.08s, background 0.15s, border-color 0.15s, opacity 0.15s;
+  user-select: none;
+}
+.btn:hover {
+  background: var(--surface-3);
+}
+.btn:active {
+  transform: scale(0.98);
+}
+.btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  transform: none;
+}
+
+.btn--primary,
+.btn--lang {
+  background: var(--accent);
+  border-color: transparent;
+  color: #17130a;
+  font-weight: 650;
+}
+.btn--primary:hover,
+.btn--lang:hover {
+  background: #d8b03a;
+}
+.btn--ghost {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--dim);
+}
+.btn--ghost:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+.btn--ok {
+  background: var(--ok);
+  border-color: transparent;
+  color: #06180f;
+  font-weight: 650;
+}
+.btn--bad {
+  background: var(--bad);
+  border-color: transparent;
+  color: #200a08;
+  font-weight: 650;
+}
+.btn--block {
+  width: 100%;
+}
+.btn--sm {
+  padding: 7px 12px;
+  font-size: 0.81rem;
+  border-radius: 8px;
+}
+.btn--lg {
+  padding: 14px 22px;
+  font-size: 0.98rem;
+  border-radius: 12px;
+}
+.btn.is-on {
+  border-color: var(--accent-line);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.ja {
+  font-family: var(--ff-ja);
+}
+
+.ja-huge {
+  font-family: var(--ff-ja);
+  font-size: clamp(5rem, 32vw, 11rem);
+  line-height: 1;
+  font-weight: 400;
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
+.ja-big {
+  font-family: var(--ff-ja);
+  font-size: clamp(2.4rem, 12vw, 4rem);
+  line-height: 1.15;
+  font-weight: 500;
+}
+
+.ja-md {
+  font-family: var(--ff-ja);
+  font-size: 1.6rem;
+  line-height: 1.35;
+}
+
+.ja-text {
+  font-family: var(--ff-ja);
+  font-size: 1.22rem;
+  line-height: 1.9;
+}
+
+.reading {
+  font-family: var(--ff-ja);
+  color: var(--text-dim);
+  font-size: 0.95rem;
+}
+
+.romaji {
+  color: var(--text-faint);
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+}
+
+/* Furigana — kanji üstüne okunuş */
+ruby {
+  ruby-position: over;
+}
+rt {
+  font-size: 0.5em;
+  color: var(--text-dim);
+  font-weight: 400;
+}
+
+/* ————————————————————————— Kana ızgarası ————————————————————————— */
+
+.kana-cell {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border-radius: 12px;
+  border: 1px solid var(--line-soft);
+  background: var(--bg-elev);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.08s;
+}
+.kana-cell:active {
+  transform: scale(0.94);
+}
+.kana-cell .c {
+  font-family: var(--ff-ja);
+  font-size: 1.85rem;
+  line-height: 1;
+}
+.kana-cell .r {
+  font-size: 0.66rem;
+  color: var(--text-faint);
+  letter-spacing: 0.03em;
+}
+.kana-cell.is-known {
+  border-color: var(--ok);
+  background: var(--ok-dim);
+}
+.kana-cell.is-learning {
+  border-color: var(--warn);
+  background: var(--warn-dim);
+}
+.kana-cell.is-empty {
+  border-style: dashed;
+  opacity: 0.25;
+  cursor: default;
+}
+
+/* ————————————————————————— İlerleme ————————————————————————— */
+
+.bar {
+  height: 7px;
+  border-radius: 99px;
+  background: var(--bg-elev-2);
+  overflow: hidden;
+}
+.bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: var(--lang, var(--accent));
+  transition: width 0.4s ease;
+}
+
+.ring {
+  --p: 0;
+  --size: 54px;
+  width: var(--size);
+  height: var(--size);
+  flex: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: conic-gradient(var(--lang, var(--accent)) calc(var(--p) * 1%), var(--bg-elev-2) 0);
+  position: relative;
+}
+.ring::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: var(--bg-elev);
+}
+.ring > span {
+  position: relative;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+/* ————————————————————————— Alt gezinme ————————————————————————— */
+
+.nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  height: calc(var(--nav-h) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background: rgba(19, 22, 28, 0.94);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid var(--line-soft);
+}
+
+.nav a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  font-size: 0.66rem;
+  color: var(--text-faint);
+  font-weight: 500;
+}
+.nav a .ic {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+.nav a.active {
+  color: var(--accent);
+}
+
+/* ————————————————————————— Alıştırma bileşenleri ————————————————————————— */
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1.5px solid var(--line);
+  background: var(--bg-elev);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.08s;
+}
+.option:active {
+  transform: scale(0.99);
+}
+.option.is-correct {
+  border-color: var(--ok);
+  background: var(--ok-dim);
+}
+.option.is-wrong {
+  border-color: var(--bad);
+  background: var(--bad-dim);
+}
+.option.is-muted {
+  opacity: 0.45;
+}
+.option .key {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: var(--bg-elev-2);
+  font-size: 0.72rem;
+  color: var(--text-faint);
+  font-weight: 700;
+}
+
+.field {
+  width: 100%;
+  padding: 13px 14px;
+  border-radius: 12px;
+  border: 1.5px solid var(--line);
+  background: var(--bg-elev);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.field:focus {
+  border-color: var(--accent);
+}
+.field.is-correct {
+  border-color: var(--ok);
+}
+.field.is-wrong {
+  border-color: var(--bad);
+}
+
+textarea.field {
+  min-height: 130px;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.token {
+  padding: 9px 13px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--bg-elev-2);
+  cursor: pointer;
+  font-family: var(--ff-ja);
+  font-size: 1.02rem;
+  transition: transform 0.08s, opacity 0.15s;
+}
+.token:active {
+  transform: scale(0.95);
+}
+.token.is-used {
+  opacity: 0.28;
+  pointer-events: none;
+}
+
+.feedback {
+  padding: 13px 14px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+.feedback--ok {
+  background: var(--ok-dim);
+  color: var(--ok);
+}
+.feedback--bad {
+  background: var(--bad-dim);
+  color: var(--bad);
+}
+.feedback--info {
+  background: var(--bg-elev-2);
+  color: var(--text-dim);
+}
+
+/* ————————————————————————— Ders metni ————————————————————————— */
+
+.prose {
+  /* Ders anlatımı uzun metindir: gövde yazısı arayüz yazısından büyük olmalı */
+  font-size: 1.02rem;
+  line-height: 1.8;
+  color: var(--text);
+  /* Satır 65-75 karakteri geçince göz satır başını kaybeder */
+  max-width: 62ch;
+}
+.prose p + p {
+  margin-top: 0.15em;
+}
+.prose h4 {
+  margin: 1.1em 0 0.35em;
+  font-size: 0.98rem;
+  color: var(--text);
+}
+.prose strong {
+  color: var(--text);
+  font-weight: 680;
+}
+.prose em {
+  color: var(--text-dim);
+  font-style: italic;
+}
+.prose code {
+  font-family: var(--ff-mono);
+  font-size: 0.86em;
+  background: var(--bg-elev-2);
+  padding: 1px 5px;
+  border-radius: 5px;
+}
+.prose ul {
+  margin: 0.4em 0;
+  padding-left: 1.25em;
+}
+.prose li {
+  margin: 0.25em 0;
+}
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.7em 0;
+  font-size: 0.87rem;
+}
+.prose th,
+.prose td {
+  border: 1px solid var(--line-soft);
+  padding: 7px 9px;
+  text-align: left;
+}
+.prose th {
+  background: var(--bg-elev-2);
+  font-weight: 620;
+  color: var(--text-dim);
+}
+.prose .tbl-wrap {
+  overflow-x: auto;
+}
+
+/* ————————————————————————— Çizim tuvali ————————————————————————— */
+
+.canvas-wrap {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: var(--r);
+  border: 1px solid var(--line);
+  background: var(--bg-elev);
+  overflow: hidden;
+  touch-action: none;
+}
+.canvas-wrap canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+.canvas-guide {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.canvas-ghost {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--ff-ja);
+  font-size: 62vmin;
+  max-font-size: 300px;
+  color: var(--text);
+  opacity: 0.1;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ————————————————————————— Yardımcılar ————————————————————————— */
+
+.dim {
+  color: var(--text-dim);
+}
+.faint {
+  color: var(--text-faint);
+}
+.small {
+  font-size: 0.83rem;
+}
+.tiny {
+  font-size: 0.73rem;
+}
+.center {
+  text-align: center;
+}
+.bold {
+  font-weight: 650;
+}
+.mono {
+  font-family: var(--ff-mono);
+}
+.hr {
+  height: 1px;
+  background: var(--line-soft);
+  border: 0;
+  margin: 4px 0;
+}
+.tap {
+  cursor: pointer;
+}
+.nowrap {
+  white-space: nowrap;
+}
+.scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.hide-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.chips::-webkit-scrollbar {
+  display: none;
+}
+.chip {
+  flex: none;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--bg-elev);
+  font-size: 0.83rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+.chip.active {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-faint);
+}
+
+.sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  animation: fade 0.18s ease;
+}
+.sheet > .inner {
+  width: 100%;
+  max-width: 640px;
+  max-height: 88vh;
+  overflow-y: auto;
+  background: var(--bg-elev);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  border-top: 1px solid var(--line);
+  padding: 18px var(--pad) calc(24px + env(safe-area-inset-bottom));
+  animation: rise 0.24s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes rise {
+  from {
+    transform: translateY(22px);
+  }
+}
+
+.pulse {
+  animation: pulse 1.4s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.42;
+  }
+}
+
+@media (min-width: 760px) {
+  :root {
+    --pad: 22px;
+  }
+  .nav {
+    grid-template-columns: repeat(5, minmax(0, 120px));
+    justify-content: center;
+  }
+}
+
+/* ————————————————————————— Çizgi sırası ————————————————————————— */
+
+.stroke-box {
+  position: relative;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r);
+  border: 1px solid var(--line);
+  background: var(--bg-elev-2);
+  overflow: hidden;
+}
+.stroke-svg {
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  display: block;
+}
+
+.stroke-guide rect {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 0.7;
+}
+.stroke-guide line {
+  stroke: var(--line);
+  stroke-width: 0.6;
+  stroke-dasharray: 3 4;
+}
+
+.stroke {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 5.5;
+}
+.stroke--ghost {
+  stroke: var(--text);
+  opacity: 0.13;
+}
+.stroke--ink {
+  stroke: var(--lang, var(--accent));
+}
+
+.stroke-num {
+  font-size: 7px;
+  font-family: var(--ff-mono);
+  fill: var(--text-faint);
+  paint-order: stroke;
+  stroke: var(--bg-elev-2);
+  stroke-width: 2.5px;
+  stroke-linejoin: round;
+}
+.stroke-num.is-done {
+  fill: var(--lang, var(--accent));
+}
+
+.stroke-start {
+  fill: none;
+  stroke: var(--ok);
+  stroke-width: 1.8;
+}
+.stroke-tip {
+  fill: var(--ok);
+  transition: opacity 0.25s;
+}
+
+.btn.is-on {
+  border-color: var(--lang, var(--accent));
+  color: var(--lang, var(--accent));
+}
+
+/* ————————————————————————— Seslendirme durumu ————————————————————————— */
+
+.speakbtn {
+  position: relative;
+}
+.speakbtn-tag {
+  position: absolute;
+  right: 2px;
+  bottom: 0px;
+  font-size: 0.62rem;
+  font-style: normal;
+  font-weight: 700;
+  color: var(--warn);
+  line-height: 1;
+}
+.speakbtn--approx {
+  border-color: var(--warn-dim);
+}
+.speakbtn--none {
+  opacity: 0.6;
+  border-style: dashed;
+}
+
+/* ————————————————————————— Büyük karakter ————————————————————————— */
+
+.bigchar {
+  position: relative;
+  width: 100%;
+  display: grid;
+  place-items: center;
+  padding: 10px;
+  border-radius: var(--r);
+  border: 1px solid var(--line);
+  background: var(--bg-elev-2);
+  cursor: zoom-in;
+}
+.bigchar .ja {
+  font-size: clamp(7rem, 42vw, 15rem);
+  line-height: 1.05;
+  font-weight: 400;
+}
+.bigchar-hint {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+}
+
+.zoom {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  animation: fade 0.18s ease;
+}
+.zoom-top,
+.zoom-bottom {
+  padding: 10px var(--pad);
+  gap: 10px;
+  flex: none;
+}
+.zoom-top {
+  border-bottom: 1px solid var(--line-soft);
+  padding-top: calc(10px + env(safe-area-inset-top));
+}
+.zoom-bottom {
+  border-top: 1px solid var(--line-soft);
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+}
+.zoom-body {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  padding: 12px;
+}
+.zoom-char {
+  font-size: min(72vw, 62vh);
+  line-height: 1;
+  font-weight: 400;
+  user-select: none;
+}
+
+/* ————————————————————————— Yazı sistemi sayfası ————————————————————————— */
+
+.script-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--text-faint);
+}
+.script-dot--kanji {
+  background: #f0a868;
+}
+.script-dot--hiragana {
+  background: #7dd3fc;
+}
+.script-dot--katakana {
+  background: #c4b5fd;
+}
+.script-dot--romaji {
+  background: #6ee7a8;
+}
+.script-dot--punct {
+  background: #9aa3b2;
+}
+
+.mixed-sentence {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 0;
+  font-size: clamp(1.5rem, 7vw, 2.1rem);
+  line-height: 1.5;
+}
+.seg {
+  border: 0;
+  background: transparent;
+  padding: 2px 1px;
+  font: inherit;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  border-radius: 4px 4px 0 0;
+  transition: background 0.15s;
+}
+.seg--kanji {
+  border-bottom-color: #f0a868;
+}
+.seg--hiragana {
+  border-bottom-color: #7dd3fc;
+}
+.seg--katakana {
+  border-bottom-color: #c4b5fd;
+}
+.seg--romaji {
+  border-bottom-color: #6ee7a8;
+}
+.seg--punct {
+  border-bottom-color: #9aa3b2;
+}
+.seg.is-picked {
+  background: var(--bg-elev-2);
+}
+
+.script-card--kanji {
+  border-left: 3px solid #f0a868;
+}
+.script-card--hiragana {
+  border-left: 3px solid #7dd3fc;
+}
+.script-card--katakana {
+  border-left: 3px solid #c4b5fd;
+}
+.script-card--romaji {
+  border-left: 3px solid #6ee7a8;
+}
+
+ul.tight {
+  margin: 0;
+  padding-left: 18px;
+}
+ul.tight li {
+  margin-bottom: 4px;
+}
+
+.link {
+  color: var(--lang, var(--accent));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.quirk-demo {
+  font-size: clamp(1.9rem, 9vw, 2.8rem);
+  line-height: 1.3;
+  text-align: center;
+  padding: 10px 6px;
+}
+
+/* Yazı yönü gösterimi */
+.dir-demo {
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--bg-elev-2);
+  padding: 12px;
+}
+.dir-h {
+  font-size: 1.25rem;
+  line-height: 1.7;
+  display: flex;
+  flex-direction: column;
+}
+.dir-v {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  height: 210px;
+  font-size: 1.25rem;
+  line-height: 1.9;
+  margin-left: auto;
+  padding-right: 2px;
+}
+.dir-arrow {
+  margin-top: 8px;
+  font-size: 0.7rem;
+  color: var(--text-faint);
+}
+.dir-arrow--v {
+  text-align: right;
+}
+
+/* Kare kutu (genkō yōshi) */
+.genko {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(38px, 1fr));
+  gap: 3px;
+}
+.genko-cell {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  font-size: 1.4rem;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--bg-elev-2);
+  background-image: linear-gradient(var(--line-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+  background-size: 50% 50%;
+  background-position: center;
+}
+
+/* Okuma parçası: her satır kendi ses düğmesiyle */
+.passage-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.passage-line:last-child {
+  border-bottom: 0;
+}
+
+/* ————————————————————————— Kana hız testi ————————————————————————— */
+
+.speed {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+}
+.speed-top {
+  flex: none;
+  padding: 10px var(--pad);
+  padding-top: calc(10px + env(safe-area-inset-top));
+  border-bottom: 1px solid var(--line-soft);
+}
+.speed-clock {
+  font-size: 1.6rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--lang, var(--accent));
+}
+.speed-clock.is-low {
+  color: var(--bad);
+  animation: pulse 1s ease-in-out infinite;
+}
+.speed-char {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  font-size: min(52vw, 42vh);
+  line-height: 1;
+  user-select: none;
+  transition: color 0.12s, transform 0.12s;
+}
+.speed-char.flash-ok {
+  color: var(--ok);
+  transform: scale(1.04);
+}
+.speed-char.flash-bad {
+  color: var(--bad);
+}
+.speed-bottom {
+  flex: none;
+  padding: 12px var(--pad);
+  padding-bottom: calc(14px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line-soft);
+}
+.speed-input {
+  font-size: 1.5rem;
+  text-align: center;
+  letter-spacing: 0.08em;
+}
+
+/* Genki müfredat eşleme etiketi */
+.genki-tag {
+  flex: none;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: var(--lang, var(--accent));
+  background: var(--lang-dim, var(--accent-dim));
+  white-space: nowrap;
+}
+
+/* ————————————————————————— Kendi testin ————————————————————————— */
+
+/* Kurulum: satır ve harf seçiciler */
+.quiz-group {
+  border-color: var(--line-soft);
+  transition: border-color 0.15s;
+}
+.quiz-group.is-active {
+  border-color: var(--lang, var(--accent));
+}
+.quiz-group-title {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text);
+}
+.quiz-chars {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(54px, 1fr));
+  gap: 6px;
+}
+.quiz-char {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 7px 2px;
+  border-radius: 10px;
+  border: 1px solid var(--line-soft);
+  background: var(--bg-elev-2);
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s, transform 0.08s;
+}
+.quiz-char:active {
+  transform: scale(0.94);
+}
+.quiz-char .c {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+.quiz-char .r {
+  font-size: 0.62rem;
+  color: var(--text-faint);
+}
+.quiz-char.is-on {
+  border-color: var(--lang, var(--accent));
+  background: var(--lang-dim, var(--accent-dim));
+}
+.quiz-char.is-on .r {
+  color: var(--lang, var(--accent));
+}
+
+/* Test ekranı — tam ekran, dikkat dağıtmayan */
+.quiz {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+}
+.quiz-top {
+  flex: none;
+  padding: 10px var(--pad);
+  padding-top: calc(10px + env(safe-area-inset-top));
+  border-bottom: 1px solid var(--line-soft);
+}
+.quiz-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px;
+  min-height: 0;
+}
+.quiz-prompt {
+  line-height: 1;
+  font-weight: 400;
+  user-select: none;
+  text-align: center;
+}
+.quiz-prompt.ja {
+  font-size: min(40vw, 30vh);
+}
+.quiz-prompt.is-romaji {
+  font-size: min(22vw, 14vh);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--lang, var(--accent));
+}
+.quiz-options {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  padding: 0 var(--pad);
+}
+.quiz-opt {
+  min-height: 84px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--bg-elev);
+  font-size: 1.35rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: transform 0.08s, background 0.12s;
+}
+.quiz-opt.ja {
+  font-size: 2.6rem;
+  font-weight: 400;
+}
+.quiz-opt:active {
+  transform: scale(0.97);
+  background: var(--bg-elev-2);
+}
+.quiz-foot {
+  flex: none;
+  padding: 12px var(--pad);
+  padding-bottom: calc(14px + env(safe-area-inset-bottom));
+}
+
+/* Sonuç dökümü */
+.quiz-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.quiz-row:last-child {
+  border-bottom: 0;
+}
+.quiz-row.is-wrong {
+  background: var(--bad-dim);
+  border-radius: 8px;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+.quiz-row-no {
+  min-width: 20px;
+  text-align: right;
+}
+
+/* Çizgi verisinden çizilen kana glifi — yazı tipi yerine */
+.kana-glyph {
+  display: inline-block;
+  vertical-align: middle;
+  flex: none;
+}
+
+/* El yazısı / basılı biçim karşılaştırma kutusu */
+.form-box {
+  display: grid;
+  place-items: center;
+  height: 92px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--bg-elev-2);
+}
+
+/* Kelime okuma — hece hece dizilim */
+.word-line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 4px 10px;
+  margin: 6px 0;
+}
+.word-mora {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.word-mora-r {
+  font-family: var(--ff-mono);
+  font-size: 0.72rem;
+  color: var(--lang, var(--accent));
+  letter-spacing: 0.04em;
+}
+
+/* ————————————————————————— Ana sayfa ————————————————————————— */
+
+.home-mark {
+  font-size: 1.6rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  color: var(--text);
+}
+
+.home-foot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 8px 0 4px;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.home-foot .ja {
+  letter-spacing: 0.2em;
+}
+
+/* Liste satırlarındaki simge kutusu */
+.entry-icon,
+.entry-glyph {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 9px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--dim);
+}
+.entry-glyph {
+  font-size: 1.05rem;
+  color: var(--text);
+}
+.card--link:hover .entry-icon,
+.card--link:hover .entry-glyph {
+  border-color: var(--line-strong);
+  color: var(--accent);
+}
+
+/* Dikkat çekmesi gereken tek kart tipi */
+.card--accent {
+  border-color: var(--accent-line);
+  background: linear-gradient(180deg, var(--accent-soft), transparent 70%), var(--surface);
+}
+.card--accent .entry-icon {
+  color: var(--accent);
+  border-color: var(--accent-line);
+}
+
+/* Sayı kutusu */
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.stat-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.stat-value {
+  font-size: 1.9rem;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+.stat-note {
+  font-size: 0.76rem;
+  color: var(--dim);
+}
+
+/* Araç kutucuğu */
+.tool {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 13px 12px;
+  border-radius: var(--r);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  transition: background 0.15s, border-color 0.15s, transform 0.08s;
+}
+.tool:hover {
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+}
+.tool:active {
+  transform: scale(0.985);
+}
+.tool-glyph {
+  font-size: 1.45rem;
+  line-height: 1.15;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+.tool:hover .tool-glyph {
+  color: var(--accent);
+}
+.tool-title {
+  font-size: 0.85rem;
+  font-weight: 550;
+}
+.tool-sub {
+  font-size: 0.71rem;
+  color: var(--faint);
+}
+
+/* ————————————————————————— İkon setine geçişin getirdikleri —————————————————————————
+   Emoji yerine tek çizgi dilinde SVG ikonlar kullanılıyor. Emoji işletim
+   sistemine göre biçim değiştiriyor, kendi rengini dayatıyor ve satır
+   yüksekliğini bozuyordu; ikonlar currentColor ile boyanır ve hizası şaşmaz. */
+
+/* Boş durum simgesi */
+.empty-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--faint);
+}
+
+/* Sonuç ekranlarındaki büyük simge (ders bitti, test bitti…) */
+.result-mark {
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 62px;
+  margin: 0 auto;
+  border-radius: 50%;
+  border: 1px solid var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* İkon + metin taşıyan düğmeler: ikon metinle aynı hizada dursun */
+.btn {
+  align-items: center;
+  gap: 7px;
+}
+
+/* Madde imli ipucu listesi — emoji yerine ince bir çizgi işareti */
+.tips {
+  list-style: none;
+  display: grid;
+  gap: 7px;
+  font-size: 0.86rem;
+  color: var(--dim);
+}
+.tips li {
+  position: relative;
+  padding-left: 15px;
+  line-height: 1.5;
+}
+.tips li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 7px;
+  height: 1px;
+  background: var(--accent);
+  opacity: 0.7;
+}
+
+/* İkonlu arama kutusu */
+.searchbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 13px;
+  border-radius: var(--r);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--faint);
+}
+.searchbar:focus-within {
+  border-color: var(--accent-line);
+  color: var(--accent);
+}
+.field--bare {
+  flex: 1;
+  min-width: 0;
+  padding-left: 0;
+  padding-right: 0;
+  background: none;
+  border: none;
+  color: var(--text);
+}
+.field--bare:focus {
+  outline: none;
+  border: none;
+  box-shadow: none;
+}
+
+/* Alt gezinme artık ikon taşıyor: eski emoji satırı için ayarlanmış
+   ölçüler yerine ikonla metnin dengeli durduğu bir düzen. */
+.nav a svg {
+  opacity: 0.85;
+}
+.nav a.active svg {
+  opacity: 1;
+}
+
+/* ————————————————————————— Hiragana kelime listesi —————————————————————————
+   Kana tablosu harfleri tanıtır; bu liste onları BAĞLAMAYI çalıştırır.
+   Bu yüzden asıl vurgu kelimenin kendisinde değil, hecelere ayrılmış
+   hâlinde — okurken gözün o kutulardan tek tek geçmesi isteniyor. */
+
+.wordrow {
+  padding: 12px 14px;
+  border-radius: var(--r);
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.wordrow + .wordrow {
+  margin-top: 0;
+}
+
+.wordrow-word {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.25;
+}
+.wordrow-tr {
+  font-size: 0.88rem;
+  color: var(--dim);
+  margin-top: 2px;
+}
+.wordrow-note {
+  margin-top: 9px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+  line-height: 1.5;
+}
+
+/* Heceleme şeridi */
+.mora-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 6px;
+  margin-top: 11px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.mora {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-width: 34px;
+  padding: 5px 7px 4px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.mora-ch {
+  font-size: 1.12rem;
+  line-height: 1.15;
+  color: var(--text);
+}
+.mora-r {
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.mora-sum {
+  margin-left: auto;
+  align-self: center;
+  font-size: 0.7rem;
+  color: var(--faint);
+}
+
+.wordrow-oku {
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+  margin-top: 3px;
+}
+
+/* ————————————————————————— Hiragana bitirme sınavı ————————————————————————— */
+
+.exam-stem {
+  display: grid;
+  place-items: center;
+  margin: 6px 0;
+}
+.exam-stem-text {
+  font-size: 2.6rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  line-height: 1.15;
+}
+
+.exam-score {
+  font-size: 3.4rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+/* Teşhis kartındaki tavsiye — gövde metninden ayrılsın ki gözden kaçmasın */
+.exam-tip {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  border-left: 2px solid var(--accent);
+  font-size: 0.86rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.exam-explain {
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--dim);
+}
+
+.exam-confuse {
+  gap: 8px;
+  padding: 6px 0;
+  align-items: center;
+}
+.exam-confuse + .exam-confuse {
+  border-top: 1px solid var(--line);
+}
+.exam-confuse-ch {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.exam-confuse-ch.is-wrong {
+  border-color: var(--bad);
+  color: var(--bad);
+}
+
+/* ————————————————————————— Rota ————————————————————————— */
+
+/* Plandaki sıra numarası — adımların sırayla yapılacağını görsel olarak söyler */
+.plan-no {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.stage-glyph {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font-size: 1.25rem;
+  color: var(--dim);
+}
+
+/* Aşama durumu: bitmiş sönük, aktif vurgulu, gelecek olan soluk */
+.stage--done {
+  opacity: 0.72;
+}
+.stage--done .stage-glyph {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+.stage--active {
+  border-color: var(--accent-line);
+  background: linear-gradient(180deg, var(--accent-soft), transparent 60%), var(--surface);
+}
+.stage--active .stage-glyph {
+  border-color: var(--accent-line);
+  color: var(--accent);
+}
+.stage--todo {
+  opacity: 0.6;
+}
+
+.stage-why {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px dashed var(--line);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--dim);
+}
+
+/* Sınav geçmişindeki mini bölüm çubukları */
+.exam-hist-pct {
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+.exam-hist-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 46px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+.exam-hist-bar {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 3px;
+  height: 100%;
+}
+.exam-hist-bar i {
+  display: block;
+  width: 100%;
+  max-width: 22px;
+  border-radius: 2px 2px 0 0;
+}
+.exam-hist-bar span {
+  font-size: 0.58rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* Ana sayfadaki rota kartı tıklanabilir */
+.railcard--link {
+  display: block;
+  transition: border-color 0.15s ease;
+}
+.railcard--link:hover {
+  border-color: var(--accent-line);
+}
+
+/* ————————————————————————— Tekrar puanlama düğmeleri —————————————————————————
+   Dört düğme üç bilgi taşır: ne dediğin (Tekrar/Zor/İyi/Kolay), ne anlama
+   geldiği (bilemedim/zor çıkardım/normal/anında) ve sonucu (kartı ne zaman
+   tekrar göreceğin). Eskiden ortadaki satır yoktu ve düğmeler anlaşılmıyordu. */
+
+.rate-btn {
+  flex-direction: column;
+  gap: 1px;
+  padding: 9px 3px 8px;
+  line-height: 1.2;
+}
+.rate-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.rate-hint {
+  font-size: 0.6rem;
+  opacity: 0.72;
+  letter-spacing: 0.01em;
+}
+.rate-when {
+  font-size: 0.66rem;
+  font-weight: 600;
+  opacity: 0.85;
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+
+/* Metin gibi görünen düğme — açıklama panelini açar */
+.linkbtn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.linkbtn:hover {
+  color: var(--text);
+}
+
+/* Yazıldığı gibi okunmayan kelime uyarısı — dikkat çekmesi gerekiyor */
+.wordrow-note--warn {
+  color: var(--accent);
+  border-top-color: var(--accent-line);
+}
+
+/* ————————————————————————— Hiragana özel kuralları ————————————————————————— */
+
+.rule-glyph {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  color: var(--accent);
+  font-size: 1.3rem;
+}
+
+/* Kuralın kendisi — kartın en görünür satırı olmalı */
+.rule-line {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border-left: 2px solid var(--accent);
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.rule-ex {
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.rule-ex-kana {
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+.rule-ex-read {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+}
+
+/* Karşılaştırma satırı: kuralı ihlal edersen kelime neye dönüşür */
+.rule-vs {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+}
+.rule-vs-tag {
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--bad);
+  border: 1px solid var(--bad);
+  border-radius: 5px;
+  padding: 1px 5px;
+  opacity: 0.85;
+}
+
+.rule-pitfall {
+  margin-top: 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(220, 90, 90, 0.08);
+  border: 1px solid rgba(220, 90, 90, 0.25);
+  font-size: 0.84rem;
+  line-height: 1.6;
+  color: var(--dim);
+}
+.rule-pitfall b {
+  color: var(--text);
+}
+
+/* ————————————————————————— Eşleştirme sorusu —————————————————————————
+   İki sütun: solda karakterler, sağda karışık okunuşlar. Önce sola, sonra
+   sağa dokunularak eşlenir. Doğruluk BURADA gösterilmez — testin geri
+   kalanıyla aynı kural, geri bildirim sona bırakılır. */
+
+.match-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+  max-width: 420px;
+  margin: 6px auto 0;
+}
+.match-col {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.match-cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 58px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease, opacity 0.12s ease;
+}
+.match-cell:hover {
+  border-color: var(--line-strong);
+}
+.match-cell--text {
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+/* Seçili karakter — sıradaki dokunuş buna bağlanacak */
+.match-cell.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+/* Eşlenmiş: sönükleşir ama okunur kalır, çünkü değiştirilebilir */
+.match-cell.is-done {
+  border-color: var(--accent-line);
+}
+.match-cell.is-used {
+  opacity: 0.42;
+}
+
+/* Karakterin altına iliştirilen okunuş etiketi */
+.match-tag {
+  position: absolute;
+  right: 6px;
+  bottom: 4px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+}
+
+/* Sonuç dökümünde eşleştirme bloğu */
+.quiz-row-block {
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+.quiz-row-block:first-child {
+  border-top: none;
+}
+.quiz-row-block .quiz-row-no {
+  min-width: 22px;
+}

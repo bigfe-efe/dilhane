@@ -1,0 +1,43 @@
+{
+  "name": "dilhane",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Kişisel çok katmanlı dil öğrenme uygulaması — Japonca (sıfırdan) ve İngilizce (B1+)",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "gen:audio": "tsx scripts/gen-audio.ts",
+    "gen:content": "tsx scripts/gen-content.ts",
+    "gen:strokes": "tsx scripts/gen-strokes.ts",
+    "gen:wallpaper": "tsx scripts/gen-wallpaper.ts",
+    "gen:genkou": "tsx scripts/gen-genkou.ts",
+    "wallpaper:server": "node scripts/wallpaper-server.mjs",
+    "android:add": "npx cap add android",
+    "android:sync": "npm run build && npx cap sync android",
+    "android:open": "npx cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.6.8",
+    "@capacitor/core": "^7.6.8",
+    "dexie": "^4.0.10",
+    "dexie-react-hooks": "^1.1.7",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.0",
+    "wanakana": "^5.3.1"
+  },
+  "devDependencies": {
+    "@anthropic-ai/sdk": "^0.115.0",
+    "@capacitor/cli": "^7.6.8",
+    "@types/node": "^26.1.2",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5",
+    "vite-plugin-pwa": "^0.21.1"
+  }
+}
