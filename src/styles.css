@@ -2171,3 +2171,17 @@ ul.tight li {
 .quiz-row-block .quiz-row-no {
   min-width: 22px;
 }
+
+/* Tek karakterlik şıklar — kana/kanji tanıma sorularında karakteri ayırt etmek
+   alıştırmanın kendisi olduğu için kutu da yükseltilir. */
+.option--glyph {
+  padding: 10px 14px;
+  min-height: 84px;
+}
+
+/* İçinde Japonca geçen soru metni: ろ/る, ね/れ/わ küçük puntoda ayırt edilemiyor */
+.prompt-ja {
+  font-size: 1.2rem;
+  line-height: 1.55;
+  color: var(--text);
+}

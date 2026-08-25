@@ -310,7 +310,9 @@ unit1.push({
       title: 'Ayırt etme',
       exercises: [
         mcq('Hangisi "nu" okunur?', ['ぬ', 'め', 'ね', 'れ'], 0, 'ぬ ilmeklidir; め ilmeksiz "me" okunur.'),
-        mcq('Hangisi "wa" okunur?', ['ね', 'れ', 'わ', 'ゎ'], 2, 'わ\'nın sağ tarafı içe kıvrılır.'),
+        // Çeldirici olarak küçük ゎ KULLANILMAZ: ekranda わ'dan ayırt edilemiyor
+        // ve zaten o da "wa" okunur — yani soru iki doğru cevaplı hâle gelirdi.
+        mcq('Hangisi "wa" okunur?', ['ね', 'れ', 'わ', 'ぬ'], 2, 'わ\'nın sağ tarafı içe kıvrılır; ね ve れ\'de kıvrım yoktur.'),
         mcq('「ろ」 nasıl okunur?', ['ru', 'ro', 're', 'ra'], 1, 'る ilmekli (ru), ろ ilmeksiz (ro).'),
         mcq('「ち」 nasıl okunur?', ['sa', 'chi', 'ki', 'ta'], 1, 'さ ile ayna görüntüsü gibidir ama ち "çi" okunur.'),
         mcq('「わたし」 ne demek?', ['sen', 'ben', 'o', 'biz'], 1, 'わたし = ben.'),

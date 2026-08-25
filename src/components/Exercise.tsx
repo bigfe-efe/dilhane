@@ -22,6 +22,11 @@ function accepts(input: string, answers: string[]): boolean {
   return answers.some((x) => loose(x) === a)
 }
 
+/** Metinde kana veya kanji var mı? */
+function hasJapanese(t: string): boolean {
+  return /[ぁ-ヿ㐀-鿿]/.test(t)
+}
+
 export function ExerciseView({ exercise, onDone }: { exercise: Exercise; onDone: (correct: boolean) => void }) {
   // Alıştırma değiştiğinde iç durum sıfırlansın diye key kullanılıyor
   return <Inner key={exercise.id} exercise={exercise} onDone={onDone} />
@@ -50,7 +55,13 @@ function Inner({ exercise, onDone }: { exercise: Exercise; onDone: (correct: boo
 
   return (
     <div className="stack">
-      <div className="small dim">{exercise.prompt}</div>
+      {/*
+        Soru metninde Japonca karakter geçiyorsa ("「ろ」 nasıl okunur?" gibi)
+        metin büyütülür. Küçük puntoda ろ/る, ね/れ/わ gibi çiftler ekranda
+        ayırt edilemiyordu — asıl ölçülmek istenen şey karakteri tanımak
+        olduğu için okunaklılık burada işlevsel bir gereklilik.
+      */}
+      <div className={hasJapanese(exercise.prompt) ? 'prompt-ja' : 'small dim'}>{exercise.prompt}</div>
 
       {exercise.type === 'mcq' && <Mcq ex={exercise} done={done} finish={finish} />}
       {exercise.type === 'fill' && <Fill ex={exercise} done={done} finish={finish} />}
@@ -124,13 +135,15 @@ function Mcq({
           else if (i === picked) cls += ' is-wrong'
           else cls += ' is-muted'
         }
-        // Şık tek bir karakterse (kana/kanji tanıma soruları) büyük göster —
-        // ayrıntıyı görmek için ekrana yaklaşmak gerekmesin
+        // Şık tek bir karakterse (kana/kanji tanıma soruları) büyük göster.
+        // Boyut clamp ile veriliyor: dar ekranda taşmasın, geniş ekranda da
+        // küçük kalmasın. Karakterleri ayırt etmek bu alıştırmanın kendisi
+        // olduğu için punto burada süs değil, işlevin parçası.
         const glyphOnly = /^[ぁ-ヿ㐀-鿿]{1,3}$/.test(opt)
         return (
-          <button key={i} className={cls} onClick={() => choose(i)}>
+          <button key={i} className={`${cls}${glyphOnly ? ' option--glyph' : ''}`} onClick={() => choose(i)}>
             <span className="key" title="Klavyeden bu sayıya basabilirsin">{i + 1}</span>
-            <span className="ja" style={{ fontSize: glyphOnly ? '2.3rem' : '1.02rem', lineHeight: 1.2 }}>
+            <span className="ja" style={{ fontSize: glyphOnly ? 'clamp(2.8rem, 9vw, 3.6rem)' : '1.02rem', lineHeight: 1.15 }}>
               {opt}
             </span>
             {ex.optionHints?.[i] && <span className="tiny faint">{ex.optionHints[i]}</span>}
