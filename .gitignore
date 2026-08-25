@@ -17,6 +17,7 @@ ios/
 
 # Kisisel ayarlar ve makineye ozgu dosyalar
 wallpaper/prefs.json
+dilhane-kaynak.txt
 tsconfig.tsbuildinfo
 .claude/
 

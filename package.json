@@ -13,6 +13,7 @@
     "gen:strokes": "tsx scripts/gen-strokes.ts",
     "gen:wallpaper": "tsx scripts/gen-wallpaper.ts",
     "gen:genkou": "tsx scripts/gen-genkou.ts",
+    "bundle": "tsx scripts/gen-bundle.ts",
     "wallpaper:server": "node scripts/wallpaper-server.mjs",
     "android:add": "npx cap add android",
     "android:sync": "npm run build && npx cap sync android",
