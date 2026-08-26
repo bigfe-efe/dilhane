@@ -132,11 +132,11 @@ export const ROADMAP: Stage[] = [
     what: [
       'Eksik kalan kelime ve kanjileri tamamla',
       'Okuma hızını artır — sınavda süre dardır',
-      'Deneme sınavı çöz, zayıf bölümü tekrarla',
+      'Deneme sınavı çöz, zayıf bölümü tekrarla (uygulamada var)',
     ],
     why: 'Genki I ≈ N5 seviyesidir. Sınava girmeyeceksen bile hedef olarak işe yarar: nerede olduğunu ölçer.',
     lessonIds: [],
-    link: { to: '/n5', label: 'N5 sınavı nasıl işliyor' },
+    link: { to: '/n5-deneme', label: 'N5 deneme sınavına gir' },
   },
 ]
 

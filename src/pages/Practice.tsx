@@ -82,6 +82,13 @@ const GROUPS: { title: string; note?: string; items: Tool[] }[] = [
         sub: 'Sekiz bölüm, eksik teşhisi ve plan',
         stages: ['hiragana'],
       },
+      {
+        to: '/n5-deneme',
+        glyph: '模',
+        title: 'N5 deneme sınavı',
+        sub: 'Gerçek biçim, süreli, bölüm bölüm döküm',
+        stages: ['genki-1-4', 'genki-5-8', 'genki-9-12', 'n5'],
+      },
       { to: '/rota', icon: 'target', title: 'Rota ve çalışma planı', sub: 'Nerede olduğun, sırada ne var' },
     ],
   },

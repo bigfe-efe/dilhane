@@ -2303,3 +2303,86 @@ ul.tight li {
   line-height: 1.55;
   color: var(--dim);
 }
+
+/* ————————————————————————— N5 deneme sınavı ————————————————————————— */
+
+.mock-score {
+  font-size: 3.6rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--accent);
+}
+
+/* Sayaç — son iki dakikada kırmızıya döner ki farkına varasın */
+.mock-timer {
+  font-size: 0.92rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 7px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--dim);
+}
+.mock-timer.is-low {
+  color: var(--bad);
+  border-color: var(--bad);
+}
+
+/* Sınav gövdesi yukarıdan başlar — metin uzun olabilir, ortalamak kaydırır */
+.mock-body {
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 12px;
+  padding-top: 10px;
+  overflow-y: auto;
+}
+
+.mock-prompt {
+  font-size: 1.25rem;
+  line-height: 1.9;
+  letter-spacing: 0.02em;
+}
+
+/* Okuma metni — ilan tipi olanlar tek aralıklı, çerçeveli */
+.mock-passage {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  max-height: 40vh;
+  overflow-y: auto;
+}
+.mock-passage.is-notice {
+  border-style: dashed;
+  border-color: var(--accent-line);
+}
+.mock-passage-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.mock-passage pre {
+  margin: 0;
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 2;
+  white-space: pre-wrap;
+  word-break: normal;
+}
+
+/* Seçili şık — cevap doğru mu yanlış mı GÖSTERİLMEZ, sadece seçildiği belli olur */
+.option.is-picked {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.badge--ok {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+.badge--bad {
+  border-color: var(--bad);
+  color: var(--bad);
+}

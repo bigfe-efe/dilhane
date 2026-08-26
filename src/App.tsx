@@ -10,6 +10,7 @@ import RoadmapPage from '@/pages/Roadmap'
 import KanaRulesPage from '@/pages/KanaRules'
 import KanaRuleTestPage from '@/pages/KanaRuleTest'
 import ResourcesPage from '@/pages/Resources'
+import N5MockPage from '@/pages/N5Mock'
 import PracticePage from '@/pages/Practice'
 import KanaWordsPage from '@/pages/KanaWords'
 import LeechesPage from '@/pages/Leeches'
@@ -63,6 +64,7 @@ export default function App() {
         <Route path="/kana-kurallar" element={<KanaRulesPage />} />
         <Route path="/kural-testi" element={<KanaRuleTestPage />} />
         <Route path="/kaynaklar" element={<ResourcesPage />} />
+        <Route path="/n5-deneme" element={<N5MockPage />} />
         <Route path="/kana-hiz" element={<KanaSpeedPage />} />
         <Route path="/kana-test" element={<KanaQuizPage />} />
         <Route path="/hiragana-sinav" element={<HiraganaExamPage />} />
