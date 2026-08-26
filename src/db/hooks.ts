@@ -97,6 +97,36 @@ export function useLeeches() {
   )
 }
 
+/** Bugün tamamlanan görevlerin kimlikleri. */
+export function useDailyDone(day: string) {
+  return (
+    useLiveQuery(async () => {
+      const rows = await db.daily.where('day').equals(day).toArray()
+      return new Set(rows.map((r) => r.taskId))
+    }, [day]) ?? new Set<string>()
+  )
+}
+
+/** Son N günün tamamlanma sayısı — seri ve grafik için. */
+export function useDailyHistory(days = 14) {
+  return (
+    useLiveQuery(async () => {
+      const rows = await db.daily.toArray()
+      const say = new Map<string, number>()
+      for (const r of rows) say.set(r.day, (say.get(r.day) ?? 0) + 1)
+      const out: { day: string; count: number }[] = []
+      const d = new Date()
+      d.setDate(d.getDate() - (days - 1))
+      for (let i = 0; i < days; i++) {
+        const key = todayKey(d)
+        out.push({ day: key, count: say.get(key) ?? 0 })
+        d.setDate(d.getDate() + 1)
+      }
+      return out
+    }, [days]) ?? []
+  )
+}
+
 /** Bitirme sınavı geçmişi — en yeni başta. */
 export function useExams() {
   return useLiveQuery(async () => db.exams.orderBy('at').reverse().toArray(), []) ?? []

@@ -53,6 +53,13 @@ const GROUPS: { title: string; note?: string; items: Tool[] }[] = [
         stages: ['hiragana', 'katakana'],
       },
       { to: '/yazi-sistemi', icon: 'book', title: 'Yazı sistemi', sub: 'Üç alfabe, yazı yönü, çizgi sırası' },
+      {
+        to: '/kaynaklar',
+        icon: 'headphones',
+        title: 'Dinleme ve video',
+        sub: 'Küratlı YouTube kaynakları — internet gerekir',
+        stages: ['hiragana', 'katakana', 'genki-1-4', 'genki-5-8', 'genki-9-12', 'n5'],
+      },
     ],
   },
   {

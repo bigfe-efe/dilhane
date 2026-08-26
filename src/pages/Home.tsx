@@ -1,27 +1,32 @@
 import { Link } from 'react-router-dom'
 import { Bar, TopBar } from '@/components/ui'
-import { Icon } from '@/components/icons'
-import { useDueCounts, useExams, useLeeches, useLessonProgress, useToday } from '@/db/hooks'
-import { LANG_NATIVE } from '@/content'
-import { ROADMAP, buildPlan } from '@/content/ja/roadmap'
+import { Icon, type IconName } from '@/components/icons'
+import { useDailyDone, useDailyHistory, useDueCounts, useExams, useLeeches, useLessonProgress, useToday } from '@/db/hooks'
+import { db, todayKey } from '@/db/db'
+import { LESSONS_ORDERED } from '@/content'
+import { buildDailyPlan, type DailyTask, type TaskKind } from '@/content/ja/study-plan'
 
-// Ana sayfa tek bir soruyu cevaplar: BUGÜN ne yapayım?
+// "Bugün" — günün çalışma listesi.
 //
-// Eskiden burada bütün araçların ızgarası vardı; aramak zordu çünkü sayfa
-// "her şey" demeye çalışıyordu. Araçlar artık "Daha" sayfasında gruplu duruyor.
-// Burada yalnızca bugün yapılacak iş var: bekleyen tekrar, sıradaki ders ve
-// rotanın bir cümlelik özeti. Uzun vadeli yön ise Rota sayfasında.
+// Ana sayfa artık bir menü değil, bir GÖREV LİSTESİ. Tek soruyu cevaplıyor:
+// bugün ne yapmalıyım? Görevler sınav tarihine, müfredatın neresinde olduğuna
+// ve bekleyen kart sayısına göre her gün yeniden üretiliyor.
+//
+// Sıralama önem sırasıdır, bütçe sırası değil. Yorulup bıraktığında en kritik
+// olanı yapmış olursun: önce tekrar, sonra yeni ders, sonra alıştırma.
 
-/** Ana sayfadaki kısayollar — tamamı Çalış sekmesinde. */
-const QUICK: { to: string; glyph: string; title: string; sub: string }[] = [
-  { to: '/kana/hiragana', glyph: 'あ', title: 'Hiragana', sub: 'Tablo' },
-  { to: '/kana-kurallar', glyph: '則', title: 'Hiragana dilbilgisi', sub: 'Yazı sistemi kuralları' },
-  { to: '/kural-testi', glyph: '筆', title: 'Kural testi', sub: 'Okunuşu yaz' },
-  { to: '/kana-test', glyph: '試', title: 'Kendi testin', sub: 'Harfleri sen seç' },
-  { to: '/kana-kelime', glyph: '読', title: 'Kelime okuma', sub: 'Hece hece sök' },
-]
+const IKON: Record<TaskKind, IconName> = {
+  review: 'repeat',
+  lesson: 'book',
+  drill: 'target',
+  write: 'brush',
+  read: 'search',
+  grammar: 'brackets',
+  video: 'headphones',
+  exam: 'trophy',
+}
 
-function greeting(): string {
+function selam(): string {
   const h = new Date().getHours()
   if (h < 6) return 'İyi geceler'
   if (h < 12) return 'Günaydın'
@@ -30,23 +35,44 @@ function greeting(): string {
 }
 
 export default function Home() {
+  const gun = todayKey()
   const due = useDueCounts()
   const today = useToday()
   const prog = useLessonProgress()
   const leeches = useLeeches()
   const exams = useExams()
+  const yapilan = useDailyDone(gun)
+  const gecmis = useDailyHistory(14)
 
-  const accuracy = today.reviews > 0 ? Math.round((today.correct / today.reviews) * 100) : 0
   const tamamlanan = new Set(
     [...prog.map.entries()].filter(([, v]) => v.status === 'completed').map(([k]) => k),
   )
-  const plan = buildPlan(exams[0] ?? null, tamamlanan)
-  const stage = ROADMAP.find((s) => s.id === plan.stageId)
+
+  const plan = buildDailyPlan({
+    day: gun,
+    dueCards: due.total,
+    completed: tamamlanan,
+    nextLesson: prog.next,
+    lastExam: exams[0] ?? null,
+    leeches: leeches.leeches.length,
+    totalLessons: LESSONS_ORDERED.length,
+  })
+
+  const cekirdek = plan.tasks.filter((t) => !t.optional)
+  const bitenCekirdek = cekirdek.filter((t) => yapilan.has(t.id)).length
+  const yuzde = cekirdek.length ? (bitenCekirdek / cekirdek.length) * 100 : 0
+  const kalanDakika = plan.tasks.filter((t) => !yapilan.has(t.id)).reduce((a, t) => a + t.minutes, 0)
+
+  const isaretle = async (t: DailyTask) => {
+    const id = `${gun}:${t.id}`
+    if (yapilan.has(t.id)) await db.daily.delete(id)
+    else await db.daily.put({ id, day: gun, taskId: t.id, at: Date.now() })
+  }
 
   return (
     <>
       <TopBar
-        title={greeting()}
+        title={selam()}
         sub={new Date().toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' })}
         right={
           <Link to="/settings" className="iconbtn" aria-label="Ayarlar">
@@ -56,120 +82,97 @@ export default function Home() {
       />
 
       <div className="page stack-lg lang-ja">
-        {/* Nerede olduğun — tek satır, ayrıntısı Rota'da */}
-        {stage && (
-          <Link to="/rota" className="railcard railcard--link">
-            <div className="row">
-              <span className="ja home-mark">日本語</span>
-              <div className="spacer" />
-              <span className="badge badge--accent tiny">{stage.title}</span>
-            </div>
-            <div className="stack-sm" style={{ marginTop: 16 }}>
-              <div className="card-title" style={{ fontSize: '1rem' }}>
-                {plan.headline}
-              </div>
-              <div className="card-sub" style={{ lineHeight: 1.55 }}>
-                {plan.items[0]?.title ?? stage.sub}
-              </div>
-            </div>
-            <div className="row tiny dim" style={{ marginTop: 14 }}>
-              <span>Rotayı ve haftalık planı gör</span>
-              <div className="spacer" />
-              <Icon name="right" size={14} />
-            </div>
-          </Link>
-        )}
+        {/* ————— Sınav geri sayımı ve tempo ————— */}
+        <Link to="/rota" className="railcard railcard--link">
+          <div className="row">
+            <span className="ja home-mark">日本語</span>
+            <div className="spacer" />
+            <span className={`badge tiny badge--${plan.pace.state === 'behind' ? 'bad' : 'accent'}`}>
+              JLPT N5
+            </span>
+          </div>
 
-        {/* Bugünün işi */}
-        <div className="stack-sm">
-          <h2>Bugün</h2>
+          <div className="row" style={{ alignItems: 'baseline', gap: 8, marginTop: 14 }}>
+            <span className="countdown tabular">{plan.daysLeft}</span>
+            <span className="card-sub">gün kaldı · 6 Aralık 2026</span>
+          </div>
 
-          {due.total > 0 ? (
-            <Link to="/review" className="card card--link card--accent">
-              <div className="row">
-                <span className="entry-icon">
-                  <Icon name="repeat" size={19} />
-                </span>
-                <div className="stack-sm" style={{ gap: 1, flex: 1 }}>
-                  <div className="card-title">Önce tekrar</div>
-                  <div className="card-sub">{due.total} kart bekliyor — yeni ders açmadan bunu bitir</div>
-                </div>
-                <Icon name="right" size={16} style={{ color: 'var(--faint)' }} />
-              </div>
-            </Link>
-          ) : (
-            <div className="card">
-              <div className="row">
-                <span className="entry-icon">
-                  <Icon name="check" size={18} />
-                </span>
-                <div className="stack-sm" style={{ gap: 1, flex: 1 }}>
-                  <div className="card-title">Tekrar bitti</div>
-                  <div className="card-sub">Bekleyen kart yok. Sıradaki derse geçebilirsin.</div>
-                </div>
-              </div>
-            </div>
-          )}
+          <div className="card-sub" style={{ lineHeight: 1.55, marginTop: 6 }}>
+            {plan.pace.text}
+          </div>
 
-          {prog.next && (
-            <Link to={`/lesson/${prog.next.id}`} className="card card--link">
-              <div className="row">
-                <span className="entry-icon">
-                  <Icon name="book" size={19} />
-                </span>
-                <div className="stack-sm" style={{ gap: 1, flex: 1 }}>
-                  <div className="card-title">
-                    {prog.completed === 0 ? 'İlk dersi aç' : 'Sıradaki ders'}
-                  </div>
-                  <div className="card-sub">{prog.next.title}</div>
-                </div>
-                <Icon name="right" size={16} style={{ color: 'var(--faint)' }} />
-              </div>
-            </Link>
-          )}
+          <div className="row tiny dim" style={{ marginTop: 12 }}>
+            <span>{plan.focus}</span>
+            <div className="spacer" />
+            <Icon name="right" size={14} />
+          </div>
+        </Link>
 
-          {leeches.leeches.length > 0 && (
-            <Link to="/zorlandiklarim" className="card card--link">
-              <div className="row">
-                <span className="entry-icon">
-                  <Icon name="flame" size={19} />
-                </span>
-                <div className="stack-sm" style={{ gap: 1, flex: 1 }}>
-                  <div className="card-title">Takıldığın kartlar</div>
-                  <div className="card-sub">{leeches.leeches.length} kart sürekli unutuluyor</div>
-                </div>
-                <Icon name="right" size={16} style={{ color: 'var(--faint)' }} />
-              </div>
-            </Link>
-          )}
-        </div>
-
-        {/* Günlük araçlar — hepsi Çalış sekmesinde, bunlar en sık kullanılanlar */}
+        {/* ————— Günün listesi ————— */}
         <div className="stack-sm">
           <div className="row">
-            <h2>Çalış</h2>
+            <h2>Bugünün listesi</h2>
             <div className="spacer" />
-            <Link to="/calis" className="tiny dim" style={{ textDecoration: 'underline' }}>
-              hepsi
-            </Link>
+            <span className="tiny faint tabular">
+              {bitenCekirdek} / {cekirdek.length}
+            </span>
           </div>
-          <div className="grid grid-auto">
-            {QUICK.map((q) => (
-              <Link key={q.to} to={q.to} className="tool">
-                <span className="ja tool-glyph">{q.glyph}</span>
-                <span className="tool-title">{q.title}</span>
-                <span className="tool-sub">{q.sub}</span>
-              </Link>
-            ))}
+
+          <div className="card stack-sm">
+            <Bar value={yuzde} />
+            <div className="row tiny">
+              <span className="dim">
+                {yuzde === 100 ? 'Bugünlük iş bitti' : `${kalanDakika} dakikalık iş kaldı`}
+              </span>
+              <div className="spacer" />
+              <span className="faint tabular">~{plan.minutes} dk toplam</span>
+            </div>
           </div>
+
+          {plan.tasks.map((t) => {
+            const bitti = yapilan.has(t.id)
+            return (
+              <div key={t.id} className={`card task${bitti ? ' is-done' : ''}${t.optional ? ' is-optional' : ''}`}>
+                <div className="row">
+                  <button
+                    className="task-check"
+                    onClick={() => void isaretle(t)}
+                    aria-label={bitti ? 'Yapılmadı olarak işaretle' : 'Yapıldı olarak işaretle'}
+                  >
+                    <Icon name={bitti ? 'squareCheck' : 'square'} size={20} />
+                  </button>
+
+                  <div className="stack-sm" style={{ gap: 2, flex: 1, minWidth: 0 }}>
+                    <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
+                      <span className="task-title">{t.title}</span>
+                      {t.optional && <span className="badge tiny">ekstra</span>}
+                    </div>
+                    <div className="card-sub" style={{ lineHeight: 1.5 }}>
+                      {t.detail}
+                    </div>
+                  </div>
+
+                  <div className="stack-sm" style={{ gap: 4, alignItems: 'flex-end' }}>
+                    <span className="tiny faint tabular">{t.minutes} dk</span>
+                    <Link to={t.to} className="btn btn--sm" aria-label={`${t.title} — aç`}>
+                      <Icon name={IKON[t.kind]} size={15} />
+                      Aç
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
         </div>
 
-        {/* Sayılar */}
+        {/* ————— Sayılar ————— */}
         <div className="grid grid-2">
           <div className="card stat">
             <div className="stat-label">Bugün</div>
             <div className="stat-value tabular">{today.reviews}</div>
-            <div className="stat-note">{today.reviews > 0 ? `%${accuracy} doğruluk` : 'henüz çalışmadın'}</div>
+            <div className="stat-note">
+              {today.reviews > 0 ? `%${Math.round((today.correct / today.reviews) * 100)} doğruluk` : 'henüz çalışmadın'}
+            </div>
           </div>
           <div className="card stat">
             <div className="stat-label">Seri</div>
@@ -178,7 +181,25 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Müfredat ilerlemesi */}
+        {/* ————— Son iki hafta ————— */}
+        <div className="card stack-sm">
+          <div className="row tiny">
+            <span className="dim">Son 14 gün</span>
+            <div className="spacer" />
+            <span className="faint tabular">{gecmis.filter((g) => g.count > 0).length} gün çalıştın</span>
+          </div>
+          <div className="streak-bars">
+            {gecmis.map((g) => (
+              <span
+                key={g.day}
+                className={`streak-bar${g.count > 0 ? ' is-on' : ''}`}
+                title={`${g.day}: ${g.count} görev`}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* ————— Müfredat ————— */}
         <div className="card stack-sm">
           <div className="row tiny">
             <span className="dim">Müfredat</span>
@@ -188,14 +209,15 @@ export default function Home() {
             </span>
           </div>
           <Bar value={prog.percent} />
-          <Link to="/lessons" className="tiny dim" style={{ textDecoration: 'underline' }}>
-            Bütün dersleri gör
-          </Link>
-        </div>
-
-        <div className="home-foot">
-          <span className="ja">{LANG_NATIVE}</span>
-          <span>Dilhane</span>
+          <div className="row">
+            <Link to="/lessons" className="tiny dim" style={{ textDecoration: 'underline' }}>
+              Bütün dersler
+            </Link>
+            <div className="spacer" />
+            <Link to="/calis" className="tiny dim" style={{ textDecoration: 'underline' }}>
+              Çalışma araçları
+            </Link>
+          </div>
         </div>
       </div>
     </>

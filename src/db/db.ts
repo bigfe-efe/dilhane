@@ -111,6 +111,22 @@ export interface ExamRecord {
   withWriting: boolean
 }
 
+/**
+ * Günlük görev işareti.
+ *
+ * Planın KENDİSİ saklanmıyor — o her gün sınav tarihine, ders ilerlemesine ve
+ * bekleyen kart sayısına bakılarak yeniden üretiliyor. Saklanan tek şey neyin
+ * yapıldığı. Böylece plan değişirse geçmiş bozulmuyor ve "dün ne yaptım"
+ * sorusu hep doğru cevaplanıyor.
+ */
+export interface DailyDone {
+  /** `YYYY-MM-DD:taskId` */
+  id: string
+  day: string
+  taskId: string
+  at: number
+}
+
 class DilhaneDB extends Dexie {
   cards!: Table<Card, string>
   reviews!: Table<ReviewLog, number>
@@ -121,6 +137,7 @@ class DilhaneDB extends Dexie {
   settings!: Table<Setting, string>
   notes!: Table<Note, string>
   exams!: Table<ExamRecord, number>
+  daily!: Table<DailyDone, string>
 
   constructor() {
     super('dilhane')
@@ -139,6 +156,11 @@ class DilhaneDB extends Dexie {
     // Dexie mevcut verileri olduğu gibi taşır.
     this.version(2).stores({
       exams: 'at, kind, percent',
+    })
+
+    // v3: günlük görev işaretleri
+    this.version(3).stores({
+      daily: 'id, day, taskId',
     })
   }
 }
