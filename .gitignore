@@ -15,6 +15,12 @@ android/
 ios/
 .gradle/
 
+# Telifli materyal — depo herkese acik, buraya HICBIR sey girmemeli
+Genki*/
+*.pdf
+*.epub
+*.mobi
+
 # Kisisel ayarlar ve makineye ozgu dosyalar
 wallpaper/prefs.json
 dilhane-kaynak.txt
