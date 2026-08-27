@@ -75,16 +75,56 @@ function segment(text: string): string[] {
 
 /**
  * Konu eki は "wa" okunur ama "ha" yazılır — Japoncanın en sık yazım-okuma
- * uyuşmazlığı. Ek olduğu kesin değildir, ama şu üç işaret yeter:
- *   • kelimenin başında değil       (はな, はたらく, はじめまして korunur)
+ * uyuşmazlığı. Ek olduğu kesin değildir, elenerek bulunuyor:
+ *   • kelimenin başında değil       (はな, はしる, はじめまして korunur)
  *   • ardından ん gelmiyor          (ごはん, はんぶん korunur)
  *   • öncesinde は yok              (はは "haha" korunur)
- * Geriye kalan neredeyse hep ektir: わたし|は, こんにち|は.
+ *
+ * Bu üçü tek başına yetmiyordu: おはよう da üçünü de geçiyor ve "ovayou"
+ * okunuyordu. Eksik olan şuydu — konu eki bir ÖBEĞİN SONUNDA durur. Ardından
+ * kana geliyorsa は kelimenin içindedir:
+ *   わたしは → は’den sonra kana yok, ek        → wa
+ *   おはよう → は’den sonra よ var, kelime içi  → ha
+ *
+ * Tek istisna baştan sona kana yazılmış CÜMLELER: 「わたしはがくせいです」de
+ * ek de kelime de kana, は’den sonra yine kana geliyor. Orada cümle olduğunu
+ * anlamak gerekiyor — kanji, boşluk, noktalama ya da です/ます ile biten bir
+ * yüklem varsa bu bir cümledir.
+ *
+ * Bir de おはようございます var: hem ます ile bitiyor hem は’den sonra kana
+ * geliyor, yani cümle sanılıyor. Onu şu ayrım eliyor — konu eki bir öbeğin
+ * ARDINDAN gelir, kelimenin ikinci harfi olmaz. Öncesinde kanji varsa
+ * (私は, 猫は) sınır zaten bellidir ve は kesinlikle ektir.
  */
+const SENTENCE_MARK = /[㐀-鿿\s、。「」！？!?,.]/
+const PREDICATE_END = /(です|ですか|ます|ますか|ました|ません|でした|ください|でしょう)$/
+const KANA_CH = /[ぁ-ゟァ-ヿー]/
+const BOUNDARY = /[\s、。「」！？!?,.]/
+
 function fixTopicParticle(kana: string): string {
   const c = [...kana]
+  const sentence = SENTENCE_MARK.test(kana) || PREDICATE_END.test(kana)
   return c
-    .map((ch, i) => (ch === 'は' && i > 0 && c[i + 1] !== 'ん' && c[i - 1] !== 'は' ? 'わ' : ch))
+    .map((ch, i) => {
+      if (ch !== 'は') return ch
+      const prev = c[i - 1]
+      const next = c[i + 1]
+
+      // Kelime başı — boşluk ya da noktalamadan sonra da kelime başıdır
+      if (i === 0 || !prev || BOUNDARY.test(prev)) return ch
+      // はは "anne" korunur; ama ははは üçlüsünde sonuncusu ektir
+      // (「はははせんせいです」 = haha wa sensei desu)
+      if (prev === 'は' && c[i - 2] !== 'は') return ch
+      if (next === 'ん') return ch // ごはん, はんぶん
+
+      // Öncesinde kanji/latin var: sınır belli, は ektir (私は, AはBです)
+      if (!KANA_CH.test(prev)) return 'わ'
+
+      // Buradan sonrası baştan sona kana; ayırt etmek zor.
+      if (i === 1) return ch // おはよう — ek olamayacak kadar başta
+      if (!next || !KANA_CH.test(next)) return 'わ' // わたしは, こんにちは
+      return sentence ? 'わ' : ch // わたしはがくせいです
+    })
     .join('')
 }
 

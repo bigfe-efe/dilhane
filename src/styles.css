@@ -2386,3 +2386,107 @@ ul.tight li {
   border-color: var(--bad);
   color: var(--bad);
 }
+
+/* ————————————————————————— Hiragana kelime sözlüğü —————————————————————————
+   Bu bir liste, alistirma degil: goz gezdirilecek ve aranacak. Bu yuzden satir
+   yuksekligi dusuk tutuldu ve kelimeler bitisik bir blok halinde duruyor —
+   ayri ayri kartlara bolununce tarama zorlasiyor. */
+
+.vocab-tools {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--bg);
+  padding: 8px 0 6px;
+  margin-top: -8px;
+}
+
+.vocab-search {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+  border-radius: var(--r);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--faint);
+}
+.vocab-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.92rem;
+}
+.vocab-clear {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--dim);
+  cursor: pointer;
+}
+
+.vocab-list {
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+  overflow: hidden;
+}
+.vocab-row {
+  padding: 11px 14px;
+}
+.vocab-row + .vocab-row {
+  border-top: 1px solid var(--line);
+}
+
+.vocab-kana {
+  font-size: 1.45rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.25;
+}
+.vocab-oku {
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+  margin-top: 2px;
+}
+.vocab-tr {
+  font-size: 0.9rem;
+  color: var(--text);
+  margin-top: 3px;
+}
+.vocab-pos {
+  font-size: 0.66rem;
+  letter-spacing: 0.03em;
+  color: var(--faint);
+  white-space: nowrap;
+}
+
+/* Kelimeye ozgu dilbilgisi notu — kelimeden gorsel olarak ayrilmali ki
+   "anlam" ile "kural" birbirine karismasin. */
+.vocab-note {
+  margin-top: 8px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  border-left: 2px solid var(--line);
+  line-height: 1.55;
+  color: var(--dim);
+}
+.vocab-note + .vocab-note {
+  margin-top: 5px;
+}
+/* Yazildigi gibi okunmayan kelime — dikkat cekmesi gerekiyor */
+.vocab-note--warn {
+  border-left-color: var(--accent);
+  color: var(--accent);
+}

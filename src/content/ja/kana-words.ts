@@ -1,4 +1,5 @@
 import { toRomaji } from 'wanakana'
+import { ALL_VOCAB } from './kana-vocab'
 // Hiragana ile okunabilen kelimeler — kana sökme alıştırması için.
 //
 // NEDEN AYRI BİR LİSTE:
@@ -30,6 +31,8 @@ export interface KanaWord {
   reading?: string
   /** Neden farklı okunduğunun açıklaması */
   note?: string
+  /** Kelimeye özgü dilbilgisi notu (fiil grubu, aldığı ek, sayaç kapsamı…) */
+  gram?: string
 }
 
 type Row = [string, string, string?]
@@ -245,12 +248,45 @@ const ROWS: Row[] = [
   ['りゅうがくせい', 'yabancı öğrenci', '留学生'],
 ]
 
-export const KANA_WORDS: KanaWord[] = ROWS.map(([kana, tr, kanji]) => ({
+// Temalı sözlük (kana-vocab.ts) kelimeleri de bu havuza katılır.
+//
+// NEDEN: iki ayrı hiragana kelime listesi tutmak, ikisinin zamanla birbirinden
+// ayrı düşmesi demekti — birinde düzeltilen bir okunuş ötekinde yanlış kalırdı.
+// Tek kaynak var: temalı liste. Aşağıdaki ROWS ise SÖKME alıştırması için
+// kana satırlarına göre derecelendirilmiş kısa kelimelerdir; onlar da havuza
+// giriyor. Tekrar edenler eleniyor.
+//
+// Tek heceli edatlar (は, を, へ, に…) havuza ALINMIYOR: onlar kelime değil ek,
+// ve "okunuşunu yaz" alıştırmasında tek harf sormanın bir anlamı yok.
+const VOCAB_MAP = new Map(ALL_VOCAB.map((w) => [w.kana, w]))
+
+const FROM_ROWS: KanaWord[] = ROWS.map(([kana, tr, kanji]) => ({
   kana,
   tr,
-  kanji,
+  kanji: kanji ?? VOCAB_MAP.get(kana)?.kanji,
+  gram: VOCAB_MAP.get(kana)?.gram,
   ...(IRREGULAR[kana] ?? {}),
 }))
+
+const IN_ROWS = new Set(FROM_ROWS.map((w) => w.kana))
+
+const FROM_VOCAB: KanaWord[] = ALL_VOCAB.filter(
+  (w) => !IN_ROWS.has(w.kana) && !(w.pos === 'edat' && [...w.kana].length === 1),
+).map((w) => ({
+  kana: w.kana,
+  tr: w.tr,
+  kanji: w.kanji,
+  gram: w.gram,
+  reading: w.reading,
+  note: w.note,
+}))
+
+export const KANA_WORDS: KanaWord[] = [
+  ...FROM_ROWS,
+  // Aynı kelime birden çok temada geçebiliyor (ほん hem "kitap" hem sayaç);
+  // havuzda bir kez bulunması yeterli.
+  ...FROM_VOCAB.filter((w, i, a) => a.findIndex((x) => x.kana === w.kana) === i),
+]
 
 const BY_KANA = new Map(KANA_WORDS.map((w) => [w.kana, w]))
 

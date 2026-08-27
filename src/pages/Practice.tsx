@@ -63,11 +63,24 @@ const GROUPS: { title: string; note?: string; items: Tool[] }[] = [
     ],
   },
   {
+    title: 'Kelime',
+    note: 'Harfleri bağlayabilmek için gerçek kelimeye ihtiyaç var.',
+    items: [
+      {
+        to: '/kelimeler',
+        glyph: '語',
+        title: 'Hiragana kelime sözlüğü',
+        sub: 'Temalı liste, Türkçe karşılık ve dilbilgisi notu',
+        stages: ['hiragana', 'katakana', 'genki-1-4'],
+      },
+      { to: '/kana-kelime', glyph: '読', title: 'Kelime okuma', sub: 'Hiragana kelimeleri hece hece sök', stages: ['hiragana', 'katakana'] },
+    ],
+  },
+  {
     title: 'Alıştırma',
     note: 'Bilgi burada oturur — tabloya bakmak değil, kendi başına çıkarmak.',
     items: [
       { to: '/kana-test', glyph: '試', title: 'Kendi testin', sub: 'Çıkacak karakterleri sen seç', stages: ['hiragana', 'katakana'] },
-      { to: '/kana-kelime', glyph: '読', title: 'Kelime okuma', sub: 'Hiragana kelimeleri hece hece sök', stages: ['hiragana', 'katakana'] },
       { to: '/kana-hiz', glyph: '速', title: 'Hız testi', sub: 'Tanıma hızını ölç', stages: ['hiragana', 'katakana'] },
       { to: '/write', icon: 'brush', title: 'Yazı çalışması', sub: 'Çiz, çizgi sırası denetlensin', stages: ['hiragana', 'katakana'] },
     ],

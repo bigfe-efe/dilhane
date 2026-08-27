@@ -38,6 +38,7 @@ const PRACTICE: { to: string; glyph: string; title: string; sub: string }[] = [
   { to: '/hiragana-sinav', glyph: '終', title: 'Bitirme sınavı', sub: 'Sekiz bölüm, tam ölçüm' },
   { to: '/kana-test', glyph: '試', title: 'Kendi testin', sub: 'Çıkacak harfleri sen seç' },
   { to: '/kana-kelime', glyph: '読', title: 'Kelime okuma', sub: 'Heceleyerek sök' },
+  { to: '/kelimeler', glyph: '語', title: 'Kelime sözlüğü', sub: 'Anlam ve dilbilgisi notu' },
   { to: '/kana-hiz', glyph: '速', title: 'Hız testi', sub: 'Ne kadar akıcısın' },
 ]
 

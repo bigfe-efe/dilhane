@@ -13,6 +13,7 @@ import ResourcesPage from '@/pages/Resources'
 import N5MockPage from '@/pages/N5Mock'
 import PracticePage from '@/pages/Practice'
 import KanaWordsPage from '@/pages/KanaWords'
+import VocabPage from '@/pages/Vocab'
 import LeechesPage from '@/pages/Leeches'
 import N5Page from '@/pages/N5'
 import KanjiPage from '@/pages/Kanji'
@@ -71,6 +72,7 @@ export default function App() {
         <Route path="/rota" element={<RoadmapPage />} />
         <Route path="/calis" element={<PracticePage />} />
         <Route path="/kana-kelime" element={<KanaWordsPage />} />
+        <Route path="/kelimeler" element={<VocabPage />} />
         <Route path="/kanji" element={<KanjiPage />} />
 
         <Route path="/lessons" element={<LessonsPage />} />
