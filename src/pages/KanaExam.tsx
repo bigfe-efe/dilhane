@@ -5,7 +5,7 @@ import { Icon } from '@/components/icons'
 import { KanaGlyph } from '@/components/KanaGlyph'
 import { DrawCanvas } from '@/components/DrawCanvas'
 import {
-  SECTION_TR,
+  sectionTr,
   buildExam,
   examPlan,
   confusablesOf,
@@ -13,6 +13,7 @@ import {
   readingOk,
   type Answer,
   type ExamResult,
+  type KanaType,
   type Question,
 } from '@/content/ja/exam'
 import { KANA_BY_CHAR } from '@/content/ja/kana'
@@ -20,7 +21,10 @@ import { checkDrawing, type Point } from '@/lib/stroke-check'
 import { ensureStrokeData } from '@/lib/strokes'
 import { db, ensureCards } from '@/db/db'
 
-// Hiragana bitirme sınavı.
+// Kana bitirme sınavı — hem hiragana hem katakana için.
+//
+// Sayfa alfabeyi prop olarak alır; içerik farkları exam.ts'te çözülmüş durumda.
+// Burada yalnızca başlıklar, geri dönüş adresi ve kayıt anahtarı değişiyor.
 //
 // TASARIM KARARI — cevap sınav bitene kadar gösterilmez.
 // Soru sonrası "doğru/yanlış" göstermek sınavı alıştırmaya çevirir: insan
@@ -29,7 +33,7 @@ import { db, ensureCards } from '@/db/db'
 
 type Phase = 'setup' | 'exam' | 'result'
 
-export default function HiraganaExamPage() {
+export default function KanaExamPage({ kana = 'hiragana' }: { kana?: KanaType }) {
   const [phase, setPhase] = useState<Phase>('setup')
   const [full, setFull] = useState(true)
   const [withWriting, setWithWriting] = useState(false)
@@ -41,14 +45,14 @@ export default function HiraganaExamPage() {
 
   const start = () => {
     answers.current = new Map()
-    setQuestions(buildExam({ full, withWriting }))
+    setQuestions(buildExam({ kana, full, withWriting }))
     setIdx(0)
     setResult(null)
     setPhase('exam')
   }
 
   const finish = async (qs: Question[]) => {
-    const r = evaluate(qs, answers.current)
+    const r = evaluate(qs, answers.current, kana)
     setResult(r)
     setPhase('result')
 
@@ -57,7 +61,7 @@ export default function HiraganaExamPage() {
     try {
       await db.exams.put({
         at: Date.now(),
-        kind: 'hiragana',
+        kind: kana,
         percent: r.percent,
         correct: r.correct,
         total: r.total,
@@ -78,12 +82,22 @@ export default function HiraganaExamPage() {
   }
 
   if (phase === 'setup') {
-    return <Setup full={full} setFull={setFull} writing={withWriting} setWriting={setWithWriting} onStart={start} />
+    return (
+      <Setup
+        kana={kana}
+        full={full}
+        setFull={setFull}
+        writing={withWriting}
+        setWriting={setWithWriting}
+        onStart={start}
+      />
+    )
   }
 
   if (phase === 'result' && result) {
     return (
       <Result
+        kana={kana}
         result={result}
         questions={questions}
         answers={answers.current}
@@ -94,6 +108,7 @@ export default function HiraganaExamPage() {
 
   return (
     <Exam
+      kana={kana}
       q={questions[idx]}
       index={idx}
       total={questions.length}
@@ -106,12 +121,14 @@ export default function HiraganaExamPage() {
 // ————————————————————————— Başlangıç —————————————————————————
 
 function Setup({
+  kana,
   full,
   setFull,
   writing,
   setWriting,
   onStart,
 }: {
+  kana: KanaType
   full: boolean
   setFull: (v: boolean) => void
   writing: boolean
@@ -119,22 +136,24 @@ function Setup({
   onStart: () => void
 }) {
   // Sayılar sınavı kuran modülden geliyor; ekranla sınav ayrışamaz
-  const plan = examPlan(full, writing)
+  const SECTION_TR = sectionTr(kana)
+  const label = kana === 'hiragana' ? 'Hiragana' : 'Katakana'
+  const plan = examPlan(full, writing, kana)
   const sections = plan.filter((p) => p.section !== 'cizim')
   const toplam = plan.reduce((a, b) => a + b.count, 0)
-  const tamToplam = examPlan(true, writing).reduce((a, b) => a + b.count, 0)
-  const kisaToplam = examPlan(false, writing).reduce((a, b) => a + b.count, 0)
+  const tamToplam = examPlan(true, writing, kana).reduce((a, b) => a + b.count, 0)
+  const kisaToplam = examPlan(false, writing, kana).reduce((a, b) => a + b.count, 0)
 
   return (
     <>
-      <TopBar title="Hiragana bitirme sınavı" sub={`${toplam} soru`} back="/kana/hiragana" />
+      <TopBar title={`${label} bitirme sınavı`} sub={`${toplam} soru`} back={`/kana/${kana}`} />
 
       <div className="page stack-lg lang-ja">
         <div className="card card--accent stack-sm">
           <div className="card-title">Bu sınav neyi ölçüyor?</div>
           <div className="card-sub">
-            Tabloyu ezberlemiş olmak hiragana bilmek değildir. Bu sınav sekiz ayrı beceriyi ayrı ayrı yokluyor —
-            hangi bölümde düştüğün, ne çalışman gerektiğini söylüyor.
+            Tabloyu ezberlemiş olmak {label.toLocaleLowerCase('tr')} bilmek değildir. Bu sınav {sections.length}{' '}
+            ayrı beceriyi ayrı ayrı yokluyor — hangi bölümde düştüğün, ne çalışman gerektiğini söylüyor.
           </div>
           <div className="tiny faint" style={{ marginTop: 4 }}>
             Doğru cevaplar sınav bitene kadar gösterilmez. Geri bildirim görmek ölçümü bozar.
@@ -201,18 +220,21 @@ function Setup({
 // ————————————————————————— Sınav —————————————————————————
 
 function Exam({
+  kana,
   q,
   index,
   total,
   onSubmit,
   onQuit,
 }: {
+  kana: KanaType
   q: Question
   index: number
   total: number
   onSubmit: (a: Answer) => void
   onQuit: () => void
 }) {
+  const SECTION_TR = sectionTr(kana)
   return (
     <div className="quiz lang-ja">
       <div className="quiz-top">
@@ -360,16 +382,19 @@ function WriteView({ q, onSubmit }: { q: Extract<Question, { type: 'write' }>; o
 // ————————————————————————— Sonuç —————————————————————————
 
 function Result({
+  kana,
   result,
   questions,
   answers,
   onRetry,
 }: {
+  kana: KanaType
   result: ExamResult
   questions: Question[]
   answers: Map<string, Answer>
   onRetry: () => void
 }) {
+  const SECTION_TR = sectionTr(kana)
   const [added, setAdded] = useState(false)
   const pct = Math.round(result.percent)
   const wrong = useMemo(() => questions.filter((q) => !answers.get(q.id)?.correct), [questions, answers])
@@ -383,7 +408,7 @@ function Result({
 
   return (
     <>
-      <TopBar title="Sınav sonucu" back="/kana/hiragana" />
+      <TopBar title="Sınav sonucu" back={`/kana/${kana}`} />
 
       <div className="page stack-lg lang-ja">
         {/* Puan */}

@@ -5,7 +5,8 @@ import KanaPage from '@/pages/Kana'
 import WritingSystemPage from '@/pages/WritingSystem'
 import KanaSpeedPage from '@/pages/KanaSpeed'
 import KanaQuizPage from '@/pages/KanaQuiz'
-import HiraganaExamPage from '@/pages/HiraganaExam'
+import KanaExamPage from '@/pages/KanaExam'
+import KatakanaWordsPage from '@/pages/KatakanaWords'
 import RoadmapPage from '@/pages/Roadmap'
 import KanaRulesPage from '@/pages/KanaRules'
 import KanaRuleTestPage from '@/pages/KanaRuleTest'
@@ -68,7 +69,9 @@ export default function App() {
         <Route path="/n5-deneme" element={<N5MockPage />} />
         <Route path="/kana-hiz" element={<KanaSpeedPage />} />
         <Route path="/kana-test" element={<KanaQuizPage />} />
-        <Route path="/hiragana-sinav" element={<HiraganaExamPage />} />
+        <Route path="/hiragana-sinav" element={<KanaExamPage kana="hiragana" />} />
+        <Route path="/katakana-sinav" element={<KanaExamPage kana="katakana" />} />
+        <Route path="/katakana-kelime" element={<KatakanaWordsPage />} />
         <Route path="/rota" element={<RoadmapPage />} />
         <Route path="/calis" element={<PracticePage />} />
         <Route path="/kana-kelime" element={<KanaWordsPage />} />

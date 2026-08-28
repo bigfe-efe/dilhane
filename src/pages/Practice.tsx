@@ -73,7 +73,14 @@ const GROUPS: { title: string; note?: string; items: Tool[] }[] = [
         sub: 'Temalı liste, Türkçe karşılık ve dilbilgisi notu',
         stages: ['hiragana', 'katakana', 'genki-1-4'],
       },
-      { to: '/kana-kelime', glyph: '読', title: 'Kelime okuma', sub: 'Hiragana kelimeleri hece hece sök', stages: ['hiragana', 'katakana'] },
+      { to: '/kana-kelime', glyph: '読', title: 'Kelime okuma', sub: 'Hiragana kelimeleri hece hece sök', stages: ['hiragana'] },
+      {
+        to: '/katakana-kelime',
+        glyph: '外',
+        title: 'Katakana kelime listesi',
+        sub: 'Kaynağıyla birlikte — ezberlenmez, çözülür',
+        stages: ['katakana', 'genki-1-4'],
+      },
     ],
   },
   {
@@ -96,6 +103,13 @@ const GROUPS: { title: string; note?: string; items: Tool[] }[] = [
         stages: ['hiragana'],
       },
       {
+        to: '/katakana-sinav',
+        glyph: '終',
+        title: 'Katakana bitirme sınavı',
+        sub: 'Dokuz bölüm — kaynak kelime bölümü dahil',
+        stages: ['katakana'],
+      },
+      {
         to: '/n5-deneme',
         glyph: '模',
         title: 'N5 deneme sınavı',
@@ -113,7 +127,7 @@ export default function PracticePage() {
   const tamamlanan = new Set(
     [...prog.map.entries()].filter(([, v]) => v.status === 'completed').map(([k]) => k),
   )
-  const plan = buildPlan(exams[0] ?? null, tamamlanan)
+  const plan = buildPlan(exams, tamamlanan)
   const stage = ROADMAP.find((s) => s.id === plan.stageId)
 
   // Bu aşamada işine yarayan araçlar — hepsi aşağıda yine duruyor,

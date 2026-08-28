@@ -15,11 +15,10 @@ export default function RoadmapPage() {
   const exams = useExams()
   const prog = useLessonProgress()
 
-  const sonSinav = exams[0] ?? null
   const tamamlanan = new Set(
     [...prog.map.entries()].filter(([, v]) => v.status === 'completed').map(([k]) => k),
   )
-  const plan = buildPlan(sonSinav, tamamlanan)
+  const plan = buildPlan(exams, tamamlanan)
   const aktifIndex = ROADMAP.findIndex((s) => s.id === plan.stageId)
 
   return (

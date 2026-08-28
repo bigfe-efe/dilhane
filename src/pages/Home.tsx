@@ -53,7 +53,7 @@ export default function Home() {
     dueCards: due.total,
     completed: tamamlanan,
     nextLesson: prog.next,
-    lastExam: exams[0] ?? null,
+    exams,
     leeches: leeches.leeches.length,
     totalLessons: LESSONS_ORDERED.length,
   })

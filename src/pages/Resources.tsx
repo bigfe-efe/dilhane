@@ -23,7 +23,7 @@ export default function ResourcesPage() {
   const tamamlanan = new Set(
     [...prog.map.entries()].filter(([, v]) => v.status === 'completed').map(([k]) => k),
   )
-  const plan = buildPlan(exams[0] ?? null, tamamlanan)
+  const plan = buildPlan(exams, tamamlanan)
   const stage = ROADMAP.find((s) => s.id === plan.stageId)
 
   return (

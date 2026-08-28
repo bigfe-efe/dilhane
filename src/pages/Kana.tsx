@@ -39,6 +39,14 @@ const PRACTICE: { to: string; glyph: string; title: string; sub: string }[] = [
   { to: '/kana-test', glyph: '試', title: 'Kendi testin', sub: 'Çıkacak harfleri sen seç' },
   { to: '/kana-kelime', glyph: '読', title: 'Kelime okuma', sub: 'Heceleyerek sök' },
   { to: '/kelimeler', glyph: '語', title: 'Kelime sözlüğü', sub: 'Anlam ve dilbilgisi notu' },
+]
+
+/** Katakana tablosundan açılan kısayollar — sınavı ve kelime listesi ayrı. */
+const PRACTICE_KATA: { to: string; glyph: string; title: string; sub: string }[] = [
+  { to: '/katakana-sinav', glyph: '終', title: 'Bitirme sınavı', sub: 'Dokuz bölüm, tam ölçüm' },
+  { to: '/katakana-kelime', glyph: '外', title: 'Kelime listesi', sub: 'Kaynağıyla birlikte' },
+  { to: '/kana-test', glyph: '試', title: 'Kendi testin', sub: 'Çıkacak harfleri sen seç' },
+  { to: '/write', glyph: '書', title: 'Yazı çalışması', sub: 'Çizgi sırası denetlensin' },
   { to: '/kana-hiz', glyph: '速', title: 'Hız testi', sub: 'Ne kadar akıcısın' },
 ]
 
@@ -121,7 +129,7 @@ export default function KanaPage() {
         <div className="stack-sm">
           <h3>Kendini dene</h3>
           <div className="grid grid-auto">
-            {PRACTICE.map((p) => (
+            {(kind === 'hiragana' ? PRACTICE : PRACTICE_KATA).map((p) => (
               <Link key={p.to} to={p.to} className="tool">
                 <span className="ja tool-glyph">{p.glyph}</span>
                 <span className="tool-title">{p.title}</span>
@@ -436,7 +444,7 @@ function KanaSheet({ k, onClose, onStep }: { k: KanaChar; onClose: () => void; o
         <div className="stack-sm">
           <h3>Kendini dene</h3>
           <div className="grid grid-auto">
-            {PRACTICE.map((p) => (
+            {(k.type === 'hiragana' ? PRACTICE : PRACTICE_KATA).map((p) => (
               <Link key={p.to} to={p.to} className="tool">
                 <span className="ja tool-glyph">{p.glyph}</span>
                 <span className="tool-title">{p.title}</span>

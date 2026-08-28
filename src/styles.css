@@ -2490,3 +2490,14 @@ ul.tight li {
   border-left-color: var(--accent);
   color: var(--accent);
 }
+
+/* Katakana kelimesinin geldigi kaynak — kelimenin karsisinda, kucuk ve soluk.
+   Vurgu kelimenin kendisinde kalmali; kaynak destek bilgisi. */
+.kata-from {
+  font-size: 0.7rem;
+  letter-spacing: 0.01em;
+  color: var(--faint);
+  text-align: right;
+  max-width: 140px;
+  line-height: 1.35;
+}

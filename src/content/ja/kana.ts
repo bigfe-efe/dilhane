@@ -296,9 +296,32 @@ export const CONFUSING_PAIRS: [string, string][] = [
   ['け', 'は'],
   ['ん', 'そ'],
   // ————— Katakana —————
+  //
+  // Katakana hiraganadan DAHA çok karışır: harfler daha az çizgiden oluşuyor,
+  // dolayısıyla ayırt edici ayrıntı daha az. シ/ツ ile ソ/ン'i ayıran şey tek
+  // bir çizginin AÇISI ve YÖNÜ — şeklin kendisi değil.
   ['シ', 'ツ'],
   ['ソ', 'ン'],
+  ['シ', 'ソ'],
+  ['ツ', 'ン'],
   ['ク', 'ワ'],
+  ['ク', 'ケ'],
+  ['ク', 'タ'],
   ['ス', 'ヌ'],
+  ['ヌ', 'メ'],
   ['マ', 'ム'],
+  ['ア', 'マ'],
+  ['ナ', 'メ'],
+  ['チ', 'テ'],
+  ['チ', 'タ'],
+  ['ウ', 'ワ'],
+  ['ウ', 'フ'],
+  ['ル', 'レ'],
+  ['レ', 'ノ'],
+  ['コ', 'ユ'],
+  ['オ', 'ホ'],
+  ['ニ', 'エ'],
+  ['セ', 'ヤ'],
+  ['ラ', 'ヲ'],
+  ['ミ', 'ラ'],
 ]

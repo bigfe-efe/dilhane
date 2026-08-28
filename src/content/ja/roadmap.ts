@@ -201,8 +201,20 @@ const SECTION_FIX: Record<string, { title: string; detail: string; link?: { to: 
   },
 }
 
-/** Sınav sonucundan haftalık plan çıkarır. */
-export function buildPlan(exam: ExamRecord | null, completedLessons: Set<string>): Plan {
+/**
+ * Sınav sonuçlarından haftalık plan çıkarır.
+ *
+ * TÜM sınav geçmişini alır, tek bir kaydı değil: artık iki tür bitirme sınavı
+ * var (hiragana ve katakana) ve "en son girilen sınav" ile "hiragana sınavı"
+ * aynı şey olmayabilir. Yalnızca `exams[0]` bakılsaydı katakana sınavına giren
+ * biri hiragana planına geri düşerdi.
+ *
+ * Liste yeniden eskiye sıralı geldiği için her türün ilki en güncelidir.
+ */
+export function buildPlan(exams: ExamRecord[], completedLessons: Set<string>): Plan {
+  const exam = exams.find((e) => e.kind === 'hiragana') ?? null
+  const kataExam = exams.find((e) => e.kind === 'katakana') ?? null
+
   // Henüz ölçüm yok
   if (!exam) {
     return {
@@ -262,14 +274,36 @@ export function buildPlan(exam: ExamRecord | null, completedLessons: Set<string>
       },
       {
         title: 'シ/ツ ve ソ/ン ayrımına ayrıca çalış',
-        detail: 'Katakana’nın en çok karıştırılan ikilileri bunlar. Fark çizgilerin yönündedir, uzunluğunda değil.',
+        detail:
+          'Katakana’nın en çok karıştırılan ikilileri bunlar. Fark çizgilerin YÖNÜNDE: シ ve ン yataydan başlar, ツ ve ソ dikey iner. Yani ilk ikisinin noktaları yan yana, son ikisininki üst üstedir.',
         link: { to: '/kana/katakana', label: 'Katakana tablosu' },
+      },
+      {
+        title: 'Katakana kelimeleri kaynağıyla oku',
+        detail:
+          'Katakana kelimeleri ezberlenmez, çözülür: コーヒー’yi sökebilen anlamı zaten bilir. Kalıbı öğren, hiç görmediğin kelimeyi de okursun.',
+        link: { to: '/katakana-kelime', label: 'Katakana kelime listesi' },
       },
       {
         title: 'Hiragana’yı bırakma',
         detail: 'Günde birkaç dakika kelime oku. Yeni alfabe öğrenirken eskisi paslanır.',
-        link: { to: '/kana-kelime', label: 'Kelime okuma' },
+        link: { to: '/kelimeler', label: 'Hiragana kelime sözlüğü' },
       },
+      kataExam
+        ? {
+            title: `Katakana sınavını tekrarla (son: %${Math.round(kataExam.percent)})`,
+            detail:
+              kataExam.percent >= 85
+                ? 'Ölçüm iyi. Dersleri bitirince bir kez daha gir, sonra Genki’ye geç.'
+                : 'Eksikleri kapatıp yeniden gir. %85 üstü katakana için yeterli sayılır — %100 beklemek gereksiz.',
+            link: { to: '/katakana-sinav', label: 'Katakana sınavı' },
+          }
+        : {
+            title: 'Katakana bitirme sınavına gir',
+            detail:
+              'Hiraganadaki sınavın aynısı, üstüne bir bölüm daha: kaynak kelime. Nerede olduğunu ölçmeden ne çalışacağını bilemezsin.',
+            link: { to: '/katakana-sinav', label: 'Sınava gir' },
+          },
     ]
     if (zayif.length) {
       const [s, p] = zayif[0]

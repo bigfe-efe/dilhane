@@ -51,7 +51,8 @@ export interface PlanContext {
   /** Tamamlanmış ders kimlikleri */
   completed: Set<string>
   nextLesson: Lesson | undefined
-  lastExam: ExamRecord | null
+  /** Bitirme sınavı geçmişi, yeniden eskiye — hiragana ve katakana karışık */
+  exams: ExamRecord[]
   leeches: number
   /** Toplam ders sayısı */
   totalLessons: number
@@ -93,7 +94,7 @@ export function buildDailyPlan(ctx: PlanContext, now = new Date()): DailyPlan {
   const daysLeft = daysUntilExam(now)
   const { kalanDers, lessonsPerWeek } = pacing(ctx.completed.size, ctx.totalLessons, daysLeft)
 
-  const rota = buildPlan(ctx.lastExam, ctx.completed)
+  const rota = buildPlan(ctx.exams, ctx.completed)
   const stage = ROADMAP.find((s) => s.id === rota.stageId)
   const tasks: DailyTask[] = []
 
