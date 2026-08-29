@@ -32,8 +32,8 @@
  * verisi ve örnek kelimeler HTML'in içine gömülür. Veri uygulamada değişirse
  * bu script yeniden çalıştırılır; iki yerde ayrı liste tutulmaz.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { join, sep } from 'node:path'
 import { deflateSync } from 'node:zlib'
 import { CONFUSING_PAIRS, HIRAGANA, KATAKANA } from '../src/content/ja/kana'
 import { ALL_KATA_WORDS, kataReading } from '../src/content/ja/katakana-words'
@@ -154,6 +154,50 @@ function build() {
   console.log(`  index.html   ${data.length} karakter · ${kb} KB`)
   console.log(`  ${ipucu} karakterde karışan çift uyarısı, ${kelime} karakterde örnek kelime`)
   console.log(`  project.json + preview.png (Wallpaper Engine için)`)
+
+  syncToWallpaperEngine()
+}
+
+/**
+ * Wallpaper Engine klasörüne de kopyalar.
+ *
+ * NEDEN: duvar kâğıdı oraya bir KOPYA olarak gidiyor. Burada üretip elle
+ * kopyalamayı unutunca ekranda eski sürüm kalıyor ve "düzelttim ama
+ * değişmedi" durumu çıkıyor — bir kez yaşandı.
+ *
+ * Yol önce DILHANE_WE_DIR ortam değişkeninden okunur; yoksa bilinen Steam
+ * konumları taranır. Kişisel yol depoya yazılmıyor. Ne yapıldığı ekrana
+ * basılıyor, sessizce bir yere dosya yazmasın.
+ */
+function syncToWallpaperEngine() {
+  const rel = join('steamapps', 'common', 'wallpaper_engine', 'projects', 'myprojects')
+  const adaylar = process.env.DILHANE_WE_DIR
+    ? [process.env.DILHANE_WE_DIR]
+    : // Sürücü kökü path.sep ile kuruluyor, elle ters bölü yazılmıyor:
+      // join('D:', 'SteamLibrary') sürücüye GÖRELİ bir yol verir (D:SteamLibrary),
+      // mutlak yol için ayıracın kendisi gerekiyor.
+      ['C:', 'D:', 'E:', 'F:'].flatMap((d) => [
+        join(d + sep, 'SteamLibrary', rel),
+        join(d + sep, 'Program Files (x86)', 'Steam', rel),
+      ])
+
+  const kok = adaylar.find((d) => existsSync(d))
+  if (!kok) {
+    console.log('')
+    console.log('Wallpaper Engine klasörü bulunamadı — kopyalanmadı.')
+    console.log('Yolu biliyorsan: DILHANE_WE_DIR=... npm run gen:katakana-wallpaper')
+    return
+  }
+
+  const hedef = join(kok, 'dilhane-katakana')
+  if (!existsSync(hedef)) mkdirSync(hedef, { recursive: true })
+  for (const f of ['index.html', 'project.json', 'preview.png']) {
+    copyFileSync(join(OUT_DIR, f), join(hedef, f))
+  }
+  console.log('')
+  console.log(`Wallpaper Engine'e kopyalandı:`)
+  console.log(`  ${hedef}`)
+  console.log(`Duvar kâğıdı açıksa Wallpaper Engine'de bir kez yeniden seç.`)
 }
 
 /** Wallpaper Engine manifest'i — klasör doğrudan içe aktarılabilsin diye. */
@@ -273,21 +317,31 @@ const TEMPLATE = String.raw`<!doctype html>
     100% { transform: translate(-2vw,2vh) scale(1.02); }
   }
 
+  /* MASAÜSTÜ GERÇEKLERİ:
+     Bu bir duvar kâğıdı, boş bir tuval değil. İki şey ekranı yiyor:
+       • Görev çubuğu — Wallpaper Engine duvar kâğıdını onun ARKASINA çizer,
+         yani alttaki ~48px görünmez. İlk sürümde örnek kelime kartının altı
+         çubuğun altında kalıyordu.
+       • Masaüstü simgeleri — üst sıra ve sağ sütun dolu olur. İlk sürümde üst
+         şerit ("DİLHANE · KATAKANA") simgelerin arkasında kalıyordu.
+     Çözüm: üst şerit tamamen kaldırıldı, içeriği alt bloğa taşındı; altta da
+     görev çubuğu kadar güvenli boşluk bırakıldı. Geriye kalan alan (orta ve
+     sol-alt) masaüstünde neredeyse her zaman boştur. */
   #app {
     position: relative; height: 100%;
     display: grid;
-    grid-template-rows: auto 1fr auto;
-    padding: 3.2vh 4vw;
+    grid-template-rows: 1fr auto auto;
+    padding: 8vh 4vw calc(3vh + 56px);
   }
 
-  /* ————— Üst şerit ————— */
-  #top { display: flex; align-items: center; gap: 1.2vw; }
-  #brand { font-size: 1.5vh; letter-spacing: .32em; text-transform: uppercase; color: var(--faint); }
-  #row { font-size: 1.9vh; color: var(--accent); letter-spacing: .04em; }
-  #count { margin-left: auto; font-size: 1.5vh; color: var(--faint); font-variant-numeric: tabular-nums; }
-  /* Kalan süre çubuğu: harfin ne zaman değişeceği belli olsun, ani geçiş
-     dikkat dağıtmasın. */
-  #bar { height: 2px; background: var(--line); border-radius: 2px; overflow: hidden; margin-top: 1.2vh; }
+  #meta { display: flex; align-items: baseline; gap: 1.4vw; }
+  #brand { font-size: 1.4vh; letter-spacing: .3em; text-transform: uppercase; color: var(--faint); }
+  #row { font-size: 1.8vh; color: var(--accent); letter-spacing: .04em; }
+  #count { font-size: 1.4vh; color: var(--faint); font-variant-numeric: tabular-nums; }
+
+  /* Kalan süre çubuğu artık EN ALTTA, görev çubuğunun hemen üstünde. Üstteyken
+     simge etiketlerinin arasında kayboluyordu. */
+  #bar { height: 2px; background: var(--line); border-radius: 2px; overflow: hidden; margin-top: 2.2vh; }
   #bar > i { display: block; height: 100%; width: 100%; background: var(--accent); transform-origin: left; }
 
   /* ————— Orta: harf ————— */
@@ -296,7 +350,9 @@ const TEMPLATE = String.raw`<!doctype html>
     justify-content: center; gap: 4vw; min-height: 0;
   }
   #glyphWrap { position: relative; display: grid; place-items: center; }
-  #glyph { height: min(54vh, 38vw); width: auto; display: block; overflow: visible; }
+  /* Harf yuksekligi ust bosluga gore kisildi: 8vh'lik ust pay simge sirasini
+     temizliyor, harf de o payi asmasin diye 48vh'e indi. */
+  #glyph { height: min(48vh, 34vw); width: auto; display: block; overflow: visible; }
   #glyph path {
     fill: none; stroke: var(--text);
     stroke-width: 5.5; stroke-linecap: round; stroke-linejoin: round;
@@ -307,7 +363,7 @@ const TEMPLATE = String.raw`<!doctype html>
      Bilerek soluk: asıl gösterilen katakana, bu yalnızca bağ kurdurur. */
   #anchor { display: grid; gap: .8vh; justify-items: center; }
   #anchorKana {
-    font-size: 15vh; line-height: 1; color: var(--faint);
+    font-size: 13vh; line-height: 1; color: var(--faint);
     font-family: 'Yu Gothic','Hiragino Kaku Gothic ProN','Noto Sans JP','MS Gothic',Meiryo,sans-serif;
   }
   #anchorLabel { font-size: 1.4vh; color: var(--faint); letter-spacing: .1em; }
@@ -349,23 +405,14 @@ const TEMPLATE = String.raw`<!doctype html>
 
   /* Geçiş: içerik topluca solup yeniden beliriyor. Tek tek animasyon
      dikkati parçalıyordu. */
-  #app.is-out #stage, #app.is-out #info, #app.is-out #row { opacity: 0; transform: translateY(.8vh); }
-  #stage, #info, #row { transition: opacity .45s ease, transform .45s ease; }
+  #app.is-out #stage, #app.is-out #info { opacity: 0; transform: translateY(.8vh); }
+  #stage, #info { transition: opacity .45s ease, transform .45s ease; }
 </style>
 </head>
 <body>
 <div id="glow"></div>
 
 <div id="app">
-  <div>
-    <div id="top">
-      <span id="brand">Dilhane · Katakana</span>
-      <span id="row"></span>
-      <span id="count"></span>
-    </div>
-    <div id="bar"><i id="barFill"></i></div>
-  </div>
-
   <div id="stage">
     <div id="glyphWrap"><svg id="glyph" viewBox="0 0 109 109" aria-hidden="true"></svg></div>
     <div id="anchor">
@@ -375,6 +422,11 @@ const TEMPLATE = String.raw`<!doctype html>
   </div>
 
   <div id="info">
+    <div id="meta">
+      <span id="brand">Dilhane · Katakana</span>
+      <span id="row"></span>
+      <span id="count"></span>
+    </div>
     <div id="readingRow">
       <span id="romaji"></span>
       <span id="tr"></span>
@@ -382,6 +434,8 @@ const TEMPLATE = String.raw`<!doctype html>
     </div>
     <div id="cards"></div>
   </div>
+
+  <div id="bar"><i id="barFill"></i></div>
 </div>
 
 <script>

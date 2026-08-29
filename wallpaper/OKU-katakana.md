@@ -75,5 +75,14 @@ Kana tablosu, örnek kelimeler veya çizgi verisi uygulamada değişirse:
 npm run gen:katakana-wallpaper
 ```
 
-Duvar kâğıdı HTML'i yeniden üretilir. İki yerde ayrı liste tutulmuyor —
-veri uygulamadan geliyor.
+Duvar kâğıdı HTML'i yeniden üretilir **ve Wallpaper Engine klasörüne de
+kopyalanır** — orada duran bir kopya olduğu için elle kopyalamayı unutunca
+ekranda eski sürüm kalıyordu.
+
+Klasör bulunamazsa yolu kendin verebilirsin:
+
+```bash
+DILHANE_WE_DIR="D:\SteamLibrary\steamapps\common\wallpaper_engine\projects\myprojects" npm run gen:katakana-wallpaper
+```
+
+İki yerde ayrı liste tutulmuyor — veri uygulamadan geliyor.
