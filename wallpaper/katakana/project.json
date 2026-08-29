@@ -1,0 +1,15 @@
+{
+  "title": "Dilhane — Katakana",
+  "description": "Katakana harfleri sırayla, çizgi sırası canlandırmasıyla. Okunuş, hiragana karşılığı, karışan çift uyarısı ve örnek kelime her harfle birlikte görünür.",
+  "type": "web",
+  "file": "index.html",
+  "preview": "preview.png",
+  "visibility": "private",
+  "tags": [
+    "Abstract",
+    "Minimalistic"
+  ],
+  "general": {
+    "properties": {}
+  }
+}

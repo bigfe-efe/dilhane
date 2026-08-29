@@ -12,6 +12,7 @@
     "gen:content": "tsx scripts/gen-content.ts",
     "gen:strokes": "tsx scripts/gen-strokes.ts",
     "gen:wallpaper": "tsx scripts/gen-wallpaper.ts",
+    "gen:katakana-wallpaper": "tsx scripts/gen-katakana-wallpaper.ts",
     "gen:genkou": "tsx scripts/gen-genkou.ts",
     "bundle": "tsx scripts/gen-bundle.ts",
     "wallpaper:server": "node scripts/wallpaper-server.mjs",
