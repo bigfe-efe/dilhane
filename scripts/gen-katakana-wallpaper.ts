@@ -130,9 +130,12 @@ function build() {
       h: hiraByRomaji.get(k.romaji) ?? '',
       // Çizgi yolları — birden çok karakterli yōon'da yan yana dizilir
       p: chars.flatMap((ch, i) => (strokes[ch]?.s ?? []).map((d) => ({ d, ox: i * 109 }))),
-      // Çizgi başlangıç noktaları — numaralı nokta olarak çizilir
-      n: chars.flatMap((ch, i) =>
-        (strokes[ch]?.n ?? []).map(([x, y]) => ({ x: x + i * 109, y })),
+      // Çizgi başlangıç noktaları — ekranda numaralı daire olarak çizilir.
+      // Numara HER KARAKTERDE 1'den başlar: キャ gibi iki karakterli yōon'da
+      // 1-2-3-4-5 diye devam etseydi ikinci karakterin kendi çizgi sırası
+      // yanlış görünürdü.
+      n: chars.flatMap((ch, ci) =>
+        (strokes[ch]?.n ?? []).map(([x, y], si) => ({ x: x + ci * 109, y, i: si + 1 })),
       ),
       w: chars.length,
       e: es,
@@ -357,7 +360,21 @@ const TEMPLATE = String.raw`<!doctype html>
     fill: none; stroke: var(--text);
     stroke-width: 5.5; stroke-linecap: round; stroke-linejoin: round;
   }
-  #glyph circle { fill: var(--accent); opacity: 0; }
+  /* Numaralı başlangıç noktası. Numara koyu, daire vurgu renginde — koyu
+     zeminde en okunur birleşim bu. Rakam çizgiden büyük görünmesin diye
+     daire yarıçapı çizgi kalınlığına yakın tutuldu. */
+  #glyph g.dot { opacity: 0; }
+  #glyph g.dot circle { fill: var(--accent); }
+  #glyph g.dot text {
+    fill: #100e0d;
+    font-size: 8px;
+    font-weight: 700;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    text-anchor: middle;
+    dominant-baseline: central;
+    /* Rakam SVG ölçeğinde çizilir; kullanıcı seçemesin diye devre dışı */
+    pointer-events: none;
+  }
 
   /* Hiragana karşılığı — "bunu zaten biliyorsun" çıpası.
      Bilerek soluk: asıl gösterilen katakana, bu yalnızca bağ kurdurur. */
@@ -496,13 +513,29 @@ function drawGlyph(item) {
     return el;
   });
 
+  // Başlangıç noktaları NUMARALI. Önce hepsi aynı boş daireydi ve kaçıncı
+  // çizgi olduğu ancak canlandırmayı baştan izleyerek anlaşılıyordu; duvar
+  // kâğıdına ortasından bakan biri sırayı kaçırıyordu. Numara, tek bakışta
+  // "buradan başla, sonra şuraya" diyor.
+  const ns = 'http://www.w3.org/2000/svg';
   const dots = item.n.map((n) => {
-    const el = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    el.setAttribute('cx', n.x);
-    el.setAttribute('cy', n.y);
-    el.setAttribute('r', '3.4');
-    glyph.appendChild(el);
-    return el;
+    const g = document.createElementNS(ns, 'g');
+    g.setAttribute('class', 'dot');
+
+    const c = document.createElementNS(ns, 'circle');
+    c.setAttribute('cx', n.x);
+    c.setAttribute('cy', n.y);
+    c.setAttribute('r', '6.4');
+    g.appendChild(c);
+
+    const t = document.createElementNS(ns, 'text');
+    t.setAttribute('x', n.x);
+    t.setAttribute('y', n.y);
+    t.textContent = n.i;
+    g.appendChild(t);
+
+    glyph.appendChild(g);
+    return g;
   });
 
   // Toplam ~1.8 saniye: harfin ekranda kaldığı sürenin dörtte biri kadar.
@@ -621,9 +654,13 @@ function show() {
     barFill.style.transform = 'scaleX(0)';
   });
 
+  // İKİ zamanlayıcı da aynı değişkende tutuluyor. Önce iç setTimeout takip
+  // edilmiyordu: sekme görünürlüğü tam solma anında değişirse dış zamanlayıcı
+  // temizleniyor ama iç olan yine de show() çağırıyor ve iki döngü birden
+  // dönmeye başlıyordu — harfler beklenenin iki katı hızda geçiyordu.
   timer = setTimeout(() => {
     app.classList.add('is-out');
-    setTimeout(show, FADE);
+    timer = setTimeout(show, FADE);
   }, hold);
 }
 
