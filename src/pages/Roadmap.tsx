@@ -3,6 +3,8 @@ import { Bar, TopBar } from '@/components/ui'
 import { Icon } from '@/components/icons'
 import { ROADMAP, buildPlan, stageProgress } from '@/content/ja/roadmap'
 import { SECTION_TR, type Section } from '@/content/ja/exam'
+import { MONDAI, type MondaiId } from '@/content/ja/n5-mock'
+import type { ExamRecord } from '@/db/db'
 import { useExams, useLessonProgress } from '@/db/hooks'
 
 // Yol haritası ve kişisel çalışma planı.
@@ -138,7 +140,7 @@ export default function RoadmapPage() {
                   <div className="row">
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div className="card-title" style={{ fontSize: '0.95rem' }}>
-                        Hiragana bitirme sınavı
+                        {SINAV_ADI[e.kind] ?? e.kind}
                       </div>
                       <div className="card-sub">
                         {new Date(e.at).toLocaleDateString('tr-TR', {
@@ -167,12 +169,28 @@ export default function RoadmapPage() {
                   </div>
                 </div>
               ))}
-              {exams.length > 1 && (
-                <div className="tiny faint">
-                  İlk sınavında %{Math.round(exams[exams.length - 1].percent)} almıştın, sonuncuda %
-                  {Math.round(exams[0].percent)}.
-                </div>
-              )}
+              {/*
+                Karşılaştırma TÜR İÇİNDE yapılır. Üç ayrı sınav var (hiragana,
+                katakana, N5 denemesi) ve birinin yüzdesini ötekiyle kıyaslamak
+                anlamsız — N5 denemesinden %30 almak, hiragana sınavından %30
+                almakla aynı şey değil.
+              */}
+              {(() => {
+                const gelisim = (Object.keys(SINAV_ADI) as ExamRecord['kind'][])
+                  .map((k) => ({ k, list: exams.filter((e) => e.kind === k) }))
+                  .filter((g) => g.list.length > 1)
+                if (!gelisim.length) return null
+                return (
+                  <div className="tiny faint stack-sm">
+                    {gelisim.map(({ k, list }) => (
+                      <div key={k}>
+                        {SINAV_ADI[k]}: ilk denemende %{Math.round(list[list.length - 1].percent)},
+                        sonuncuda %{Math.round(list[0].percent)}.
+                      </div>
+                    ))}
+                  </div>
+                )
+              })()}
             </>
           )}
         </div>
@@ -207,8 +225,22 @@ export default function RoadmapPage() {
 }
 
 /** Kayıtlı sonuçtaki bölüm anahtarı bilinmiyor olabilir (eski kayıt), o yüzden korumalı. */
+/** Sınav türünün ekranda görünen adı. */
+const SINAV_ADI: Record<ExamRecord['kind'], string> = {
+  hiragana: 'Hiragana bitirme sınavı',
+  katakana: 'Katakana bitirme sınavı',
+  'n5-deneme': 'N5 deneme sınavı',
+}
+
+/**
+ * Bölüm adı.
+ *
+ * Kana sınavlarının bölümleri SECTION_TR'de; N5 denemesininkiler MONDAI'de.
+ * İkisi de bulunamazsa ham anahtar gösterilir — bilinmeyen bir anahtarı boş
+ * bırakmak, geçmişte ne olduğunu tamamen gizlerdi.
+ */
 function sectionAdi(s: string): string {
-  return SECTION_TR[s as Section]?.title ?? s
+  return SECTION_TR[s as Section]?.title ?? MONDAI[s as MondaiId]?.title ?? s
 }
 
 function pctColor(p: number): string {

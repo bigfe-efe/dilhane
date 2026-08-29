@@ -13,7 +13,8 @@ import {
   type SectionId,
 } from '@/content/ja/n5-mock'
 import { daysUntilExam } from '@/content/ja/study-plan'
-import { bumpStat } from '@/db/db'
+import { bumpStat, db } from '@/db/db'
+import { useExams } from '@/db/hooks'
 
 // JLPT N5 deneme sınavı.
 //
@@ -28,6 +29,9 @@ import { bumpStat } from '@/db/db'
 type Faz = 'kurulum' | 'bolum' | 'ara' | 'sonuc'
 
 export default function N5MockPage() {
+  // Yalnızca N5 denemeleri — tablo üç sınav türünü birden tutuyor
+  const gecmis = useExams().filter((e) => e.kind === 'n5-deneme')
+
   const [faz, setFaz] = useState<Faz>('kurulum')
   const [plan, setPlan] = useState<MockSectionPlan[]>([])
   const [bolumIdx, setBolumIdx] = useState(0)
@@ -79,6 +83,7 @@ export default function N5MockPage() {
       const hepsi = plan.flatMap((b) => b.questions)
       const r = scoreMock(cevaplar, hepsi)
       bumpStat({ reviews: hepsi.length, correct: r.correct, ja: 1 })
+      void kaydet(r, hepsi)
       setFaz('sonuc')
       return
     }
@@ -86,6 +91,39 @@ export default function N5MockPage() {
     setSoruIdx(0)
     setKalanSn(plan[yeni].minutes * 60)
     setFaz('bolum')
+  }
+
+  /**
+   * Denemeyi kalıcı kaydeder.
+   *
+   * NEDEN: sonuç ekranı kapanınca deneme uçup gidiyordu; iki deneme arasındaki
+   * farkı görmenin yolu yoktu. Asıl değeri olan şey tek bir puan değil, aynı
+   * sınavı aylar arayla verip mondai bazında NEYİN düzeldiğini görmek.
+   *
+   * Kayıt başarısız olsa bile sonuç ekranı açılmalı — o yüzden sessizce geçiyor
+   * ve `void` ile beklenmiyor.
+   */
+  const kaydet = async (r: ReturnType<typeof scoreMock>, hepsi: MockQ[]) => {
+    try {
+      await db.exams.put({
+        at: Date.now(),
+        kind: 'n5-deneme',
+        // Ölçekli puanı DEĞİL yüzdeyi saklıyoruz: 120'lik ölçek yalnızca bu
+        // sınava özgü, oysa `exams` tablosu üç sınav türünü birden tutuyor.
+        percent: (r.correct / Math.max(1, r.total)) * 100,
+        correct: r.correct,
+        total: r.total,
+        sections: Object.fromEntries(
+          r.byMondai.map((m) => [m.mondai, (m.correct / Math.max(1, m.total)) * 100]),
+        ),
+        // Yanlış çıkan soruların mondai'leri — zayıf soru tipi buradan çıkar
+        weakChars: hepsi.filter((q) => cevaplar.get(q.id) !== q.answer).map((q) => q.mondai),
+        full: true,
+        withWriting: false,
+      })
+    } catch {
+      // Sessiz geç — sonucu göstermek kaydetmekten önemli
+    }
   }
 
   const isaretle = (q: MockQ, i: number) => {
@@ -145,6 +183,44 @@ export default function N5MockPage() {
             </Link>{' '}
             ayrıca çalışman gerekiyor.
           </div>
+
+          {/*
+            Önceki denemeler burada, sınavın hemen başında duruyor. Sebebi:
+            deneme sınavının değeri tek bir puanda değil, aynı sınavı aylar
+            arayla verip farkı görmekte. Rota sayfasında da var ama insan
+            sınava girerken oraya bakmıyor.
+          */}
+          {gecmis.length > 0 && (
+            <div className="card stack-sm">
+              <div className="row">
+                <div className="card-title" style={{ fontSize: '0.95rem' }}>
+                  Önceki denemelerin
+                </div>
+                <div className="spacer" />
+                <span className="tiny faint tabular">{gecmis.length} deneme</span>
+              </div>
+              {gecmis.slice(0, 5).map((e) => (
+                <div key={e.at} className="row tiny">
+                  <span className="faint">
+                    {new Date(e.at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })}
+                  </span>
+                  <div className="spacer" />
+                  <span className="faint tabular">
+                    {e.correct}/{e.total}
+                  </span>
+                  <span className="tabular" style={{ minWidth: 46, textAlign: 'right' }}>
+                    {Math.round((e.percent / 100) * 120)} / 120
+                  </span>
+                </div>
+              ))}
+              {gecmis.length > 1 && (
+                <div className="tiny faint">
+                  İlkinde {Math.round((gecmis[gecmis.length - 1].percent / 100) * 120)}, sonuncuda{' '}
+                  {Math.round((gecmis[0].percent / 100) * 120)} puan aldın.
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="card stack-sm">
             <button className={`row card--link${sureli ? '' : ' is-off'}`} onClick={() => setSureli(!sureli)} style={{ background: 'none', border: 0, padding: 0, cursor: 'pointer', textAlign: 'left' }}>

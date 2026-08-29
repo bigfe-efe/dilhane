@@ -99,7 +99,7 @@ export interface Note {
 export interface ExamRecord {
   /** Sınavın bittiği an — kimlik olarak da bunu kullanıyoruz */
   at: number
-  kind: 'hiragana' | 'katakana'
+  kind: 'hiragana' | 'katakana' | 'n5-deneme'
   percent: number
   correct: number
   total: number
