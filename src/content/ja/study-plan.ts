@@ -18,12 +18,32 @@ import { ROADMAP, buildPlan } from './roadmap'
 // ÖNEM SIRASINA dizilir — yorulup bıraktığında en kritik olanı yapmış olursun.
 // Sıra şu: tekrar → yeni ders → alıştırma → yazma → ekstra.
 
-/** JLPT N5 sınav tarihi. Aralık oturumu. */
-export const EXAM_DATE = new Date(2026, 11, 6) // 6 Aralık 2026
+/**
+ * Sınav tarihi artık koda gömülü DEĞİL, ayarlardan geliyor ve boş olabilir.
+ *
+ * NEDEN: tarih sabit olduğu sürece sınav ertelendiğinde uygulama yanlış bir
+ * güne geri sayıyor ve o güne göre "haftada şu kadar ders bitir" diye tempo
+ * dayatıyordu. Tarihi olmayan biri için geri sayım anlamsızdır; anlamlı olan
+ * ilerlemedir. Bu yüzden `null` geçerli bir durum ve her yerde ele alınıyor.
+ *
+ * Tarih girildiğinde eski davranışın tamamı geri gelir.
+ */
+export const EXAM_DATE_KEY = 'exam.date'
 
-export function daysUntilExam(now = new Date()): number {
+/** Ayarlarda saklanan 'YYYY-MM-DD' metnini yerel tarihe çevirir. */
+export function parseExamDate(iso: string | null | undefined): Date | null {
+  if (!iso) return null
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso)
+  if (!m) return null
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
+/** Sınava kalan gün. Tarih yoksa null — "0 gün kaldı" yanlış olurdu. */
+export function daysUntilExam(examDate: Date | null, now = new Date()): number | null {
+  if (!examDate) return null
   const a = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const b = new Date(EXAM_DATE.getFullYear(), EXAM_DATE.getMonth(), EXAM_DATE.getDate())
+  const b = new Date(examDate.getFullYear(), examDate.getMonth(), examDate.getDate())
   return Math.round((b.getTime() - a.getTime()) / 86_400_000)
 }
 
@@ -53,6 +73,8 @@ export interface PlanContext {
   nextLesson: Lesson | undefined
   /** Bitirme sınavı geçmişi, yeniden eskiye — hiragana ve katakana karışık */
   exams: ExamRecord[]
+  /** Hedeflenen sınav günü; belirlenmemişse null */
+  examDate: Date | null
   leeches: number
   /** Toplam ders sayısı */
   totalLessons: number
@@ -62,10 +84,10 @@ export interface DailyPlan {
   tasks: DailyTask[]
   /** Toplam tahmini süre */
   minutes: number
-  /** Sınava kalan gün */
-  daysLeft: number
-  /** Tempo: haftada kaç ders bitmeli */
-  lessonsPerWeek: number
+  /** Sınava kalan gün; tarih belirlenmemişse null */
+  daysLeft: number | null
+  /** Tempo: haftada kaç ders bitmeli. Sınav tarihi yoksa null. */
+  lessonsPerWeek: number | null
   /** Programa göre durumun */
   pace: { state: 'ahead' | 'ontrack' | 'behind'; text: string }
   /** Bugünün tek cümlelik odağı */
@@ -80,8 +102,16 @@ export interface DailyPlan {
  * Son üç haftayı tekrar ve deneme sınavına ayırıyoruz — yeni konu öğrenerek
  * sınava girmek işe yaramaz, son dönem pekiştirme dönemidir.
  */
-function pacing(completed: number, total: number, daysLeft: number) {
+/**
+ * Tempo hesabı.
+ *
+ * Tarih yoksa "haftada kaç ders" diye bir cevap YOKTUR — uydurmak yerine null
+ * dönülüyor. Son üç hafta tekrar ve deneme için ayrılıyor, o yüzden çalışma
+ * günü sayısından 21 düşülüyor.
+ */
+function pacing(completed: number, total: number, daysLeft: number | null) {
   const kalanDers = Math.max(0, total - completed)
+  if (daysLeft === null) return { kalanDers, lessonsPerWeek: null }
   const calismaGunu = Math.max(1, daysLeft - 21)
   const hafta = calismaGunu / 7
   const gereken = kalanDers / Math.max(1, hafta)
@@ -91,7 +121,7 @@ function pacing(completed: number, total: number, daysLeft: number) {
 // ————————————————————————— Plan üretimi —————————————————————————
 
 export function buildDailyPlan(ctx: PlanContext, now = new Date()): DailyPlan {
-  const daysLeft = daysUntilExam(now)
+  const daysLeft = daysUntilExam(ctx.examDate, now)
   const { kalanDers, lessonsPerWeek } = pacing(ctx.completed.size, ctx.totalLessons, daysLeft)
 
   const rota = buildPlan(ctx.exams, ctx.completed)
@@ -243,7 +273,20 @@ export function buildDailyPlan(ctx: PlanContext, now = new Date()): DailyPlan {
 
   // ————— Tempo değerlendirmesi —————
   let pace: DailyPlan['pace']
-  if (kalanDers === 0) {
+  if (lessonsPerWeek === null) {
+    // Sınav tarihi yok: tempo yerine İLERLEME söyleniyor. "Geride kaldın"
+    // demek için bir son tarih gerekir; olmayınca tek dürüst cevap nerede
+    // olduğundur.
+    // Sayıyı tekrar etme: ders sayısı zaten kartın başında büyük yazıyor.
+    // Buradaki cümle o sayının ne anlama geldiğini söylemeli.
+    pace = {
+      state: 'ontrack',
+      text:
+        kalanDers === 0
+          ? 'Bütün dersler bitti. Sınav tarihi girersen tempo hesabı da geri gelir.'
+          : 'Tempo yerine ilerleme gösteriliyor. Ayarlar’dan bir sınav tarihi girersen haftada kaç ders bitirmen gerektiği hesaplanır.',
+    }
+  } else if (kalanDers === 0) {
     pace = { state: 'ahead', text: 'Bütün dersler bitti. Kalan süre tekrar ve deneme için.' }
   } else if (lessonsPerWeek <= 2) {
     pace = { state: 'ahead', text: `Haftada ${lessonsPerWeek} ders yeterli — rahat bir tempo.` }

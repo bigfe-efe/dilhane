@@ -16,7 +16,9 @@ import {
 } from '@/lib/tts'
 import { jaToTurkishSpeech } from '@/lib/ja-phonetic'
 import { sttAvailable } from '@/lib/stt'
-import { db, exportAll, importAll } from '@/db/db'
+import { db, exportAll, importAll, setSetting } from '@/db/db'
+import { useExamDate } from '@/db/hooks'
+import { EXAM_DATE_KEY, daysUntilExam } from '@/content/ja/study-plan'
 
 const SAMPLE: Record<Lang, string> = {
   ja: 'こんにちは。日本語を勉強しています。',
@@ -129,6 +131,8 @@ export default function SettingsPage() {
 
       <div className="page stack-lg" key={tick}>
         {msg && <div className="feedback feedback--ok">{msg}</div>}
+
+        <ExamDatePanel />
 
         {(['ja'] as Lang[]).map((l) => {
           const voices = voicesFor(l)
@@ -280,5 +284,67 @@ export default function SettingsPage() {
         </div>
       </div>
     </>
+  )
+}
+
+/**
+ * Sınav tarihi ayarı.
+ *
+ * NEDEN AYARDA: tarih koda gömülüyken sınav ertelendiğinde uygulama ölü bir
+ * güne geri sayıyor ve o güne göre "haftada şu kadar ders" diye tempo
+ * dayatıyordu. Artık boş bırakılabiliyor; boşken geri sayım yerine ilerleme
+ * gösteriliyor. Tarih girilince eski davranışın tamamı geri gelir.
+ */
+function ExamDatePanel() {
+  const examDate = useExamDate()
+  const [msg, setMsg] = useState('')
+
+  const iso = examDate
+    ? `${examDate.getFullYear()}-${String(examDate.getMonth() + 1).padStart(2, '0')}-${String(
+        examDate.getDate(),
+      ).padStart(2, '0')}`
+    : ''
+
+  const kaydet = async (v: string) => {
+    await setSetting(EXAM_DATE_KEY, v || null)
+    setMsg(v ? 'Tarih kaydedildi — geri sayım ve tempo hesabı açıldı.' : 'Tarih silindi.')
+  }
+
+  const kalan = daysUntilExam(examDate)
+
+  return (
+    <div className="card stack-sm">
+      <div className="row">
+        <div className="card-title" style={{ flex: 1 }}>
+          Sınav tarihi
+        </div>
+        {kalan !== null && kalan >= 0 && (
+          <Badge tone="accent">{kalan} gün</Badge>
+        )}
+      </div>
+
+      <div className="card-sub">
+        Bir tarih girersen ana sayfa geri sayıma geçer ve haftalık ders temposunu buna göre hesaplar.
+        Boş bırakırsan tempo yerine ilerleme gösterilir — sınav tarihi yokken “geride kaldın”
+        diyebilmek için bir ölçü yok.
+      </div>
+
+      <div className="row" style={{ gap: 10, flexWrap: 'wrap' }}>
+        <input
+          type="date"
+          className="romaji-live-input"
+          value={iso}
+          onChange={(e) => void kaydet(e.target.value)}
+          style={{ flex: 1, minWidth: 180 }}
+        />
+        {iso && (
+          <button className="btn btn--sm btn--ghost" onClick={() => void kaydet('')}>
+            Temizle
+          </button>
+        )}
+      </div>
+
+      {msg && <div className="tiny" style={{ color: 'var(--ok)' }}>{msg}</div>}
+    </div>
   )
 }

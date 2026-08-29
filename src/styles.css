@@ -3337,3 +3337,38 @@ ul.tight li {
   font-weight: 600;
   color: var(--ok);
 }
+
+/* Kenar cubugu durum kutusu — tarih varsa geri sayim, yoksa ilerleme.
+   Ilerleme hali tiklanabilir oldugu icin baglanti gorunumu aliyor. */
+@media (min-width: 1080px) {
+  .nav-foot--link {
+    display: block;
+    transition: border-color 0.14s, background 0.14s;
+  }
+  .nav-foot--link:hover {
+    border-color: var(--accent-line);
+    background: var(--surface-3);
+  }
+  .nav-foot-stage {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .nav-foot-glyph {
+    font-size: 1.1rem;
+    color: var(--accent);
+  }
+  .nav-foot-bar {
+    height: 4px;
+    border-radius: 999px;
+    background: var(--surface-3);
+    overflow: hidden;
+    margin: 7px 0 5px;
+  }
+  .nav-foot-bar > i {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+    border-radius: 999px;
+  }
+}

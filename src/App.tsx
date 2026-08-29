@@ -35,6 +35,8 @@ import StatsPage from '@/pages/Stats'
 import SettingsPage from '@/pages/Settings'
 import MorePage from '@/pages/More'
 import { daysUntilExam } from '@/content/ja/study-plan'
+import { ROADMAP, buildPlan, stageProgress } from '@/content/ja/roadmap'
+import { useExamDate, useExams, useLessonProgress } from '@/db/hooks'
 
 // Uygulama tek dillidir (Japonca), bu yüzden rotalarda dil parametresi yoktur.
 // Eskiden /lessons/:lang gibi yollar vardı; ikinci dil kaldırılınca sadeleşti.
@@ -55,19 +57,55 @@ const NAV: { to: string; icon: IconName; label: string; end?: boolean }[] = [
 ]
 
 /**
- * Kenar çubuğunun dibindeki geri sayım.
+ * Kenar çubuğunun dibindeki durum kutusu.
  *
- * Ayrı bir bileşen çünkü her sayfada duruyor ve tarih değişimini kendi
- * hesaplıyor; App'i yeniden çizdirmeye gerek yok.
+ * Sınav tarihi VARSA geri sayım, YOKSA ilerleme gösterir.
+ *
+ * Neden ikisi: tarih yokken geri sayım anlamsız — sınav ertelendiğinde
+ * uygulama ölü bir güne geri sayıyor ve o güne göre tempo dayatıyordu.
+ * İlerleme ise her zaman doğru bir cevap: hangi aşamadasın ve ne kadarı bitti.
  */
-function ExamCountdown() {
-  const kalan = daysUntilExam()
-  if (kalan < 0) return null
+function ExamStatus() {
+  const examDate = useExamDate()
+  const exams = useExams()
+  const prog = useLessonProgress()
+
+  const kalan = daysUntilExam(examDate)
+  if (kalan !== null && kalan >= 0) {
+    return (
+      <div className="nav-foot">
+        <div className="nav-foot-num tabular">{kalan}</div>
+        <div className="nav-foot-label">
+          gün kaldı · {examDate!.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })}
+        </div>
+      </div>
+    )
+  }
+
+  const tamamlanan = new Set(
+    [...prog.map.entries()].filter(([, v]) => v.status === 'completed').map(([k]) => k),
+  )
+  const plan = buildPlan(exams, tamamlanan)
+  const stage = ROADMAP.find((s) => s.id === plan.stageId)
+  if (!stage) return null
+
+  const yuzde = Math.round(stageProgress(stage, tamamlanan))
+  const biten = stage.lessonIds.filter((id) => tamamlanan.has(id)).length
+
   return (
-    <div className="nav-foot">
-      <div className="nav-foot-num tabular">{kalan}</div>
-      <div className="nav-foot-label">gün kaldı · JLPT N5</div>
-    </div>
+    <NavLink to="/rota" className="nav-foot nav-foot--link">
+      <div className="nav-foot-stage">
+        <span className="ja nav-foot-glyph">{stage.glyph}</span>
+        <span className="nav-foot-num tabular">%{yuzde}</span>
+      </div>
+      <div className="nav-foot-bar">
+        <i style={{ width: `${Math.max(3, yuzde)}%` }} />
+      </div>
+      <div className="nav-foot-label">
+        {stage.title}
+        {stage.lessonIds.length > 0 && ` · ${biten}/${stage.lessonIds.length} ders`}
+      </div>
+    </NavLink>
   )
 }
 
@@ -146,7 +184,7 @@ export default function App() {
             </NavLink>
           ))}
 
-          <ExamCountdown />
+          <ExamStatus />
         </nav>
       )}
     </div>

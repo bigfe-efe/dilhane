@@ -14,7 +14,7 @@ import {
 } from '@/content/ja/n5-mock'
 import { daysUntilExam } from '@/content/ja/study-plan'
 import { bumpStat, db } from '@/db/db'
-import { useExams } from '@/db/hooks'
+import { useExamDate, useExams } from '@/db/hooks'
 
 // JLPT N5 deneme sınavı.
 //
@@ -31,6 +31,7 @@ type Faz = 'kurulum' | 'bolum' | 'ara' | 'sonuc'
 export default function N5MockPage() {
   // Yalnızca N5 denemeleri — tablo üç sınav türünü birden tutuyor
   const gecmis = useExams().filter((e) => e.kind === 'n5-deneme')
+  const examDate = useExamDate()
 
   const [faz, setFaz] = useState<Faz>('kurulum')
   const [plan, setPlan] = useState<MockSectionPlan[]>([])
@@ -139,7 +140,14 @@ export default function N5MockPage() {
     const toplam = buildMock().reduce((a, b) => a + b.questions.length, 0)
     return (
       <>
-        <TopBar title="N5 deneme sınavı" sub={`${daysUntilExam()} gün kaldı`} back="/calis" />
+        <TopBar
+          title="N5 deneme sınavı"
+          sub={(() => {
+            const k = daysUntilExam(examDate)
+            return k === null ? 'Sınav tarihi belirlenmedi' : `${k} gün kaldı`
+          })()}
+          back="/calis"
+        />
         <div className="page stack-lg lang-ja">
           <div className="card card--accent stack-sm">
             <div className="card-title">Gerçek sınav nasıl işliyor?</div>

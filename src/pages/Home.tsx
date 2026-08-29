@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Bar, TopBar } from '@/components/ui'
 import { Icon, type IconName } from '@/components/icons'
-import { useDailyDone, useDailyHistory, useDueCounts, useExams, useLeeches, useLessonProgress, useToday } from '@/db/hooks'
+import { useDailyDone, useDailyHistory, useDueCounts, useExamDate, useExams, useLeeches, useLessonProgress, useToday } from '@/db/hooks'
 import { db, todayKey } from '@/db/db'
 import { LESSONS_ORDERED } from '@/content'
 import { buildDailyPlan, type DailyTask, type TaskKind } from '@/content/ja/study-plan'
@@ -43,6 +43,7 @@ export default function Home() {
   const exams = useExams()
   const yapilan = useDailyDone(gun)
   const gecmis = useDailyHistory(14)
+  const examDate = useExamDate()
 
   const tamamlanan = new Set(
     [...prog.map.entries()].filter(([, v]) => v.status === 'completed').map(([k]) => k),
@@ -54,6 +55,7 @@ export default function Home() {
     completed: tamamlanan,
     nextLesson: prog.next,
     exams,
+    examDate,
     leeches: leeches.leeches.length,
     totalLessons: LESSONS_ORDERED.length,
   })
@@ -96,13 +98,36 @@ export default function Home() {
             <span className="ja home-mark">日本語</span>
             <div className="spacer" />
             <span className={`badge tiny badge--${plan.pace.state === 'behind' ? 'bad' : 'accent'}`}>
-              JLPT N5
+              {plan.daysLeft !== null ? 'JLPT N5' : 'Hedef belirlenmedi'}
             </span>
           </div>
 
+          {/*
+            Sınav tarihi varsa geri sayım, yoksa ilerleme. Ölü bir tarihe geri
+            saymak yanlış tempo dayatıyordu; tarih yokken doğru olan tek şey
+            nerede olduğun.
+          */}
           <div className="row" style={{ alignItems: 'baseline', gap: 8, marginTop: 14 }}>
-            <span className="countdown tabular">{plan.daysLeft}</span>
-            <span className="card-sub">gün kaldı · 6 Aralık 2026</span>
+            {plan.daysLeft !== null ? (
+              <>
+                <span className="countdown tabular">{plan.daysLeft}</span>
+                <span className="card-sub">
+                  gün kaldı ·{' '}
+                  {examDate!.toLocaleDateString('tr-TR', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  })}
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="countdown tabular">
+                  {prog.completed}/{prog.total}
+                </span>
+                <span className="card-sub">ders bitti</span>
+              </>
+            )}
           </div>
 
           <div className="card-sub" style={{ lineHeight: 1.55, marginTop: 6 }}>

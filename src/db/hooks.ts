@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db, getStreak, todayKey, type Card } from './db'
 import { leechLevel } from '@/lib/srs'
 import { LESSONS, LESSONS_ORDERED } from '@/content'
+import { EXAM_DATE_KEY, parseExamDate } from '@/content/ja/study-plan'
 
 /** Tekrarı gelmiş kart sayıları. */
 export function useDueCounts() {
@@ -162,5 +163,21 @@ export function useStatsRange(days = 30) {
       }
       return out
     }, [days]) ?? []
+  )
+}
+
+/**
+ * Hedeflenen sınav günü — ayarlardan, canlı.
+ *
+ * `null` geçerli bir durum: sınav tarihi belirlenmemiş olabilir (ertelenmiş
+ * ya da henüz karar verilmemiş). O zaman uygulama geri sayım yerine ilerleme
+ * gösteriyor; sahte bir tarihe geri saymak yanlış tempo dayatıyordu.
+ */
+export function useExamDate(): Date | null {
+  return (
+    useLiveQuery(async () => {
+      const row = await db.settings.get(EXAM_DATE_KEY)
+      return parseExamDate(row?.value as string | undefined)
+    }, []) ?? null
   )
 }
