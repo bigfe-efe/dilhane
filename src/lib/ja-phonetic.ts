@@ -163,3 +163,18 @@ export function hasUnreadableJa(text: string): boolean {
 export function kanaTurkishHint(kana: string): string {
   return jaToTurkishSpeech(kana)
 }
+
+/**
+ * Hazır romaji okunuşunu Türkçe yaklaşık yazıma çevirir.
+ *
+ * jaToTurkishSpeech kana'dan başlar; bunun girdisi ise ZATEN romaji olan bir
+ * okunuştur (katakana sözlüğünün kataReading çıktısı, ya da elle yazılmış
+ * "konnichiwa" gibi istisnalar). İkisi de aynı MAP tablosunu kullanıyor ki
+ * "şi/çi/tsu" yazımı uygulamanın her yerinde aynı olsun.
+ */
+export function romajiToTurkish(romaji: string): string {
+  let s = romaji.toLowerCase()
+  for (const [re, to] of LONG) s = s.replace(re, to)
+  for (const [re, to] of MAP) s = s.replace(re, to)
+  return s
+}

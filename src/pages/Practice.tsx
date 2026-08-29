@@ -88,6 +88,20 @@ const GROUPS: { title: string; note?: string; items: Tool[] }[] = [
     note: 'Bilgi burada oturur — tabloya bakmak değil, kendi başına çıkarmak.',
     items: [
       { to: '/kana-test', glyph: '試', title: 'Kendi testin', sub: 'Çıkacak karakterleri sen seç', stages: ['hiragana', 'katakana'] },
+      {
+        to: '/kelime-yazma',
+        glyph: '筆',
+        title: 'Kelime yazma',
+        sub: 'Ters yön: okunuşu gör, kanasını yaz',
+        stages: ['hiragana', 'katakana', 'genki-1-4'],
+      },
+      {
+        to: '/hece-sayma',
+        glyph: '拍',
+        title: 'Hece sayma',
+        sub: 'Kaç mora? ん, uzun ünlü ve küçük っ tuzakları',
+        stages: ['hiragana', 'katakana', 'genki-1-4'],
+      },
       { to: '/kana-hiz', glyph: '速', title: 'Hız testi', sub: 'Tanıma hızını ölç', stages: ['hiragana', 'katakana'] },
       { to: '/write', icon: 'brush', title: 'Yazı çalışması', sub: 'Çiz, çizgi sırası denetlensin', stages: ['hiragana', 'katakana'] },
     ],
@@ -177,6 +191,8 @@ export default function PracticePage() {
                 {g.note}
               </div>
             )}
+            {/* Genis ekranda iki sutun; telefonda cols-2 hicbir sey yapmaz */}
+            <div className="cols-2">
             {g.items.map((t) => (
               <Link key={t.to} to={t.to} className="card card--link">
                 <div className="row">
@@ -195,6 +211,7 @@ export default function PracticePage() {
                 </div>
               </Link>
             ))}
+            </div>
           </div>
         ))}
       </div>

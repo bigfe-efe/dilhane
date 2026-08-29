@@ -1,44 +1,60 @@
 /* Dilhane — görsel sistem.
-   Japonca çalışma uygulaması. Koyu, sakin, tek vurgulu.
+   Japonca çalışma uygulaması. Koyu, sıcak, tek vurgulu.
 
    TASARIM İLKELERİ
    1. İçerik parlar, arayüz susar. Japonca karakter sayfadaki en parlak şeydir;
       kartlar, çizgiler ve etiketler arka plana çekilir.
    2. Çerçeve yerine katman. Kutuları çizgiyle ayırmak yerine yüzey tonuyla
       ayırıyoruz; kılcal çizgiler yalnızca gerektiğinde ve çok soluk.
-   3. Tek vurgu rengi. Pirinç sarısı (kintsugi'nin altın dokunuşu) yalnızca
-      etkileşim ve o anki durum için; her yerde kullanılırsa vurgu olmaktan çıkar.
+   3. Tek vurgu rengi. Yalnızca etkileşim ve o anki durum için; her yerde
+      kullanılırsa vurgu olmaktan çıkar.
    4. Emoji yok. Simgeler tek çizgi dilinde SVG (bkz. components/icons.tsx);
-      emojinin biçimi işletim sistemine göre değişir ve arayüzü ucuzlatır. */
+      emojinin biçimi işletim sistemine göre değişir ve arayüzü ucuzlatır.
+   5. Geniş ekran ziyan edilmez. 1080px üstünde gezinme sola geçer, içerik
+      sütunlara ayrılır. Telefon düzeni olduğu gibi durur.
+
+   RENK — neden sıcak siyah + kaki (柿色)
+   Koyu arayüzlerin çoğu mavi-siyah zemine mor/elektrik mavisi vurgu koyar; o
+   birleşim artık her yazılımda var ve kimliksiz. Buradaki zemin mürekkep (墨)
+   gibi SICAK siyahtır — sarıya çalar, maviye değil. Vurgu ise kaki/vermilyon:
+   Japon mimarisinde (torii), lakede ve hanko mühründe asırlardır kullanılan
+   renk. Sıcak zemin + sıcak vurgu, ekrana bakarken yorucu olan mavi ışığı da
+   azaltıyor.
+
+   Vurgu ile "yanlış" rengi birbirine karışmasın diye kırmızı, TON olarak
+   ayrıldı: vurgu turuncuya (kaki), hata pembeye (gül) çalıyor. */
 
 :root {
-  /* Yüzeyler — saf siyah değil; saf siyah ekranda çukur görünür */
-  --bg: #0a0b0e;
-  --surface: #121419;
-  --surface-2: #171a21;
-  --surface-3: #1e222b;
+  /* Yüzeyler — saf siyah değil; saf siyah ekranda çukur görünür.
+     Sıcak taraf: kırmızı kanalı en yüksek, mavi en düşük. */
+  --bg: #100e0d;
+  --surface: #1a1817;
+  --surface-2: #211e1c;
+  --surface-3: #2b2725;
 
-  /* Kılcal çizgiler — renk değil, ışık miktarı */
-  --line: rgba(255, 255, 255, 0.07);
-  --line-strong: rgba(255, 255, 255, 0.13);
+  /* Kılcal çizgiler — renk değil, ışık miktarı. Sıcak zeminde saf beyaz
+     çizgi mavi görünüyor, o yüzden çizgiler de kırık beyaz. */
+  --line: rgba(240, 228, 218, 0.08);
+  --line-strong: rgba(240, 228, 218, 0.15);
 
-  /* Metin — saf beyaz değil; göz yormasın */
-  --text: #e9ebef;
-  --dim: #9aa2b0;
-  --faint: #646b79;
+  /* Metin — saf beyaz değil; zeminle aynı sıcaklıkta kırık beyaz */
+  --text: #efe9e3;
+  --dim: #aaa199;
+  --faint: #746b64;
 
-  /* Tek vurgu: pirinç */
-  --accent: #c9a227;
-  --accent-soft: rgba(201, 162, 39, 0.12);
-  --accent-line: rgba(201, 162, 39, 0.32);
+  /* Tek vurgu: kaki / vermilyon (柿色) */
+  --accent: #e0714f;
+  --accent-soft: rgba(224, 113, 79, 0.13);
+  --accent-line: rgba(224, 113, 79, 0.34);
 
-  /* Durum renkleri — doygunluğu düşük, arayüzle kavga etmesin */
-  --ok: #6fbf8e;
-  --ok-soft: rgba(111, 191, 142, 0.12);
-  --warn: #d9a441;
-  --warn-soft: rgba(217, 164, 65, 0.12);
-  --bad: #d9736a;
-  --bad-soft: rgba(217, 115, 106, 0.12);
+  /* Durum renkleri — doygunluğu düşük, arayüzle kavga etmesin.
+     "bad" bilerek gül kırmızısı: vurgunun turuncusundan ayrılsın. */
+  --ok: #7fbe78;
+  --ok-soft: rgba(127, 190, 120, 0.13);
+  --warn: #e0b552;
+  --warn-soft: rgba(224, 181, 82, 0.13);
+  --bad: #e0566f;
+  --bad-soft: rgba(224, 86, 111, 0.13);
 
   /* Eski adlar — özelleşmiş bloklar bunlara dayanıyor */
   --bg-elev: var(--surface);
@@ -60,6 +76,10 @@
   --r-lg: 18px;
 
   --nav-h: 66px;
+  /* Üst çubuğun yüksekliği. Sayfa içindeki yapışkan şeritler (arama, süzgeç)
+     buna göre konumlanıyor; ikisi de top:0 olsaydı biri ötekinin altına
+     girerdi — nitekim giriyordu. */
+  --topbar-h: 64px;
   --pad: 20px;
 
   --ff: ui-sans-serif, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -595,6 +615,18 @@ rt {
 }
 .nav a.active {
   color: var(--accent);
+}
+
+/* Marka ve geri sayım yalnızca kenar çubuğu düzeninde var. Telefondaki alt
+   çubuk beş sütunluk bir ızgara; bu ikisi orada görünürse ızgara yediye
+   çıkar ve sekmeler daralır. */
+.nav-brand,
+.nav-foot {
+  display: none;
+}
+.nav-brand-name,
+.nav-brand-sub {
+  display: block;
 }
 
 /* ————————————————————————— Alıştırma bileşenleri ————————————————————————— */
@@ -2394,7 +2426,7 @@ ul.tight li {
 
 .vocab-tools {
   position: sticky;
-  top: 0;
+  top: var(--topbar-h);
   z-index: 3;
   background: var(--bg);
   padding: 8px 0 6px;
@@ -2500,4 +2532,592 @@ ul.tight li {
   text-align: right;
   max-width: 140px;
   line-height: 1.35;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   GENIS EKRAN (>= 1080px)
+
+   Uygulama telefon icin kurulmustu: 720px'lik bir sutun, ekranin ortasinda,
+   iki yaninda bos alan. 16:9 bir monitorde bu alanin ucte ikisi bosa gidiyor
+   ve sayfa gereksiz yere uzuyor — her sey alt alta diziliyor.
+
+   Burada uc sey degisiyor:
+   1. Gezinme alttan SOLA gecer ve kalici bir kenar cubugu olur. Alt cubuk
+      ekranin en degerli yerini (goz hizasinin altini) yiyordu; solda ise
+      zaten bos duran alani kullaniyor ve etiketler tam okunur hale geliyor.
+   2. Icerik sutunu genisler.
+   3. Uzun kart listeleri sutunlara ayrilir. Bu en buyuk kazanc: 150 kelimelik
+      bir liste tek sutunda 40 ekran boyu, iki sutunda 20.
+
+   Telefon duzeni hic bozulmaz — burasi tamamen ek bir katman.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+@media (min-width: 1080px) {
+  :root {
+    --sidebar: 244px;
+    --topbar-h: 76px;
+    --pad: 28px;
+  }
+
+  .app {
+    padding-bottom: 0;
+    padding-left: var(--sidebar);
+  }
+
+  /* ————— Kenar cubugu ————— */
+  .nav {
+    top: 0;
+    right: auto;
+    bottom: 0;
+    width: var(--sidebar);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 18px 12px calc(18px + env(safe-area-inset-bottom));
+    background: var(--surface);
+    border-top: 0;
+    border-right: 1px solid var(--line);
+  }
+
+  .nav a {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    position: relative;
+    transition: background 0.14s, color 0.14s;
+  }
+  .nav a:hover {
+    background: var(--surface-2);
+    color: var(--dim);
+  }
+  .nav a.active {
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  /* Etkin sekmeyi renkten baska bir seyle de isaretle — renk korligunde
+     ve dusuk parlaklikta tek basina renk yeterli degil. */
+  .nav a.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 20%;
+    bottom: 20%;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--accent);
+  }
+
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 6px 12px 18px;
+  }
+  .nav-brand-mark {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    flex: none;
+    border-radius: 9px;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-line);
+    color: var(--accent);
+    font-size: 1.05rem;
+  }
+  .nav-brand-name {
+    font-size: 0.98rem;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+  }
+  .nav-brand-sub {
+    font-size: 0.68rem;
+    color: var(--faint);
+    letter-spacing: 0.02em;
+  }
+
+  /* Kenar cubugunun dibi: sinava kalan gun. Her sayfada gorunmesi, tempoyu
+     hatirlatmak icin bilerek. */
+  .nav-foot {
+    display: block;
+    margin-top: auto;
+    padding: 12px;
+    border-radius: 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+  }
+  .nav-foot-num {
+    font-size: 1.5rem;
+    font-weight: 650;
+    line-height: 1;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .nav-foot-label {
+    font-size: 0.7rem;
+    color: var(--faint);
+    margin-top: 3px;
+    line-height: 1.35;
+  }
+
+  /* ————— Icerik ————— */
+  .page {
+    max-width: 1240px;
+    padding: 26px var(--pad) 56px;
+  }
+  .page--wide {
+    max-width: 1440px;
+  }
+
+  .topbar {
+    padding: 16px var(--pad);
+  }
+  .topbar h1 {
+    font-size: 1.22rem;
+  }
+
+  /* Uzun kart listeleri sutunlara. CSS kolonlari kullaniliyor cunku kartlarin
+     yuksekligi degisken; grid'de satirlar en uzun karta gore hizalanip bosluk
+     birakirdi, kolonlarda ise kartlar akiyor. break-inside kart bolunmesini
+     engelliyor. */
+  .cols-2,
+  .cols-3 {
+    column-gap: 16px;
+  }
+  .cols-2 {
+    column-count: 2;
+  }
+  .cols-3 {
+    column-count: 3;
+  }
+  .cols-2 > *,
+  .cols-3 > * {
+    break-inside: avoid;
+    margin-bottom: 16px;
+  }
+
+  /* Kelime listeleri iki sutun. Satirlar arasi ayirici cizgi kolon sinirinda
+     yanlis yere denk geldigi icin liste cercevesi kaldirilip her satir kendi
+     kartina cevriliyor. */
+  .vocab-list {
+    border: 0;
+    background: transparent;
+    overflow: visible;
+    column-count: 2;
+    column-gap: 14px;
+  }
+  .vocab-row {
+    break-inside: avoid;
+    margin-bottom: 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    background: var(--surface);
+  }
+  .vocab-row + .vocab-row {
+    border-top: 1px solid var(--line);
+  }
+
+  .grid-auto {
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 14px;
+  }
+  .grid-kana {
+    grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  }
+
+  /* ————— Tam ekran alistirmalar —————
+     Bunlar bilerek tum ekrani kaplar (sinavda dikkat dagilmasin), ama icerik
+     1920px genisliginde savrulmasin diye ortada tutuluyor. */
+  .quiz-body,
+  .speed-body {
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .quiz-options {
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .quiz-top,
+  .speed-top {
+    padding-left: max(var(--pad), calc((100vw - 900px) / 2));
+    padding-right: max(var(--pad), calc((100vw - 900px) / 2));
+  }
+}
+
+/* Cok genis ekranlarda (>=1600px) bir sutun daha. 1240px'lik icerik alani
+   uc kolona bolununce kart genisligi ~390px kaliyor, hala rahat okunur. */
+@media (min-width: 1600px) {
+  .page {
+    max-width: 1440px;
+  }
+  .cols-2 {
+    column-count: 3;
+  }
+  .vocab-list {
+    column-count: 3;
+  }
+}
+
+/* ————————————————————————— Ana sayfa panosu —————————————————————————
+   Telefonda tek sutun (eski davranis); genis ekranda is / baglam ayrimi. */
+
+.dash {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+@media (min-width: 1080px) {
+  .dash {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 330px;
+    align-items: start;
+    gap: 26px;
+  }
+  /* Sag sutun sayfayla birlikte kaymasin: gorev listesi uzun, asagi
+     inerken sayilar ve seri gorunur kalsin. */
+  .dash-side {
+    position: sticky;
+    top: calc(var(--topbar-h) + 18px);
+  }
+  .dash-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ═════════════════════ Ekran kana klavyesi ═════════════════════
+   Tuslar gojuon duzeninde: her sutun bir satir (あ行, か行 …). Boyle dizmek
+   aramayi hizlandiriyor, cunku kana zaten bu duzende ogreniliyor. */
+
+.kbd {
+  width: 100%;
+}
+.kbd-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.kbd-util {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--dim);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+.kbd-util:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Sutunlar SARMAZ, yana kayar.
+   Sarmaya birakildiginda dar ekranda gojuon on sutunu alt alta iniyor ve
+   klavye 812px'lik telefon ekraninin 790px'ini yiyordu — soru gorunmez
+   oluyordu. Yatay kaydirma hem duzeni korur hem de gojuon sirasini bozmaz.
+   `safe center` tasma olmadiginda ortalar, tastiginda basi kirpmaz. */
+.kbd-grid {
+  display: flex;
+  gap: 6px;
+  flex-wrap: nowrap;
+  justify-content: safe center;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+.kbd-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
+.kbd-col-label {
+  font-size: 0.66rem;
+  color: var(--faint);
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  min-height: 14px;
+  white-space: nowrap;
+}
+
+.kbd-key {
+  display: grid;
+  place-items: center;
+  gap: 1px;
+  min-width: 44px;
+  padding: 6px 4px 4px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s, transform 0.06s;
+}
+.kbd-key:hover:not(:disabled) {
+  background: var(--surface-3);
+  border-color: var(--line-strong);
+}
+.kbd-key:active:not(:disabled) {
+  transform: translateY(1px);
+  border-color: var(--accent-line);
+}
+.kbd-key:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.kbd-key-ch {
+  font-size: 1.12rem;
+  line-height: 1.1;
+  color: var(--text);
+}
+.kbd-key-r {
+  font-size: 0.58rem;
+  color: var(--faint);
+  letter-spacing: 0.02em;
+}
+
+/* Isaretler (kucuk っ, uzatma ー) harf degil; renkle ayriliyorlar ki
+   ogrenci onlari tabloda arayip bulamayinca sasirmasin. */
+.kbd-special {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.kbd-key--special {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  min-width: 56px;
+}
+.kbd-key--special .kbd-key-ch {
+  color: var(--accent);
+}
+
+/* ═════════════════════ Kelime yazma ═════════════════════ */
+
+.ww-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px;
+  min-height: 0;
+  overflow-y: auto;
+}
+.ww-prompt {
+  text-align: center;
+}
+.ww-reading {
+  font-size: clamp(2rem, 6vw, 3.2rem);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  line-height: 1.1;
+}
+.ww-tr-reading {
+  font-size: 0.92rem;
+  color: var(--dim);
+  margin-top: 4px;
+}
+.ww-meaning {
+  font-size: 1rem;
+  color: var(--text);
+  margin-top: 8px;
+}
+
+/* Yazilanlarin serit halinde gosterilmesi bilincli: kutu dizisi kac karakter
+   gerektigini soylerdi, oysa asil olculen sey tam olarak o sayi. */
+.ww-input {
+  min-height: 68px;
+  min-width: min(420px, 80vw);
+  display: grid;
+  place-items: center;
+  padding: 10px 18px;
+  border-radius: var(--r);
+  border: 1.5px dashed var(--line-strong);
+  background: var(--surface);
+  font-size: 2rem;
+  letter-spacing: 0.14em;
+}
+.ww-input.is-ok {
+  border-style: solid;
+  border-color: var(--ok);
+  background: var(--ok-soft);
+}
+.ww-input.is-bad {
+  border-style: solid;
+  border-color: var(--bad);
+  background: var(--bad-soft);
+}
+.ww-placeholder {
+  color: var(--faint);
+  letter-spacing: 0.2em;
+}
+
+.ww-feedback {
+  text-align: center;
+  font-size: 0.92rem;
+}
+.ww-feedback.is-ok {
+  color: var(--ok);
+  font-weight: 600;
+}
+.ww-feedback.is-bad {
+  color: var(--dim);
+}
+.ww-answer {
+  font-size: 1.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--ok);
+}
+
+.ww-foot {
+  flex: none;
+  max-height: 58vh;
+  overflow-y: auto;
+  padding: 12px var(--pad) calc(14px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.ww-foot > .row {
+  justify-content: center;
+}
+
+/* ═════════════════════ Hece sayma ═════════════════════ */
+
+.mora-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 16px;
+  min-height: 0;
+  overflow-y: auto;
+  text-align: center;
+}
+.mora-word {
+  font-size: clamp(2.6rem, 11vw, 5rem);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  line-height: 1.15;
+}
+.mora-ask {
+  font-size: 1rem;
+  color: var(--dim);
+}
+.mora-line--big .mora {
+  min-width: 46px;
+  padding: 8px 10px 6px;
+}
+.mora-line--big .mora-ch {
+  font-size: 1.5rem;
+}
+.mora-verdict {
+  font-size: 1.05rem;
+}
+.mora-verdict.is-ok {
+  color: var(--ok);
+  font-weight: 600;
+}
+.mora-verdict.is-bad {
+  color: var(--bad);
+}
+.mora-why {
+  max-width: 520px;
+  margin-top: 4px;
+  padding: 10px 12px;
+  border-radius: var(--r);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  text-align: left;
+  display: grid;
+  gap: 6px;
+}
+
+.mora-foot {
+  flex: none;
+  padding: 14px var(--pad) calc(16px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.mora-choices {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.mora-choice {
+  width: 58px;
+  height: 58px;
+  border-radius: 14px;
+  border: 1.5px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 1.25rem;
+  font-weight: 650;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  transition: background 0.12s, border-color 0.12s, transform 0.06s;
+}
+.mora-choice:hover:not(:disabled) {
+  border-color: var(--accent-line);
+  background: var(--surface-3);
+}
+.mora-choice:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.mora-choice.is-ok {
+  border-color: var(--ok);
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+.mora-choice.is-bad {
+  border-color: var(--bad);
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+.mora-choice.is-muted {
+  opacity: 0.3;
+}
+
+/* Kana tablosunun satir gruplari. Telefonda alt alta (eski davranis), genis
+   ekranda yan yana — bes karakterlik bir satir 1440px'i tek basina dolduramaz. */
+.kana-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+@media (min-width: 1080px) {
+  .kana-groups {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 22px 26px;
+    align-items: start;
+  }
 }

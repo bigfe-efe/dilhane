@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { toRomaji } from 'wanakana'
 import { SpeakBtn, TopBar } from '@/components/ui'
 import { Icon } from '@/components/icons'
-import { jaToTurkishSpeech } from '@/lib/ja-phonetic'
+import { jaToTurkishSpeech, romajiToTurkish } from '@/lib/ja-phonetic'
 import {
   ALL_VOCAB,
   POS_TR,
@@ -158,7 +158,7 @@ function VocabRow({ w }: { w: VocabWord }) {
             Romaji tek başına yanıltıyor: "shi", "chi", "tsu" bir Türk okuyucuya
             başka ses düşündürür. Türkçe yazımla yaklaşık okunuş o yüzden var.
           */}
-          <div className="vocab-oku">{w.reading ? tr(w.reading) : jaToTurkishSpeech(w.kana)}</div>
+          <div className="vocab-oku">{w.reading ? romajiToTurkish(w.reading) : jaToTurkishSpeech(w.kana)}</div>
           <div className="vocab-tr">{w.tr}</div>
         </div>
         <div className="stack-sm" style={{ gap: 5, alignItems: 'flex-end' }}>
@@ -172,14 +172,4 @@ function VocabRow({ w }: { w: VocabWord }) {
       {w.gram && <div className="tiny vocab-note">{w.gram}</div>}
     </div>
   )
-}
-
-/** Elle yazılmış romaji okunuşunu Türkçe yaklaşıklığa çevirir (konnichiwa → konniçiva). */
-function tr(romaji: string): string {
-  return romaji
-    .replace(/sh/g, 'ş')
-    .replace(/ch/g, 'ç')
-    .replace(/j/g, 'c')
-    .replace(/y/g, 'y')
-    .replace(/w/g, 'v')
 }

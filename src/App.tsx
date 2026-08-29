@@ -15,6 +15,8 @@ import N5MockPage from '@/pages/N5Mock'
 import PracticePage from '@/pages/Practice'
 import KanaWordsPage from '@/pages/KanaWords'
 import VocabPage from '@/pages/Vocab'
+import WordWritePage from '@/pages/WordWrite'
+import MoraCountPage from '@/pages/MoraCount'
 import LeechesPage from '@/pages/Leeches'
 import N5Page from '@/pages/N5'
 import KanjiPage from '@/pages/Kanji'
@@ -31,6 +33,7 @@ import WritingPage from '@/pages/Writing'
 import StatsPage from '@/pages/Stats'
 import SettingsPage from '@/pages/Settings'
 import MorePage from '@/pages/More'
+import { daysUntilExam } from '@/content/ja/study-plan'
 
 // Uygulama tek dillidir (Japonca), bu yüzden rotalarda dil parametresi yoktur.
 // Eskiden /lessons/:lang gibi yollar vardı; ikinci dil kaldırılınca sadeleşti.
@@ -49,6 +52,23 @@ const NAV: { to: string; icon: IconName; label: string; end?: boolean }[] = [
   { to: '/review', icon: 'repeat', label: 'Tekrar' },
   { to: '/more', icon: 'more', label: 'Daha' },
 ]
+
+/**
+ * Kenar çubuğunun dibindeki geri sayım.
+ *
+ * Ayrı bir bileşen çünkü her sayfada duruyor ve tarih değişimini kendi
+ * hesaplıyor; App'i yeniden çizdirmeye gerek yok.
+ */
+function ExamCountdown() {
+  const kalan = daysUntilExam()
+  if (kalan < 0) return null
+  return (
+    <div className="nav-foot">
+      <div className="nav-foot-num tabular">{kalan}</div>
+      <div className="nav-foot-label">gün kaldı · JLPT N5</div>
+    </div>
+  )
+}
 
 export default function App() {
   const { pathname } = useLocation()
@@ -76,6 +96,8 @@ export default function App() {
         <Route path="/calis" element={<PracticePage />} />
         <Route path="/kana-kelime" element={<KanaWordsPage />} />
         <Route path="/kelimeler" element={<VocabPage />} />
+        <Route path="/kelime-yazma" element={<WordWritePage />} />
+        <Route path="/hece-sayma" element={<MoraCountPage />} />
         <Route path="/kanji" element={<KanjiPage />} />
 
         <Route path="/lessons" element={<LessonsPage />} />
@@ -101,12 +123,28 @@ export default function App() {
 
       {!immersive && (
         <nav className="nav">
+          {/*
+            Marka ve geri sayım YALNIZCA geniş ekranda görünür (CSS ile).
+            Telefonda alt çubuk beş sekmelik bir şerittir, oraya sığmaz ve
+            zaten gerekmez. Masaüstünde ise kenar çubuğunun üstü ve altı boş
+            kalıyordu; oraya kimlik ve tempo bilgisi konuldu.
+          */}
+          <div className="nav-brand">
+            <span className="nav-brand-mark ja">語</span>
+            <span>
+              <span className="nav-brand-name">Dilhane</span>
+              <span className="nav-brand-sub">日本語</span>
+            </span>
+          </div>
+
           {NAV.map((n) => (
             <NavLink key={n.to} to={n.to} end={n.end}>
               <Icon name={n.icon} size={19} />
               <span>{n.label}</span>
             </NavLink>
           ))}
+
+          <ExamCountdown />
         </nav>
       )}
     </div>

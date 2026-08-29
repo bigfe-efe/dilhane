@@ -81,7 +81,15 @@ export default function Home() {
         }
       />
 
-      <div className="page stack-lg lang-ja">
+      {/*
+        Geniş ekranda iki sütun: solda BUGÜN YAPILACAK İŞ, sağda bağlam
+        (sayılar, seri, müfredat). Ayrım keyfi değil — sol sütun her gün
+        dokunulan, sağ sütun ara sıra bakılan şeyler. Tek sütunda bunlar
+        birbirine karışıyor ve günün listesi ekranın altına kayıyordu.
+        Telefonda ızgara çöküp eski sıraya döner.
+      */}
+      <div className="page dash lang-ja">
+        <div className="dash-main stack-lg">
         {/* ————— Sınav geri sayımı ve tempo ————— */}
         <Link to="/rota" className="railcard railcard--link">
           <div className="row">
@@ -165,8 +173,11 @@ export default function Home() {
           })}
         </div>
 
+        </div>
+
+        <aside className="dash-side stack-lg">
         {/* ————— Sayılar ————— */}
-        <div className="grid grid-2">
+        <div className="grid grid-2 dash-stats">
           <div className="card stat">
             <div className="stat-label">Bugün</div>
             <div className="stat-value tabular">{today.reviews}</div>
@@ -219,6 +230,7 @@ export default function Home() {
             </Link>
           </div>
         </div>
+        </aside>
       </div>
     </>
   )

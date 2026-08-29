@@ -176,6 +176,12 @@ export default function KanaPage() {
           </div>
         )}
 
+        {/*
+          Satır grupları geniş ekranda yan yana. Her 行 yalnızca beş karakter
+          içerdiği için tek sütunda tablo ekranın soluna sıkışıp sağı bomboş
+          bırakıyordu; kana zaten böyle, satır satır ezberlenir.
+        */}
+        <div className="kana-groups">
         {groups.map((g) => (
           <div key={g.group} className="stack-sm">
             <div className="row">
@@ -204,6 +210,7 @@ export default function KanaPage() {
             </div>
           </div>
         ))}
+        </div>
 
         {filter === 'base' && (
           <div className="card stack-sm">

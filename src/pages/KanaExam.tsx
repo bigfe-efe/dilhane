@@ -162,6 +162,7 @@ function Setup({
 
         <div className="stack-sm">
           <h3>Bölümler</h3>
+          <div className="cols-2">
           {sections.map(({ section, count }) => (
             <div key={section} className="card">
               <div className="row">
@@ -175,6 +176,7 @@ function Setup({
               </div>
             </div>
           ))}
+          </div>
         </div>
 
         <div className="stack-sm">
