@@ -52,6 +52,13 @@ const GROUPS: { title: string; note?: string; items: Tool[] }[] = [
         sub: 'Okunuşu şıksız yaz',
         stages: ['hiragana', 'katakana'],
       },
+      {
+        to: '/romaji',
+        glyph: 'A',
+        title: 'Romaji ve Japonca klavye',
+        sub: 'Nerede kullanılır, nerede kullanılmaz — ve nasıl yazılır',
+        stages: ['hiragana', 'katakana', 'genki-1-4'],
+      },
       { to: '/yazi-sistemi', icon: 'book', title: 'Yazı sistemi', sub: 'Üç alfabe, yazı yönü, çizgi sırası' },
       {
         to: '/kaynaklar',

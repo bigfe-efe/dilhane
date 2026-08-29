@@ -17,6 +17,7 @@ import KanaWordsPage from '@/pages/KanaWords'
 import VocabPage from '@/pages/Vocab'
 import WordWritePage from '@/pages/WordWrite'
 import MoraCountPage from '@/pages/MoraCount'
+import RomajiPage from '@/pages/Romaji'
 import LeechesPage from '@/pages/Leeches'
 import N5Page from '@/pages/N5'
 import KanjiPage from '@/pages/Kanji'
@@ -98,6 +99,7 @@ export default function App() {
         <Route path="/kelimeler" element={<VocabPage />} />
         <Route path="/kelime-yazma" element={<WordWritePage />} />
         <Route path="/hece-sayma" element={<MoraCountPage />} />
+        <Route path="/romaji" element={<RomajiPage />} />
         <Route path="/kanji" element={<KanjiPage />} />
 
         <Route path="/lessons" element={<LessonsPage />} />
