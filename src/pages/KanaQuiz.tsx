@@ -34,12 +34,35 @@ import { useCardStates } from '@/db/hooks'
 //    hatırlama, eşleştirme, yazma — ve testin sonuna doğru şıklar ortadan
 //    kalkar. Kapatılabilir olsaydı herkes en kolayını seçerdi.
 
-type Kind = 'hiragana' | 'katakana'
+/**
+ * Hangi alfabe(ler) teste girsin.
+ *
+ * 'karisik' SONRADAN eklendi. Önce yalnızca tek alfabe seçilebiliyordu ve
+ * karakter listesi de yalnızca o alfabeden kuruluyordu; öteki alfabenin
+ * işaretli harfleri sessizce eleniyordu (byChar onları tanımıyordu). Yani
+ * "hem hiragana hem katakana" testi kurmak mümkün değildi.
+ *
+ * Oysa iki alfabeyi AYIRT ETMEK başlı başına bir beceri: シ ile し, ノ ile の
+ * birbirine benzer ve ayrı ayrı çalışırken bu hiç ölçülmez.
+ */
+type Kind = 'hiragana' | 'katakana' | 'karisik'
 
 const KINDS: { id: Kind; label: string }[] = [
   { id: 'hiragana', label: 'ひらがな' },
   { id: 'katakana', label: 'カタカナ' },
+  { id: 'karisik', label: 'Karışık' },
 ]
+
+/** Bir satır kartı — karışık modda iki alfabeden aynı satır adı geldiği için
+ *  anahtar ve başlık alfabeyle birlikte kuruluyor. */
+interface Row {
+  id: string
+  title: string
+  alfabe: 'hiragana' | 'katakana'
+  chars: KanaChar[]
+}
+
+const ALFABE_TR = { hiragana: 'ひらがな', katakana: 'カタカナ' } as const
 
 const REPEATS: { id: string; label: string }[] = [
   { id: '1', label: 'Her harf 1×' },
@@ -63,6 +86,12 @@ interface McqQ {
   char: string
   romaji: string
   options: string[]
+  /**
+   * Yalnızca karışık testte dolu: sorulan okunuşun hangi alfabede istendiği.
+   * İki alfabe birdeyken "shi hangisi?" sorusunun し ve シ diye iki doğru
+   * cevabı olurdu; alfabe yazılınca soru tekleşiyor.
+   */
+  alfabe?: 'hiragana' | 'katakana'
 }
 interface TypeQ {
   type: 'type'
@@ -112,7 +141,19 @@ export default function KanaQuizPage() {
   const cardStates = useCardStates('kana')
   const [deckMsg, setDeckMsg] = useState('')
 
-  const groups = useMemo(() => kanaGroups(kind), [kind])
+  const groups = useMemo<Row[]>(() => {
+    const alfabeler: ('hiragana' | 'katakana')[] =
+      kind === 'karisik' ? ['hiragana', 'katakana'] : [kind]
+    return alfabeler.flatMap((a) =>
+      kanaGroups(a).map((g) => ({
+        id: `${a}:${g.group}`,
+        title: g.group,
+        alfabe: a,
+        chars: g.chars,
+      })),
+    )
+  }, [kind])
+
   const byChar = useMemo(() => {
     const m = new Map<string, KanaChar>()
     for (const g of groups) for (const c of g.chars) m.set(c.char, c)
@@ -162,6 +203,9 @@ export default function KanaQuizPage() {
     // karakter aynı kutuda olursa hangisini nereye koyduğun belirsiz kalır).
     const distinct = [...new Map(pool.map((k) => [k.romaji, k])).values()]
     const canMatch = distinct.length >= 4
+    // Seçime bakılıyor, ayara değil: kullanıcı karışık modda tek alfabeden
+    // harf seçmiş olabilir, o zaman karışık soru sormanın anlamı yok.
+    const karisik = new Set(pool.map((k) => k.type)).size > 1
 
     const slots: KanaChar[] = []
     for (let r = 0; r < repeat; r++) slots.push(...shuffle(pool))
@@ -178,7 +222,7 @@ export default function KanaQuizPage() {
     const out: Question[] = []
 
     for (const k of slots.slice(0, iA)) out.push(mcqRomajiQ(k, pool))
-    for (const k of slots.slice(iA, iB)) out.push(mcqCharQ(k, pool))
+    for (const k of slots.slice(iA, iB)) out.push(mcqCharQ(k, pool, karisik))
 
     if (canMatch) {
       const adet = Math.max(1, Math.round((iC - iB) / 4))
@@ -518,7 +562,7 @@ export default function KanaQuizPage() {
             const someIn = g.chars.some((c) => selected.has(c.char))
             const inCount = g.chars.filter((c) => selected.has(c.char)).length
             return (
-              <div key={g.group} className={`card stack-sm quiz-group${someIn ? ' is-active' : ''}`}>
+              <div key={g.id} className={`card stack-sm quiz-group${someIn ? ' is-active' : ''}`}>
                 <div className="row">
                   <button
                     className="quiz-group-title ja"
@@ -526,8 +570,12 @@ export default function KanaQuizPage() {
                     title="Satırın tamamını işaretle / kaldır"
                   >
                     <Icon name={allIn ? 'squareCheck' : someIn ? 'squareHalf' : 'square'} size={16} />
-                    {g.group}
+                    {g.title}
                   </button>
+                  {/* Karışıkta iki alfabede de aynı satır adı var (あ行 / ア行
+                      ikisi de "あ行 (a-satırı)" diye geliyor); hangisi olduğu
+                      yazmazsa iki özdeş kart görünüyor. */}
+                  {kind === 'karisik' && <span className="badge tiny ja">{ALFABE_TR[g.alfabe]}</span>}
                   <div className="spacer" />
                   <span className="tiny faint">
                     {inCount} / {g.chars.length}
@@ -622,7 +670,11 @@ export default function KanaQuizPage() {
           </div>
         )}
 
-        <Link to="/kana/hiragana" className="tiny faint center" style={{ display: 'block' }}>
+        <Link
+          to={`/kana/${kind === 'katakana' ? 'katakana' : 'hiragana'}`}
+          className="tiny faint center"
+          style={{ display: 'block' }}
+        >
           Karakterleri çalışmak için kana tablosuna git
         </Link>
       </div>
@@ -638,9 +690,23 @@ function mcqRomajiQ(k: KanaChar, pool: KanaChar[]): McqQ {
   return { type: 'mcqRomaji', char: k.char, romaji: k.romaji, options: shuffle([k.romaji, ...shuffle(others).slice(0, 3)]) }
 }
 
-function mcqCharQ(k: KanaChar, pool: KanaChar[]): McqQ {
+function mcqCharQ(k: KanaChar, pool: KanaChar[], karisik: boolean): McqQ {
+  // Karışık testte AYNI OKUNUŞLU öteki alfabe harfi en değerli çeldiricidir:
+  // し / シ ayrımı zaten ölçülmek istenen şeyin ta kendisi. Tek alfabeli
+  // testte böyle bir eş yok, orada davranış eskisi gibi kalıyor.
+  //
+  // Eşi şıklara koyunca soru belirsizleşiyor ("shi" ikisi de) — bu yüzden
+  // karışıkta soruya alfabe de yazılıyor (bkz. alfabe alanı).
+  const es = karisik ? pool.filter((o) => o.romaji === k.romaji && o.char !== k.char) : []
   const others = pool.filter((o) => o.romaji !== k.romaji).map((o) => o.char)
-  return { type: 'mcqChar', char: k.char, romaji: k.romaji, options: shuffle([k.char, ...shuffle(others).slice(0, 3)]) }
+  const celdirici = [...es.map((e) => e.char), ...shuffle(others)].slice(0, 3)
+  return {
+    type: 'mcqChar',
+    char: k.char,
+    romaji: k.romaji,
+    options: shuffle([k.char, ...celdirici]),
+    alfabe: karisik ? k.type : undefined,
+  }
 }
 
 function matchQ(distinct: KanaChar[]): MatchQ {
@@ -661,6 +727,11 @@ function McqView({ q, onSubmit }: { q: McqQ; onSubmit: (v: string) => void }) {
         <div className={`quiz-prompt${q.type === 'mcqChar' ? ' is-romaji' : ''}`}>
           {q.type === 'mcqChar' ? q.romaji : <KanaGlyph char={q.char} size="min(40vw, 30vh)" weight={4.5} />}
         </div>
+        {/* Karışık testte hangi alfabe istendiği yazılmazsa soru iki cevaplı
+            olur: "shi" hem し hem シ. */}
+        {q.type === 'mcqChar' && q.alfabe && (
+          <div className="quiz-alfabe ja">{q.alfabe === 'hiragana' ? 'ひらがな' : 'カタカナ'}</div>
+        )}
       </div>
       <div className="quiz-options">
         {q.options.map((opt) => (
