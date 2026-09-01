@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Bar, TopBar } from '@/components/ui'
 import { Icon } from '@/components/icons'
 import { KanaGlyph } from '@/components/KanaGlyph'
+import { KanaKeyboard } from '@/components/KanaKeyboard'
 import { DrawCanvas } from '@/components/DrawCanvas'
 import {
   sectionTr,
@@ -37,6 +38,7 @@ export default function KanaExamPage({ kana = 'hiragana' }: { kana?: KanaType })
   const [phase, setPhase] = useState<Phase>('setup')
   const [full, setFull] = useState(true)
   const [withWriting, setWithWriting] = useState(false)
+  const [siksiz, setSiksiz] = useState(false)
 
   const [questions, setQuestions] = useState<Question[]>([])
   const [idx, setIdx] = useState(0)
@@ -45,7 +47,7 @@ export default function KanaExamPage({ kana = 'hiragana' }: { kana?: KanaType })
 
   const start = () => {
     answers.current = new Map()
-    setQuestions(buildExam({ kana, full, withWriting }))
+    setQuestions(buildExam({ kana, full, withWriting, siksiz }))
     setIdx(0)
     setResult(null)
     setPhase('exam')
@@ -89,6 +91,8 @@ export default function KanaExamPage({ kana = 'hiragana' }: { kana?: KanaType })
         setFull={setFull}
         writing={withWriting}
         setWriting={setWithWriting}
+        siksiz={siksiz}
+        setSiksiz={setSiksiz}
         onStart={start}
       />
     )
@@ -126,6 +130,8 @@ function Setup({
   setFull,
   writing,
   setWriting,
+  siksiz,
+  setSiksiz,
   onStart,
 }: {
   kana: KanaType
@@ -133,16 +139,18 @@ function Setup({
   setFull: (v: boolean) => void
   writing: boolean
   setWriting: (v: boolean) => void
+  siksiz: boolean
+  setSiksiz: (v: boolean) => void
   onStart: () => void
 }) {
   // Sayılar sınavı kuran modülden geliyor; ekranla sınav ayrışamaz
-  const SECTION_TR = sectionTr(kana)
+  const SECTION_TR = sectionTr(kana, siksiz)
   const label = kana === 'hiragana' ? 'Hiragana' : 'Katakana'
-  const plan = examPlan(full, writing, kana)
+  const plan = examPlan(full, writing, kana, siksiz)
   const sections = plan.filter((p) => p.section !== 'cizim')
   const toplam = plan.reduce((a, b) => a + b.count, 0)
-  const tamToplam = examPlan(true, writing, kana).reduce((a, b) => a + b.count, 0)
-  const kisaToplam = examPlan(false, writing, kana).reduce((a, b) => a + b.count, 0)
+  const tamToplam = examPlan(true, writing, kana, siksiz).reduce((a, b) => a + b.count, 0)
+  const kisaToplam = examPlan(false, writing, kana, siksiz).reduce((a, b) => a + b.count, 0)
 
   return (
     <>
@@ -181,6 +189,31 @@ function Setup({
 
         <div className="stack-sm">
           <h3>Ayarlar</h3>
+
+          {/*
+            ŞIKSIZ KİP — yalnızca ZORLAŞTIRIYOR, o yüzden seçenek olmasında
+            sakınca yok. Kolaylaştıran bir ayar olsaydı herkes onu seçer ve
+            sınav ölçmeyi bırakırdı.
+          */}
+          <button
+            className={`card card--link${siksiz ? ' card--accent' : ''}`}
+            onClick={() => setSiksiz(!siksiz)}
+          >
+            <div className="row">
+              <span className="entry-icon">
+                <Icon name={siksiz ? 'squareCheck' : 'square'} size={18} />
+              </span>
+              <div style={{ flex: 1, textAlign: 'left' }}>
+                <div className="card-title">Şıksız sınav</div>
+                <div className="card-sub">
+                  {siksiz
+                    ? 'Hiç şık yok. Okunuşu yazarsın, karakteri klavyeden bulursun, kelimeleri baştan sona kana ile kurarsın. Belirgin biçimde daha zor.'
+                    : 'Kapalı: şıklı ve şıksız sorular karışık gelir. Açarsan eleyerek doğruya varmak mümkün olmaz.'}
+                </div>
+              </div>
+            </div>
+          </button>
+
           <button className={`card card--link${full ? ' card--accent' : ''}`} onClick={() => setFull(!full)}>
             <div className="row">
               <span className="entry-icon">
@@ -260,6 +293,7 @@ function Exam({
       {q.type === 'mcq' && <McqView key={q.id} q={q} onSubmit={onSubmit} />}
       {q.type === 'text' && <TextView key={q.id} q={q} onSubmit={onSubmit} />}
       {q.type === 'write' && <WriteView key={q.id} q={q} onSubmit={onSubmit} />}
+      {q.type === 'kbd' && <KbdView key={q.id} q={q} onSubmit={onSubmit} />}
     </div>
   )
 }
@@ -335,6 +369,47 @@ function TextView({ q, onSubmit }: { q: Extract<Question, { type: 'text' }>; onS
           Türkçe yazım da kabul edilir: şi / çi / tsu. Boş bırakırsan yanlış sayılır.
         </div>
         <button className="btn btn--primary btn--block" onClick={send}>
+          Sonraki
+        </button>
+      </div>
+    </>
+  )
+}
+
+/**
+ * Klavyeden kana yazma.
+ *
+ * Şıksız sınavın ana ekranı. Üstte okunuş (ya da kaynak kelime), altta gojūon
+ * düzeninde tam klavye. Eleyecek şık yok — karakteri tabloda kendin bulacaksın.
+ */
+function KbdView({
+  q,
+  onSubmit,
+}: {
+  q: Extract<Question, { type: 'kbd' }>
+  onSubmit: (a: Answer) => void
+}) {
+  const [v, setV] = useState('')
+  const send = () => onSubmit({ qid: q.id, given: v, correct: q.accepts.includes(v) })
+
+  return (
+    <>
+      <div className="quiz-body">
+        <div className="tiny faint center">{q.prompt}</div>
+        <div className="quiz-prompt is-romaji">{q.showText}</div>
+        {q.hint && <div className="tiny dim center">{q.hint}</div>}
+        <div className="ww-input" style={{ marginTop: 14 }}>
+          {v ? <span className="ja">{v}</span> : <span className="ww-placeholder">…</span>}
+        </div>
+      </div>
+      <div className="quiz-foot stack-sm">
+        <KanaKeyboard
+          type={q.alfabe}
+          onKey={(c) => setV((x) => x + c)}
+          onBackspace={() => setV((x) => [...x].slice(0, -1).join(''))}
+          onClear={() => setV('')}
+        />
+        <button className="btn btn--primary btn--block" onClick={send} disabled={!v}>
           Sonraki
         </button>
       </div>
@@ -560,9 +635,14 @@ function Result({
                     <div className="spacer" />
                   </div>
                   <div className="row" style={{ alignItems: 'center', gap: 10 }}>
-                    {q.type !== 'write' && q.showKana && (
+                    {(q.type === 'mcq' || q.type === 'text') && q.showKana && (
                       <span className="ja">
                         <KanaGlyph char={q.showKana} size="2rem" />
+                      </span>
+                    )}
+                    {q.type === 'kbd' && (
+                      <span className="mono" style={{ color: 'var(--accent)', fontSize: '1.1rem' }}>
+                        {q.showText}
                       </span>
                     )}
                     <div style={{ flex: 1, minWidth: 0 }}>

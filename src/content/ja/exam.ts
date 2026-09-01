@@ -129,6 +129,7 @@ export type Section =
   | 'tanima'
   | 'hatirlama'
   | 'uretim'
+  | 'yazim'
   | 'ayirt'
   | 'dakuten'
   | 'yoon'
@@ -139,25 +140,41 @@ export type Section =
 
 export type KanaType = 'hiragana' | 'katakana'
 
-/** Bölüm başlıkları alfabeye göre değişir: yōon örneği きゃ mı キャ mı? */
-export function sectionTr(kt: KanaType): Record<Section, { title: string; desc: string }> {
+/**
+ * Bölüm başlıkları.
+ *
+ * İki şeye göre değişir: alfabeye (yōon örneği きゃ mı キャ mı) ve KİPE.
+ * Şıksız kipte bazı bölümler bambaşka bir şey soruyor — özellikle kaynak
+ * kelime, orada yön tersine dönüyor: şıklıda "bu ne demek", şıksızda
+ * "bu kelimenin katakanasını yaz". Açıklama buna uymazsa ekran yalan söyler.
+ */
+export function sectionTr(kt: KanaType, siksiz = false): Record<Section, { title: string; desc: string }> {
   const h = kt === 'hiragana'
   return {
     tanima: { title: 'Tanıma', desc: 'Karakteri görüp okunuşunu seçmek' },
     hatirlama: { title: 'Hatırlama', desc: 'Okunuşu görüp karakteri bulmak' },
     uretim: { title: 'Üretim', desc: 'Okunuşu şıksız, kendin yazmak' },
-    ayirt: { title: 'Ayırt etme', desc: 'Birbirine benzeyen karakterler' },
-    dakuten: { title: 'Dakuten', desc: '゛ ve ゜ işaretlerinin sesi değiştirmesi' },
+    yazim: { title: 'Yazım', desc: 'Okunuşu görüp karakteri klavyeden yazmak' },
+    ayirt: siksiz
+      ? { title: 'Ayırt etme', desc: 'Karışan karakterleri şıksız, klavyeden yazmak' }
+      : { title: 'Ayırt etme', desc: 'Birbirine benzeyen karakterler' },
+    dakuten: siksiz
+      ? { title: 'Dakuten', desc: '゛ ゜ — yarısı okunuş, yarısı karakter yazma' }
+      : { title: 'Dakuten', desc: '゛ ve ゜ işaretlerinin sesi değiştirmesi' },
     yoon: { title: 'Yōon', desc: h ? 'きゃ / きゅ / きょ birleşik sesler' : 'キャ / キュ / キョ birleşik sesler' },
-    kelime: {
-      title: 'Kelime okuma',
-      desc: h ? 'Hiragana yazılmış kelimeleri sökmek' : 'Katakana yazılmış kelimeleri sökmek',
-    },
+    kelime: siksiz
+      ? { title: 'Kelime', desc: 'Yarısı okunuşu yazmak, yarısı kelimeyi kanayla kurmak' }
+      : {
+          title: 'Kelime okuma',
+          desc: h ? 'Hiragana yazılmış kelimeleri sökmek' : 'Katakana yazılmış kelimeleri sökmek',
+        },
     kural: {
       title: 'Özel kurallar',
       desc: h ? 'Küçük っ, uzun ünlü, ん' : 'Uzatma ー, küçük ッ, ン',
     },
-    kaynak: { title: 'Kaynak kelime', desc: 'Katakana kelimenin hangi kelimeden geldiği' },
+    kaynak: siksiz
+      ? { title: 'Kaynak kelime', desc: 'Kaynak kelimeyi gör, katakanasını yaz — coffee → コーヒー' }
+      : { title: 'Kaynak kelime', desc: 'Katakana kelimenin hangi kelimeden geldiği' },
     cizim: { title: 'Yazma', desc: 'Karakteri çizerek yazmak' },
   }
 }
@@ -203,7 +220,28 @@ export interface WriteQ extends Base {
   answerLabel: string
 }
 
-export type Question = McqQ | TextQ | WriteQ
+/**
+ * Klavyeden KANA yazma.
+ *
+ * Şıksız sınavın ana soru tipi. Çoktan seçmelide dört şık arasından eleyerek
+ * doğruya varılabiliyor — "bunu tanımıyorum, demek ki değil" diye. Burada
+ * eleyecek bir şey yok: karakteri gojūon tablosunda kendin bulup yazacaksın.
+ */
+export interface KbdQ extends Base {
+  type: 'kbd'
+  prompt: string
+  /** Büyük gösterilen istem: okunuş ya da kaynak kelime */
+  showText: string
+  /** Türkçe yaklaşık okunuş — küçük, altta */
+  hint?: string
+  /** Kabul edilen kana dizileri. Tek karakterde aynı okunuşlu eşler de girer
+   *  (じ/ぢ ikisi de "ji"); kelimede tek bir doğru vardır. */
+  accepts: string[]
+  answerLabel: string
+  alfabe: 'hiragana' | 'katakana'
+}
+
+export type Question = McqQ | TextQ | WriteQ | KbdQ
 
 // ————————————————————————— Yardımcılar —————————————————————————
 
@@ -367,6 +405,20 @@ function mcq(o: Omit<McqQ, 'id' | 'type'>): McqQ {
 }
 function text(o: Omit<TextQ, 'id' | 'type'>): TextQ {
   return { id: qid(), type: 'text', ...o }
+}
+function kbd(o: Omit<KbdQ, 'id' | 'type'>): KbdQ {
+  return { id: qid(), type: 'kbd', ...o }
+}
+
+/**
+ * Bir karakter için kabul edilen yazımlar.
+ *
+ * Okunuş üzerinden değerlendiriliyor: "ji" sorulduğunda じ de ぢ de doğrudur,
+ * çünkü sorulan şey sesin karşılığı. Ama YALNIZCA aynı alfabeden — şi
+ * sorulmuşken シ yazmak, sınavın ölçtüğü alfabeyi atlamak olurdu.
+ */
+function kanaAccepts(k: KanaChar, a: Alphabet): string[] {
+  return a.chars.filter((x) => x.romaji === k.romaji).map((x) => x.char)
 }
 
 /** Şıkları karıştırır ve doğru cevabın yeni yerini bulur. */
@@ -711,6 +763,189 @@ function sectionKural(n: number, a: Alphabet): Question[] {
   return out
 }
 
+// ————————————————————————— ŞIKSIZ BÖLÜMLER —————————————————————————
+//
+// Şıklı sınav "tanıyor musun" diye sorar; şıksız sınav "hatırlıyor musun"
+// diye. İkincisi çok daha zordur ve gerçek okuma/yazma becerisine daha yakın.
+// Bu yüzden şıksız kipte soru sayısı da karakter sayısına bağlanmadı —
+// bölümler kendi ağırlıklarına göre boyutlanıyor, aynı karakter birden çok
+// kez ve FARKLI yönlerden sorulabiliyor.
+
+/** Karakteri gör, okunuşunu yaz. */
+function sxUretim(n: number, a: Alphabet): Question[] {
+  return pick(a.base, Math.min(n, a.base.length)).map((k) =>
+    text({
+      section: 'uretim',
+      chars: [k.char],
+      prompt: 'Bu karakterin okunuşunu yaz',
+      showKana: k.char,
+      accepts: acceptsFor(k.char),
+      answerLabel: k.romaji,
+      explain: `${k.char} = ${k.romaji} (Türkçe: ${k.trHint})`,
+    }),
+  )
+}
+
+/** Okunuşu gör, karakteri klavyeden yaz. Hatırlamanın şıksız hâli. */
+function sxYazim(n: number, a: Alphabet, kaynak = a.base, section: Section = 'yazim'): Question[] {
+  return pick(kaynak, Math.min(n, kaynak.length)).map((k) =>
+    kbd({
+      section,
+      chars: [k.char],
+      prompt: 'Bu okunuş hangi karakter? Klavyeden yaz',
+      showText: k.romaji,
+      hint: k.trHint,
+      accepts: kanaAccepts(k, a),
+      answerLabel: k.char,
+      alfabe: a.type,
+      explain: `${k.romaji} = ${k.char}${k.mnemonic ? ` — ${k.mnemonic}` : ''}`,
+    }),
+  )
+}
+
+/**
+ * Karışan çiftler, şıksız.
+ *
+ * Şıklı sürümde さ/き yan yana durur ve aradaki farkı görürsün; burada
+ * karakteri sıfırdan üretmen gerekiyor. Aynı beceriyi ölçer ama ipucu vermez.
+ */
+function sxAyirt(n: number, a: Alphabet): Question[] {
+  const adaylar = [...new Set(a.pairs.flat())]
+    .map((c) => a.chars.find((x) => x.char === c))
+    .filter(Boolean) as KanaChar[]
+  if (!adaylar.length) return []
+  return pick(adaylar, Math.min(n, adaylar.length)).map((k) => {
+    const esler = confusablesOf(k.char)
+    return kbd({
+      section: 'ayirt',
+      chars: [k.char, ...esler],
+      prompt: 'Klavyeden yaz — karıştırılan bir karakter',
+      showText: k.romaji,
+      hint: k.trHint,
+      accepts: kanaAccepts(k, a),
+      answerLabel: k.char,
+      alfabe: a.type,
+      explain: `${k.romaji} = ${k.char}${esler.length ? ` · karıştığı harf(ler): ${esler.join(', ')}` : ''}`,
+    })
+  })
+}
+
+/** Dakuten ve yōon: yarısı okunuş yaz, yarısı karakter yaz. */
+function sxIsaretli(n: number, a: Alphabet, section: 'dakuten' | 'yoon'): Question[] {
+  const havuz = section === 'dakuten' ? a.daku : a.yoon
+  if (!havuz.length) return []
+  const yari = Math.ceil(n / 2)
+  const out: Question[] = []
+  for (const k of pick(havuz, Math.min(yari, havuz.length))) {
+    out.push(
+      text({
+        section,
+        chars: [k.char],
+        prompt: 'Bu karakterin okunuşunu yaz',
+        showKana: k.char,
+        accepts: acceptsFor(k.char),
+        answerLabel: k.romaji,
+        explain: `${k.char} = ${k.romaji}`,
+      }),
+    )
+  }
+  out.push(...sxYazim(n - yari, a, havuz, section))
+  return out
+}
+
+/**
+ * Kelime, şıksız: yarısı okuma yarısı YAZMA.
+ *
+ * Yazma yönü sınavın en zor kısmı — kelimeyi baştan sona kana ile kurmak hem
+ * karakterleri hem hece sayısını hem de özel kuralları (っ, ー, uzun ünlü)
+ * aynı anda yokluyor.
+ */
+function sxKelime(n: number, a: Alphabet): Question[] {
+  const havuz = a.words.filter((w) => w.mora >= 2)
+  if (!havuz.length) return []
+  const yari = Math.ceil(n / 2)
+  const out: Question[] = []
+
+  for (const w of pick(havuz, Math.min(yari, havuz.length))) {
+    out.push(
+      text({
+        section: 'kelime',
+        chars: w.tokens,
+        prompt: 'Bu kelimenin okunuşunu yaz',
+        showKana: w.kana,
+        accepts: [w.reading],
+        answerLabel: w.reading,
+        explain:
+          `${w.kana} = ${w.reading} · ${w.tokens.join(' · ')}` +
+          (w.from ? ` — ${w.from} (${w.tr})` : '') +
+          (w.note ? ` — ${w.note}` : ''),
+      }),
+    )
+  }
+
+  for (const w of pick(havuz, Math.min(n - yari, havuz.length))) {
+    out.push(
+      kbd({
+        section: 'kelime',
+        chars: w.tokens,
+        prompt: 'Bu kelimeyi klavyeden yaz',
+        showText: w.reading,
+        hint: w.tr,
+        accepts: [w.kana],
+        answerLabel: w.kana,
+        alfabe: a.type,
+        explain: `${w.reading} = ${w.kana} · ${w.tokens.join(' · ')} (${w.mora} hece)`,
+      }),
+    )
+  }
+  return out
+}
+
+/** Özel kurallar, şıksız: tuzaklı kelimelerin okunuşunu yaz. */
+function sxKural(n: number, a: Alphabet): Question[] {
+  const tuzakli = a.words.filter(
+    (w) => w.kana.includes(a.sokuon) || a.longRe.test(w.kana) || w.kana.includes(a.n),
+  )
+  if (!tuzakli.length) return []
+  return pick(tuzakli, Math.min(n, tuzakli.length)).map((w) =>
+    text({
+      section: 'kural',
+      chars: w.tokens,
+      prompt: 'Tuzaklara dikkat — okunuşu yaz',
+      showKana: w.kana,
+      accepts: [w.reading],
+      answerLabel: w.reading,
+      explain: `${w.kana} = ${w.reading} · ${w.tokens.join(' · ')} → ${w.mora} hece. ${a.longHow}`,
+    }),
+  )
+}
+
+/**
+ * Kaynak kelime, şıksız — YALNIZCA katakana.
+ *
+ * Şıklı sürüm "bu kelime ne demek" diye sorup Türkçe şıklar veriyordu. Şıksız
+ * sürüm tersini yapıyor ve çok daha zor: kaynak kelimeyi veriyor, katakanasını
+ * yazdırıyor. "coffee" → コーヒー. Uzatma çizgisini, küçük ッ'yi ve genişletilmiş
+ * kanayı aynı anda bilmeni gerektiriyor — katakananın asıl sınavı bu.
+ */
+function sxKaynak(n: number, a: Alphabet): Question[] {
+  const havuz = a.words.filter((w) => w.from)
+  if (!havuz.length) return []
+  return pick(havuz, Math.min(n, havuz.length)).map((w) =>
+    kbd({
+      section: 'kaynak',
+      chars: w.tokens,
+      prompt: 'Bu kelimenin katakanasını yaz',
+      showText: w.from!,
+      hint: w.tr,
+      accepts: [w.kana],
+      answerLabel: w.kana,
+      alfabe: a.type,
+      explain: `${w.from} → ${w.kana} (${w.reading}) · ${w.tokens.join(' · ')}`,
+    }),
+  )
+}
+
 function sectionCizim(n: number, a: Alphabet): Question[] {
   return pick(a.base, n).map((k) => ({
     id: qid(),
@@ -733,6 +968,8 @@ export interface ExamOptions {
   full: boolean
   /** Çizim bölümü dahil edilsin mi */
   withWriting: boolean
+  /** Şıksız kip — bütün sorular üretim */
+  siksiz?: boolean
 }
 
 /**
@@ -746,9 +983,31 @@ export function examPlan(
   full: boolean,
   withWriting: boolean,
   kt: KanaType = 'hiragana',
+  siksiz = false,
 ): { section: Section; count: number }[] {
   const f = full
   const a = ALPHABET[kt]
+
+  // ŞIKSIZ KİP — ayrı bir plan.
+  //
+  // Soru sayısı bilerek karakter sayısına bağlanmadı: aynı karakter hem
+  // "okunuşunu yaz" hem "klavyeden yaz" yönünden çıkabiliyor, üstelik karışan
+  // çift ve dakuten bölümlerinde bir kez daha. Amaç kapsamak değil zorlamak.
+  if (siksiz) {
+    const sp: { section: Section; count: number }[] = [
+      { section: 'uretim', count: f ? 14 : 7 },
+      { section: 'yazim', count: f ? 14 : 7 },
+      { section: 'ayirt', count: f ? 10 : 5 },
+      { section: 'dakuten', count: f ? 8 : 4 },
+      { section: 'yoon', count: f ? 6 : 3 },
+      { section: 'kelime', count: f ? 12 : 6 },
+      { section: 'kural', count: f ? 6 : 3 },
+    ]
+    if (kt === 'katakana') sp.push({ section: 'kaynak', count: f ? 8 : 4 })
+    if (withWriting) sp.push({ section: 'cizim', count: f ? 4 : 2 })
+    return sp
+  }
+
   const plan: { section: Section; count: number }[] = [
     { section: 'tanima', count: f ? 12 : 6 },
     { section: 'hatirlama', count: f ? 10 : 5 },
@@ -768,8 +1027,24 @@ export function examPlan(
 export function buildExam(o: ExamOptions): Question[] {
   seq = 0
   const a = ALPHABET[o.kana]
-  const plan = examPlan(o.full, o.withWriting, o.kana)
+  const plan = examPlan(o.full, o.withWriting, o.kana, o.siksiz)
   const n = (s: Section) => plan.find((p) => p.section === s)?.count ?? 0
+
+  if (o.siksiz) {
+    const sx: Question[] = [
+      ...sxUretim(n('uretim'), a),
+      ...sxYazim(n('yazim'), a),
+      ...sxAyirt(n('ayirt'), a),
+      ...sxIsaretli(n('dakuten'), a, 'dakuten'),
+      ...sxIsaretli(n('yoon'), a, 'yoon'),
+      ...sxKelime(n('kelime'), a),
+      ...sxKural(n('kural'), a),
+    ]
+    if (o.kana === 'katakana') sx.push(...sxKaynak(n('kaynak'), a))
+    if (o.withWriting) sx.push(...sectionCizim(n('cizim'), a))
+    return sx
+  }
+
   const qs: Question[] = [
     ...sectionTanima(n('tanima'), a),
     ...sectionHatirlama(n('hatirlama'), a),
