@@ -18,6 +18,8 @@ import VocabPage from '@/pages/Vocab'
 import WordWritePage from '@/pages/WordWrite'
 import MoraCountPage from '@/pages/MoraCount'
 import RomajiPage from '@/pages/Romaji'
+import DayEndPage from '@/pages/DayEnd'
+import DayEndTestPage from '@/pages/DayEndTest'
 import LeechesPage from '@/pages/Leeches'
 import N5Page from '@/pages/N5'
 import KanjiPage from '@/pages/Kanji'
@@ -138,6 +140,8 @@ export default function App() {
         <Route path="/kelime-yazma" element={<WordWritePage />} />
         <Route path="/hece-sayma" element={<MoraCountPage />} />
         <Route path="/romaji" element={<RomajiPage />} />
+        <Route path="/gun-sonu" element={<DayEndPage />} />
+        <Route path="/gun-sonu-testi/:day" element={<DayEndTestPage />} />
         <Route path="/kanji" element={<KanjiPage />} />
 
         <Route path="/lessons" element={<LessonsPage />} />

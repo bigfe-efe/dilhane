@@ -96,6 +96,13 @@ const GROUPS: { title: string; note?: string; items: Tool[] }[] = [
     items: [
       { to: '/kana-test', glyph: '試', title: 'Kendi testin', sub: 'Çıkacak karakterleri sen seç', stages: ['hiragana', 'katakana'] },
       {
+        to: '/gun-sonu',
+        glyph: '日',
+        title: 'Gün sonu',
+        sub: 'Bugün ne çalıştın? Yarın ondan test çıkar',
+        stages: ['hiragana', 'katakana', 'genki-1-4'],
+      },
+      {
         to: '/kelime-yazma',
         glyph: '筆',
         title: 'Kelime yazma',

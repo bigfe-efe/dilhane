@@ -75,6 +75,14 @@ export interface PlanContext {
   exams: ExamRecord[]
   /** Hedeflenen sınav günü; belirlenmemişse null */
   examDate: Date | null
+  /**
+   * Testi yapılmamış en yeni gün sonu kaydı.
+   *
+   * Kullanıcı bazı günler plana uymayıp kendi kafasına göre çalışıyor ve bunu
+   * "Gün sonu" sayfasında işaretliyor. Ertesi gün o kayıttan bir tekrar testi
+   * çıkıyor.
+   */
+  pendingSession?: { day: string; chars: number } | null
   leeches: number
   /** Toplam ders sayısı */
   totalLessons: number
@@ -141,6 +149,22 @@ export function buildDailyPlan(ctx: PlanContext, now = new Date()): DailyPlan {
       detail: `${ctx.dueCards} kart hazır. Yeni konuya geçmeden önce bunu kapat — biriken tekrar en hızlı vazgeçme sebebidir.`,
       minutes: Math.min(30, Math.max(5, Math.round(ctx.dueCards * 0.4))),
       to: '/review',
+    })
+  }
+
+  // ————— 1.5. Dünkü çalışmanın testi —————
+  //
+  // Bekleyen tekrarlardan sonra, yeni dersten ÖNCE. Sebebi şu: dün öğrendiğin
+  // şey bugün en kırılgan hâlinde. Üstüne yeni konu koymadan önce onu sabitle,
+  // yoksa iki gün sonra ikisi de yarım kalır.
+  if (ctx.pendingSession) {
+    tasks.push({
+      id: `gunsonu:${ctx.pendingSession.day}`,
+      kind: 'drill',
+      title: 'Dünkü çalışmanın testi',
+      detail: `Gün sonunda işaretlediğin ${ctx.pendingSession.chars} karakterden. Şıksız — okunuşu yaz, karakteri bul, kelimeyi yaz.`,
+      minutes: 10,
+      to: `/gun-sonu-testi/${ctx.pendingSession.day}`,
     })
   }
 

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Bar, TopBar } from '@/components/ui'
 import { Icon, type IconName } from '@/components/icons'
-import { useDailyDone, useDailyHistory, useDueCounts, useExamDate, useExams, useLeeches, useLessonProgress, useToday } from '@/db/hooks'
+import { useDailyDone, useDailyHistory, useDueCounts, useExamDate, useExams, useLeeches, useLessonProgress, usePendingSession, useToday } from '@/db/hooks'
 import { db, todayKey } from '@/db/db'
 import { LESSONS_ORDERED } from '@/content'
 import { buildDailyPlan, type DailyTask, type TaskKind } from '@/content/ja/study-plan'
@@ -44,6 +44,7 @@ export default function Home() {
   const yapilan = useDailyDone(gun)
   const gecmis = useDailyHistory(14)
   const examDate = useExamDate()
+  const bekleyen = usePendingSession()
 
   const tamamlanan = new Set(
     [...prog.map.entries()].filter(([, v]) => v.status === 'completed').map(([k]) => k),
@@ -56,6 +57,7 @@ export default function Home() {
     nextLesson: prog.next,
     exams,
     examDate,
+    pendingSession: bekleyen ? { day: bekleyen.day, chars: bekleyen.chars.length } : null,
     leeches: leeches.leeches.length,
     totalLessons: LESSONS_ORDERED.length,
   })

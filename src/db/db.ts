@@ -127,6 +127,33 @@ export interface DailyDone {
   at: number
 }
 
+/**
+ * Gün sonu kaydı — "bugün neyi çalıştım".
+ *
+ * NEDEN VAR:
+ * Günlük plan uygulamanın önerdiği şeydir; ama insan her zaman ona uymaz.
+ * Bazı günler kendi kafasına göre birkaç satır çalışır. O emek uygulamada
+ * hiçbir yere yazılmadığı için ertesi gün tekrarı da kurulamıyordu.
+ *
+ * Bu kayıt planın YERİNE geçmez, yanında durur: gün sonunda ne çalıştığını
+ * işaretlersin, ertesi gün tam ondan bir test çıkar. Unutma eğrisinin ilk
+ * kritik aralığı yaklaşık 24 saattir; "dün çalıştığın" ile "bugün test
+ * edilmesi gereken" neredeyse aynı şeydir.
+ */
+export interface StudySession {
+  /** YYYY-MM-DD — bir güne tek kayıt, üstüne yazılır */
+  day: string
+  /** O gün çalışılan karakterler; hiragana ve katakana karışık olabilir */
+  chars: string[]
+  /** Serbest not — "Genki 1. ders kelimeleri" gibi */
+  note?: string
+  at: number
+  /** Testi ne zaman yapıldı; yapılmadıysa tanımsız */
+  testedAt?: number
+  /** Test yüzdesi */
+  testPercent?: number
+}
+
 class DilhaneDB extends Dexie {
   cards!: Table<Card, string>
   reviews!: Table<ReviewLog, number>
@@ -138,6 +165,7 @@ class DilhaneDB extends Dexie {
   notes!: Table<Note, string>
   exams!: Table<ExamRecord, number>
   daily!: Table<DailyDone, string>
+  sessions!: Table<StudySession, string>
 
   constructor() {
     super('dilhane')
@@ -161,6 +189,12 @@ class DilhaneDB extends Dexie {
     // v3: günlük görev işaretleri
     this.version(3).stores({
       daily: 'id, day, taskId',
+    })
+
+    // v4: gün sonu kayıtları. testedAt indeksli çünkü ana sayfa "test edilmemiş
+    // gün var mı" diye soruyor ve bu sorgu her açılışta çalışıyor.
+    this.version(4).stores({
+      sessions: 'day, at, testedAt',
     })
   }
 }

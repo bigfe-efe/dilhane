@@ -389,3 +389,28 @@ export function sourceOf(kana: string): string | undefined {
 export function kataNote(kana: string): string | undefined {
   return BY_KANA.get(kana)?.note
 }
+
+/**
+ * Verilen kana kümesiyle okunabilen katakana kelimeler.
+ *
+ * Hiragana tarafındaki `wordsReadableWith` ile aynı mantık: kelimenin HER
+ * birimi seçili olmalı, biri bile eksikse kelime elenir. Katakanaya özgü iki
+ * incelik var:
+ *   • Küçük ッ, ツ'nin küçüğüdür — ツ seçilmeden çözülemez.
+ *   • Uzatma ー bir harf değil işarettir; her zaman okunabilir sayılır,
+ *     ayrıca seçilmesi gerekmez.
+ */
+export function kataWordsReadableWith(
+  selected: Set<string>,
+  opts?: { maxMora?: number },
+): KataWord[] {
+  const max = opts?.maxMora ?? Infinity
+  return KATA_QUIZ_WORDS.filter((w) => {
+    if (kataMoraCount(w.kana) > max) return false
+    return kataTokenize(w.kana).every((t) => {
+      if (t === 'ー') return true
+      if (t === 'ッ') return selected.has('ツ')
+      return selected.has(t)
+    })
+  })
+}

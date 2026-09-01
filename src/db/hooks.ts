@@ -181,3 +181,29 @@ export function useExamDate(): Date | null {
     }, []) ?? null
   )
 }
+
+/** Gün sonu kayıtları — en yeni başta. */
+export function useSessions(limit = 30) {
+  return (
+    useLiveQuery(async () => db.sessions.orderBy('day').reverse().limit(limit).toArray(), [limit]) ?? []
+  )
+}
+
+/** Tek bir günün kaydı. */
+export function useSession(day: string | undefined) {
+  return useLiveQuery(async () => (day ? await db.sessions.get(day) : undefined), [day])
+}
+
+/**
+ * Testi yapılmamış en yeni GEÇMİŞ gün.
+ *
+ * Bugünün kaydı bilerek dışarıda: gün sonunda işaretlediğin şeyi hemen test
+ * etmek tekrar değil, aynı oturumun devamı olur. Değeri ertesi gün doğuyor.
+ */
+export function usePendingSession() {
+  return useLiveQuery(async () => {
+    const bugun = todayKey()
+    const hepsi = await db.sessions.orderBy('day').reverse().toArray()
+    return hepsi.find((s) => s.day < bugun && !s.testedAt)
+  }, [])
+}
