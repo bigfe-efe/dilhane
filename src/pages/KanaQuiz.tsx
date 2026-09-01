@@ -4,6 +4,7 @@ import type { KanaChar } from '@/types'
 import { Badge, Chips, SpeakBtn, TopBar } from '@/components/ui'
 import { Icon } from '@/components/icons'
 import { KanaGlyph } from '@/components/KanaGlyph'
+import { KanaKeyboard } from '@/components/KanaKeyboard'
 import { kanaGroups } from '@/content/ja/kana'
 import { acceptsFor, readingOk } from '@/content/ja/exam'
 import { shuffle } from '@/lib/shuffle'
@@ -72,11 +73,12 @@ const REPEATS: { id: string; label: string }[] = [
 
 // ————————————————————————— Soru tipleri —————————————————————————
 
-type QType = 'mcqRomaji' | 'mcqChar' | 'match' | 'type'
+type QType = 'mcqRomaji' | 'mcqChar' | 'match' | 'type' | 'writeChar'
 
 export const QTYPE_TR: Record<QType, { title: string; ask: string }> = {
   mcqRomaji: { title: 'Tanıma', ask: 'Bu karakter nasıl okunur?' },
   mcqChar: { title: 'Hatırlama', ask: 'Bu okunuş hangi karakter?' },
+  writeChar: { title: 'Yazma (karakter)', ask: 'Bu okunuş hangi karakter? Klavyeden yaz' },
   match: { title: 'Eşleştirme', ask: 'Her karakteri okunuşuyla eşleştir' },
   type: { title: 'Yazma', ask: 'Okunuşunu yaz — şık yok' },
 }
@@ -99,24 +101,59 @@ interface TypeQ {
   romaji: string
   accepts: string[]
 }
+/**
+ * Okunuşu gör, karakteri EKRAN KLAVYESİNDEN yaz.
+ *
+ * mcqChar'ın şıksız hâli. Şıklı sürümde dört seçenek arasından eleyerek
+ * doğruya varılabiliyor — "bunu tanımıyorum, demek ki değil" diye. Burada
+ * eleyecek bir şey yok: karakteri gojūon tablosunda kendin bulman gerekiyor.
+ */
+interface WriteCharQ {
+  type: 'writeChar'
+  char: string
+  romaji: string
+  tr: string
+  alfabe: 'hiragana' | 'katakana'
+  /** Karışık seçimde hangi alfabe istendiği yazılır (し / シ ikisi de "shi") */
+  showAlfabe: boolean
+}
 interface MatchQ {
   type: 'match'
   pairs: { char: string; romaji: string }[]
   /** Sağ sütunun karışık sırası — her açılışta sabit kalsın diye saklanır */
   shuffled: string[]
 }
-type Question = McqQ | TypeQ | MatchQ
+type Question = McqQ | TypeQ | MatchQ | WriteCharQ
 
 /** Verilen cevap: tek değer ya da eşleştirme haritası. */
 type Given = { t: 'one'; v: string | null } | { t: 'pairs'; v: Record<string, string> }
 
 const SAVE_KEY = 'kana-quiz:setup'
 
+type Zorluk = 'karisik' | 'siksiz'
+
+/**
+ * ŞIKSIZ MOD — neden ayar olarak var.
+ *
+ * Soru TİPLERİ hâlâ ayarlanamıyor (bkz. yukarıdaki not): kimse en kolayını
+ * seçip orada kalmasın diye. Bu ayar ise yalnızca ZORLAŞTIRIYOR — şıkları
+ * tamamen kaldırıyor. Kolaya kaçma riski olmadığı için o kural burada
+ * geçerli değil.
+ *
+ * Gerekçe kullanıcıdan geldi: dört şık görünce bilmediği harfte bile eleyerek
+ * doğruyu buluyor ve sonuç gerçek bilgisini göstermiyor.
+ */
 interface Saved {
   kind: Kind
   chars: string[]
   repeat: number
+  zorluk?: Zorluk
 }
+
+const ZORLUKLAR: { id: Zorluk; label: string }[] = [
+  { id: 'karisik', label: 'Karışık (şıklı + yazma)' },
+  { id: 'siksiz', label: 'Şıksız — sadece yazma' },
+]
 
 function loadSaved(): Saved | null {
   try {
@@ -132,6 +169,7 @@ export default function KanaQuizPage() {
   const [kind, setKind] = useState<Kind>(saved?.kind ?? 'hiragana')
   const [selected, setSelected] = useState<Set<string>>(new Set(saved?.chars ?? []))
   const [repeat, setRepeat] = useState(saved?.repeat ?? 1)
+  const [zorluk, setZorluk] = useState<Zorluk>(saved?.zorluk ?? 'karisik')
 
   const [phase, setPhase] = useState<'setup' | 'running' | 'done'>('setup')
   const [questions, setQuestions] = useState<Question[]>([])
@@ -161,9 +199,9 @@ export default function KanaQuizPage() {
   }, [groups])
 
   useEffect(() => {
-    const data: Saved = { kind, chars: [...selected], repeat }
+    const data: Saved = { kind, chars: [...selected], repeat, zorluk }
     localStorage.setItem(SAVE_KEY, JSON.stringify(data))
-  }, [kind, selected, repeat])
+  }, [kind, selected, repeat, zorluk])
 
   const picked = [...selected].map((c) => byChar.get(c)).filter(Boolean) as KanaChar[]
   const inDeck = picked.filter((c) => cardStates.has(c.char)).length
@@ -210,6 +248,28 @@ export default function KanaQuizPage() {
     const slots: KanaChar[] = []
     for (let r = 0; r < repeat; r++) slots.push(...shuffle(pool))
     const n = slots.length
+
+    // ŞIKSIZ MOD: şıklı ve eşleştirmeli tipler tamamen düşer, geriye iki
+    // ÜRETİM tipi kalır — okunuşu yaz ve karakteri klavyeden yaz. İkisi de
+    // eleyerek çözülemez.
+    if (zorluk === 'siksiz') {
+      const out: Question[] = []
+      const yari = Math.ceil(n / 2)
+      for (const k of slots.slice(0, yari)) {
+        out.push({ type: 'type', char: k.char, romaji: k.romaji, accepts: acceptsFor(k.char) })
+      }
+      for (const k of slots.slice(yari)) {
+        out.push({
+          type: 'writeChar',
+          char: k.char,
+          romaji: k.romaji,
+          tr: k.trHint,
+          alfabe: k.type,
+          showAlfabe: karisik,
+        })
+      }
+      return out
+    }
 
     const share = canMatch
       ? { mcqRomaji: 0.3, mcqChar: 0.25, match: 0.2, type: 0.25 }
@@ -262,6 +322,15 @@ export default function KanaQuizPage() {
     if (v === null || v === '') return { correct: 0, total: 1 }
     if (q.type === 'type') return { correct: readingOk(v, q.accepts) ? 1 : 0, total: 1 }
     if (q.type === 'mcqRomaji') return { correct: v === q.romaji ? 1 : 0, total: 1 }
+    if (q.type === 'writeChar') {
+      // Okunuş üzerinden puanlanıyor (じ/ぢ ikisi de "ji"), ama alfabe
+      // istenmişse o da tutmalı: karışık testte し yazıp シ sorusunu geçmek
+      // tam olarak ölçülmek istenen ayrımı atlamak olur.
+      const w = byChar.get(v)
+      if (!w || w.romaji !== q.romaji) return { correct: 0, total: 1 }
+      if (q.showAlfabe && w.type !== q.alfabe) return { correct: 0, total: 1 }
+      return { correct: 1, total: 1 }
+    }
     return { correct: (byChar.get(v)?.romaji ?? v) === q.romaji ? 1 : 0, total: 1 }
   }
 
@@ -311,6 +380,8 @@ export default function KanaQuizPage() {
           <MatchView key={idx} q={q} onSubmit={(v) => submit({ t: 'pairs', v })} />
         ) : q.type === 'type' ? (
           <TypeView key={idx} q={q} onSubmit={(v) => submit({ t: 'one', v })} />
+        ) : q.type === 'writeChar' ? (
+          <WriteCharView key={idx} q={q} onSubmit={(v) => submit({ t: 'one', v })} />
         ) : (
           <McqView key={idx} q={q} onSubmit={(v) => submit({ t: 'one', v })} />
         )}
@@ -344,7 +415,7 @@ export default function KanaQuizPage() {
     }
 
     // Tip tip döküm — hangi beceride düştüğünü görmek puandan önemli
-    const byType = (['mcqRomaji', 'mcqChar', 'match', 'type'] as QType[])
+    const byType = (['mcqRomaji', 'mcqChar', 'writeChar', 'match', 'type'] as QType[])
       .map((t) => {
         const rows = scored.filter((r) => r.q.type === t)
         const c = rows.reduce((a, r) => a + r.s.correct, 0)
@@ -393,10 +464,14 @@ export default function KanaQuizPage() {
                 </div>
               )
             })}
+            {/* Tavsiye moda göre değişmeli: şıksız testte "şıklı bölümlerde
+                yüksek" diye bir karşılaştırma yok, o cümle orada anlamsız
+                kalıyordu. */}
             {byType.length > 1 && (
               <div className="tiny faint" style={{ lineHeight: 1.5 }}>
-                Şıklı bölümlerde yüksek, yazmada düşükse: tanıyorsun ama hatırlamıyorsun. Şıklar sana ipucu
-                veriyor — şıksız çalışmadan bu kapanmaz.
+                {zorluk === 'siksiz'
+                  ? 'İki bölüm de üretim: biri sesi karakterden çıkarmak, öteki karakteri sesten. Okunuşta yüksek yazmada düşükse okuyabiliyorsun ama yazamıyorsun — tam tersi ise karakterleri tanıyorsun, sesleri karıştırıyorsun.'
+                  : 'Şıklı bölümlerde yüksek, yazmada düşükse: tanıyorsun ama hatırlamıyorsun. Şıklar sana ipucu veriyor — şıksız çalışmadan bu kapanmaz.'}
               </div>
             )}
           </div>
@@ -528,7 +603,10 @@ export default function KanaQuizPage() {
             çalışmak insanı yanıltır.
           </div>
           <div className="stack-sm" style={{ marginTop: 4 }}>
-            {(['mcqRomaji', 'mcqChar', 'match', 'type'] as QType[]).map((t, i) => (
+            {(zorluk === 'siksiz'
+              ? (['type', 'writeChar'] as QType[])
+              : (['mcqRomaji', 'mcqChar', 'match', 'type'] as QType[])
+            ).map((t, i) => (
               <div key={t} className="row">
                 <span className="plan-no tabular">{i + 1}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -537,6 +615,16 @@ export default function KanaQuizPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+
+        <div className="stack-sm">
+          <div className="tiny bold dim">Zorluk</div>
+          <Chips items={ZORLUKLAR} value={zorluk} onChange={setZorluk} />
+          <div className="tiny faint">
+            {zorluk === 'siksiz'
+              ? 'Hiç şık yok: karakteri görüp okunuşunu yazarsın, okunuşu görüp karakteri klavyeden bulursun. Eleyerek doğruya varmak mümkün değil.'
+              : 'Şıklı ve şıksız sorular karışık gelir; test sonuna doğru şıklar ortadan kalkar.'}
           </div>
         </div>
 
@@ -786,6 +874,43 @@ function TypeView({ q, onSubmit }: { q: TypeQ; onSubmit: (v: string) => void }) 
  * yanlış eşlediğini düşünürsen üstüne tekrar dokunup çözebilirsin. Doğru olup
  * olmadığı burada GÖSTERİLMEZ — testin geri kalanıyla aynı kural.
  */
+/**
+ * Okunuşu gör, karakteri ekran klavyesinden yaz.
+ *
+ * Klavye bilerek gojūon düzeninde (bkz. KanaKeyboard): karakteri "hatırlamak"
+ * ile "tabloda yerini bilmek" birbirini besliyor. Romaji yazıp otomatik
+ * çevirmek işi klavyeye yaptırırdı.
+ */
+function WriteCharView({ q, onSubmit }: { q: WriteCharQ; onSubmit: (v: string) => void }) {
+  const [v, setV] = useState('')
+  return (
+    <>
+      <div className="quiz-body">
+        <div className="tiny faint center">{QTYPE_TR.writeChar.ask}</div>
+        <div className="quiz-prompt is-romaji">{q.romaji}</div>
+        <div className="tiny dim center">≈ {q.tr}</div>
+        {q.showAlfabe && (
+          <div className="quiz-alfabe ja">{q.alfabe === 'hiragana' ? 'ひらがな' : 'カタカナ'}</div>
+        )}
+        <div className="ww-input" style={{ marginTop: 14 }}>
+          {v ? <span className="ja">{v}</span> : <span className="ww-placeholder">…</span>}
+        </div>
+      </div>
+      <div className="quiz-foot stack-sm">
+        <KanaKeyboard
+          type={q.alfabe}
+          onKey={(c) => setV((x) => x + c)}
+          onBackspace={() => setV((x) => [...x].slice(0, -1).join(''))}
+          onClear={() => setV('')}
+        />
+        <button className="btn btn--primary btn--block" onClick={() => onSubmit(v)} disabled={!v}>
+          Sonraki
+        </button>
+      </div>
+    </>
+  )
+}
+
 function MatchView({ q, onSubmit }: { q: MatchQ; onSubmit: (v: Record<string, string>) => void }) {
   const [pairs, setPairs] = useState<Record<string, string>>({})
   const [aktif, setAktif] = useState<string | null>(null)
