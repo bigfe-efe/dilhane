@@ -21,6 +21,12 @@ Genki*/
 *.epub
 *.mobi
 
+# iPhone duvar kagidi gorselleri — 104 PNG, ~58 MB. Depoya girmesi anlamsiz:
+# tek komutla yeniden uretiliyor (npm run gen:iphone-wallpaper) ve OneDrive
+# zaten telefona senkronluyor.
+wallpaper/iphone/*.png
+wallpaper/iphone/frame.html
+
 # Kisisel ayarlar ve makineye ozgu dosyalar
 wallpaper/prefs.json
 dilhane-kaynak.txt
