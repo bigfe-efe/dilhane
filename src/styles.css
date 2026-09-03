@@ -83,10 +83,69 @@
   --pad: 20px;
 
   --ff: ui-sans-serif, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --ff-ja: 'Yu Gothic', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'MS Gothic', Meiryo, sans-serif;
+  /*
+    İki Japonca yığını.
+    Ayrıntılı gerekçe: src/lib/ja-font.ts
+
+    Kyōkasho yığınında aile adları TAM adla ("… NP-R") değil aile adıyla
+    ("… NP") yazılır. Sebebi: tek bir kesim adı verilince tarayıcı kalın
+    ağırlığı SENTEZLER (harfleri kalınlaştırıp bulanıklaştırır); aile adı
+    verilince yazı tipinin kendi B kesimini kullanır.
+
+    Kyokasho bulunmayan cihazlarda (iOS, Android) yedek olarak MİNÇO
+    seçilir — o da き ve さ'yı ayrık çizen bir gelenektir, gotiğe düşmekten
+    çok daha yakın bir karşılık verir.
+  */
+  --ff-ja-kyokasho: 'UD Digi Kyokasho NP', 'UD Digi Kyokasho NK', 'UD Digi Kyokasho N',
+    'YuKyokasho', 'Klee One', 'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif JP',
+    'BIZ UDMincho Medium', 'MS Mincho', serif;
+  --ff-ja-gothic: 'Yu Gothic', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'MS Gothic', Meiryo,
+    sans-serif;
+  --ff-ja: var(--ff-ja-kyokasho);
   --ff-mono: 'Cascadia Code', Consolas, 'SF Mono', ui-monospace, monospace;
 
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
+}
+
+/* Ayarlardan "Baskı" seçilince gerçek metinlerdeki gotik biçime geçilir */
+:root[data-ja-font='gothic'] {
+  --ff-ja: var(--ff-ja-gothic);
+}
+
+/* Yazı tipi seçici — iki biçim yan yana. Dar ekranda alt alta düşer.
+   Burada .cols-2 KULLANILMIYOR: o CSS kolonlarıyla çalışır ve yalnızca geniş
+   ekranda devreye girer; bu karşılaştırmanın telefonda da yan yana durması
+   gerekiyor, çünkü fark ancak yan yana görülüyor. */
+.fontpick {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+}
+.fontpick > button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.fontpick > button.is-on {
+  border-color: var(--accent);
+  background: var(--lang-dim, var(--bg-elev-2));
+}
+/* Büyük tutuluyor: き ile さ'nın alt kancasındaki kopukluk küçük puntoda
+   seçilmiyor, fark ancak bu boyutta görünür oluyor. */
+.fontsample {
+  font-size: 3.1rem;
+  letter-spacing: 0.1em;
+  line-height: 1.25;
+  padding: 2px 0;
+}
+.fontsample--kyokasho {
+  font-family: var(--ff-ja-kyokasho);
+}
+.fontsample--gothic {
+  font-family: var(--ff-ja-gothic);
 }
 
 * {

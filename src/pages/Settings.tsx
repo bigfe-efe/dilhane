@@ -15,6 +15,7 @@ import {
   voicesFor,
 } from '@/lib/tts'
 import { jaToTurkishSpeech } from '@/lib/ja-phonetic'
+import { JA_FONT_TR, getJaFont, setJaFont, type JaFont } from '@/lib/ja-font'
 import { sttAvailable } from '@/lib/stt'
 import { db, exportAll, importAll, setSetting } from '@/db/db'
 import { useExamDate } from '@/db/hooks'
@@ -78,6 +79,59 @@ function ApproxPanel({ onChange }: { onChange: () => void }) {
   )
 }
 
+/**
+ * Japonca yazı tipi seçimi.
+ *
+ * Örnek harfler rastgele değil: き さ ふ り, baskı ile el yazısının EN ÇOK
+ * ayrıldığı dörtlüdür. İki kutu yan yana durur ki fark anlatılmadan
+ * görülsün — bu farkı kelimeyle tarif etmek, göstermekten çok daha zor.
+ */
+function JaFontPanel() {
+  const [font, setFont] = useState<JaFont>(getJaFont)
+
+  const sec = (f: JaFont) => {
+    setFont(f)
+    setJaFont(f)
+  }
+
+  return (
+    <div className="card stack">
+      <div>
+        <div className="card-title">Japonca yazı tipi</div>
+        <div className="card-sub">
+          Bazı kanalar baskıda ve el yazısında farklı çizilir. İkisi de doğrudur — ama yazarken
+          gördüğünün aynısını istiyorsan ders kitabı biçimini seç.
+        </div>
+      </div>
+
+      <div className="fontpick">
+        {(['kyokasho', 'gothic'] as JaFont[]).map((f) => (
+          <button
+            key={f}
+            className={`card stack-sm${font === f ? ' is-on' : ''}`}
+            onClick={() => sec(f)}
+            aria-pressed={font === f}
+          >
+            <div className="row">
+              <span className="card-title" style={{ flex: 1 }}>
+                {JA_FONT_TR[f].ad}
+              </span>
+              {font === f && <Badge tone="ok">Seçili</Badge>}
+            </div>
+            <div className={`fontsample fontsample--${f}`}>きさふり</div>
+            <div className="tiny dim">{JA_FONT_TR[f].alt}</div>
+          </button>
+        ))}
+      </div>
+
+      <div className="tiny faint">
+        Kâğıda yazarken her zaman ders kitabı biçimini kullan. Baskı biçimini okumak ayrı bir
+        beceri değil — zamanla kendiliğinden alışırsın.
+      </div>
+    </div>
+  )
+}
+
 export default function SettingsPage() {
   const [tick, setTick] = useState(0)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -133,6 +187,8 @@ export default function SettingsPage() {
         {msg && <div className="feedback feedback--ok">{msg}</div>}
 
         <ExamDatePanel />
+
+        <JaFontPanel />
 
         {(['ja'] as Lang[]).map((l) => {
           const voices = voicesFor(l)
