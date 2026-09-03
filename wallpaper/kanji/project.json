@@ -1,0 +1,15 @@
+{
+  "title": "Dilhane — N5 Kanji",
+  "description": "JLPT N5 kanjileri sırayla, numaralı çizgi sırası canlandırmasıyla. Türkçe anlam, on/kun okunuşları ve okunuşun kelimeye göre nasıl değiştiğini gösteren örnek kelimeler her karakterle birlikte görünür.",
+  "type": "web",
+  "file": "index.html",
+  "preview": "preview.png",
+  "visibility": "private",
+  "tags": [
+    "Abstract",
+    "Minimalistic"
+  ],
+  "general": {
+    "properties": {}
+  }
+}

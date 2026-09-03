@@ -13,6 +13,7 @@
     "gen:strokes": "tsx scripts/gen-strokes.ts",
     "gen:wallpaper": "tsx scripts/gen-wallpaper.ts",
     "gen:katakana-wallpaper": "tsx scripts/gen-katakana-wallpaper.ts",
+    "gen:kanji-wallpaper": "tsx scripts/gen-kanji-wallpaper.ts",
     "gen:iphone-wallpaper": "tsx scripts/gen-iphone-wallpapers.ts",
     "gen:genkou": "tsx scripts/gen-genkou.ts",
     "bundle": "tsx scripts/gen-bundle.ts",
