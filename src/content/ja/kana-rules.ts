@@ -184,21 +184,26 @@ export const KANA_RULES: KanaRule[] = [
   },
   {
     id: 'yoon',
-    short: 'Küçük ゃゅょ',
+    short: 'Yōon ゃゅょ',
     glyph: 'ゃ',
-    title: 'Küçük ゃ ゅ ょ — birleşik sesler',
-    rule: 'Küçük yazılan ゃゅょ önceki karaktere yapışır ve onunla TEK hece olur.',
+    title: 'Yōon (拗音) — küçük ゃ ゅ ょ',
+    rule: 'Küçük yazılan ゃゅょ önceki karaktere yapışır ve onunla TEK hece olur. Bu birleşik seslerin adı yōon’dur.',
     body: [
+      // Adlandırma bilerek en başta: kana tablosunda bu gruba "Yōon きゃ"
+      // deniyor, burada ise "küçük ゃゅょ". İki ayrı konu sanılıyordu.
+      'Bunun adı 拗音 (yōon). Kana tablosundaki "Yōon" sekmesiyle bu kural AYNI şeydir — biri sesin adı, diğeri yazılış kuralı.',
       'きゃ tek hecedir (kya). Ama きや iki hecedir (ki-ya). Aradaki tek fark ikinci karakterin boyudur.',
       'Yalnızca い ile biten karakterlerin arkasına gelir: き, し, ち, に, ひ, み, り ve bunların dakutenli hâlleri.',
+      // Asıl karışan yer burası: きょう'daki う yōon'un parçası sanılıyor.
+      'Yōon iki karakterde BİTER. Peşinden gelen う ayrı bir hecedir, birleşmeye dahil değildir: きょう = きょ + う = 2 hece. Oradaki う yōon değil, uzatma kuralıdır — iki ayrı kural üst üste binmiştir.',
       'Yazarken küçük olanı karenin alt köşesine sıkıştır ki büyükten ayrılsın.',
     ],
     examples: [
       {
         kana: 'びょういん',
         reading: 'byouin',
-        tr: 'hastane — 3 hece',
-        vs: { kana: 'びよういん', reading: 'biyouin', tr: 'kuaför — 4 hece' },
+        tr: 'hastane — 4 hece: byo-u-i-n',
+        vs: { kana: 'びよういん', reading: 'biyouin', tr: 'kuaför — 5 hece: bi-yo-u-i-n' },
       },
       { kana: 'きょう', reading: 'kyou', tr: 'bugün — 2 hece: kyo-u' },
       { kana: 'しゃしん', reading: 'shashin', tr: 'fotoğraf' },
