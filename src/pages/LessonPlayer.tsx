@@ -47,6 +47,15 @@ export default function LessonPlayer() {
   // Klavye dinleyicisi her adımda yeniden kurulmasın diye ref üzerinden çağrılır
   const advanceRef = useRef<() => void>(() => {})
 
+  // Puana girmiş alıştırmaların id'leri.
+  //
+  // Adımlar arasında geri gidilebildiği için aynı soru ikinci kez
+  // cevaplanabilir. Sayaçlar buna körse doğruluk oranı uydurma olur: dört
+  // soruluk bir derste "7/9 doğru" gibi imkânsız sonuçlar çıkar. Bir soru
+  // yalnızca İLK cevaplandığında sayılır; sonraki karşılaşmalar sadece
+  // tekrar amaçlıdır.
+  const scored = useRef<Set<string>>(new Set())
+
   // Yanlış yapılan sorular dersin sonuna eklenir.
   // Bir soruyu yanlış yapıp geçmek, o soruyu hiç sormamakla neredeyse aynı
   // şeydir; asıl öğrenme yanlıştan sonraki ikinci karşılaşmada olur.
@@ -105,8 +114,21 @@ export default function LessonPlayer() {
         return
       }
 
-      // Yarım kalmış ders: bırakıldığı adımdan devam
-      if (p.sectionIndex > 0 && p.sectionIndex < steps.length) setI(p.sectionIndex)
+      // Yarım kalmış ders: bırakıldığı adımdan devam.
+      //
+      // Ara skor da geri yüklenir. Yoksa yarıda bırakılan bir ders her
+      // açılışta sıfırdan sayılmaya başlıyor ve biten derste "1/1 doğru"
+      // gibi, gerçekte cevaplanan soru sayısıyla ilgisi olmayan bir sonuç
+      // yazılıyordu.
+      if (p.sectionIndex > 0 && p.sectionIndex < steps.length) {
+        setI(p.sectionIndex)
+        setCorrect(p.correct)
+        setAnswered(p.total)
+        // O adıma kadarki alıştırmalar zaten puanlanmıştı
+        for (const s of steps.slice(0, p.sectionIndex)) {
+          if (s.kind === 'exercise') scored.current.add(s.exercise.id)
+        }
+      }
     })
 
     return () => {
@@ -157,6 +179,32 @@ export default function LessonPlayer() {
    * cevaplandığında setState henüz uygulanmadığı için çağıran taraf güncel
    * değerleri açıkça geçer — yoksa kayıt bir soru geriden gelir.
    */
+  /**
+   * Bir adım geri.
+   *
+   * Ders yalnızca ileri akıyordu; yanlışlıkla "Devam"a basan öğrenci
+   * anlatımı bir daha göremiyor, dersi baştan almaktan başka çaresi
+   * kalmıyordu. Geri gitmek puanı DEĞİŞTİRMEZ — cevaplanmış soru
+   * `scored` sayesinde ikinci kez sayılmaz.
+   */
+  const goBack = async () => {
+    if (i === 0) return
+    setI(i - 1)
+    await db.lessons.update(lesson.id, { sectionIndex: i - 1 })
+  }
+
+  /** Dersi ilk adımdan yeniden başlat — skor ve tekrar kuyruğu sıfırlanır. */
+  const restart = async () => {
+    scored.current = new Set()
+    retryRef.current = []
+    setRetry([])
+    setCorrect(0)
+    setAnswered(0)
+    setI(0)
+    startedAt.current = Date.now()
+    await db.lessons.update(lesson.id, { sectionIndex: 0, correct: 0, total: 0 })
+  }
+
   const advance = async (score?: { correct: number; answered: number }) => {
     const okCount = score?.correct ?? correct
     const doneCount = score?.answered ?? answered
@@ -232,6 +280,9 @@ export default function LessonPlayer() {
             <button
               className="btn btn--lang btn--block"
               onClick={() => {
+                scored.current = new Set()
+                retryRef.current = []
+                setRetry([])
                 setI(0)
                 setCorrect(0)
                 setAnswered(0)
@@ -267,6 +318,23 @@ export default function LessonPlayer() {
       />
       <div style={{ padding: '0 var(--pad)' }}>
         <Bar value={i} max={allSteps.length} />
+        {/*
+          Adım gezinmesi çubuğun hemen altında durur: öğrencinin "neredeyim"
+          sorusuna baktığı yer burası, "geri dönebilir miyim" sorusunun cevabı
+          da orada olmalı. i === 0 iken satır tamamen gizlenir.
+        */}
+        {i > 0 && (
+          <div className="row" style={{ gap: 6, marginTop: 8 }}>
+            <button className="btn btn--sm btn--ghost" onClick={goBack}>
+              <Icon name="left" size={13} /> Geri
+            </button>
+            <button className="btn btn--sm btn--ghost" onClick={restart}>
+              <Icon name="undo" size={13} /> Baştan
+            </button>
+            <div className="spacer" />
+            <span className="tiny faint">Geri gitmek puanını değiştirmez</span>
+          </div>
+        )}
       </div>
 
       <div className={`page stack-lg lang-${lesson.lang}`} ref={top}>
@@ -301,7 +369,9 @@ export default function LessonPlayer() {
               onDone={(ok) => {
                 // Tekrar turundaki cevaplar puana girmez: aynı soru iki kez
                 // sayılırsa doğruluk oranı gerçeği yansıtmaz
-                if (!inRetryRound) {
+                // Geri gidilip yeniden cevaplanan soru da sayılmaz
+                if (!inRetryRound && !scored.current.has(step.exercise.id)) {
+                  scored.current.add(step.exercise.id)
                   const nextCorrect = correct + (ok ? 1 : 0)
                   const nextAnswered = answered + 1
                   setAnswered(nextAnswered)

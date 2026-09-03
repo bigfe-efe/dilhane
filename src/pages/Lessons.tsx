@@ -82,6 +82,7 @@ export default function LessonsPage() {
                         <div className="tiny" style={{ color: 'var(--lang)' }}>
                           {p.sectionIndex + 1}. adımdan devam edersin
                           {p.total > 0 ? ` · ${p.correct}/${p.total} doğru` : ''}
+                          <span className="faint"> · içeride geri dönebilirsin</span>
                         </div>
                       )}
                     </div>
