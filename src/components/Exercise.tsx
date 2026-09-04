@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { toKana } from 'wanakana'
 import type { Exercise } from '@/types'
 import { SpeakBtn } from './ui'
 import { Icon, RecordDot } from './icons'
@@ -7,19 +8,49 @@ import { speak } from '@/lib/tts'
 import { shuffle } from '@/lib/shuffle'
 import { RecognitionError, listenOnce, scoreAgainst, scoreLabel, startRecording, sttAvailable, normalize } from '@/lib/stt'
 import { db } from '@/db/db'
+import { romajiOf } from '@/lib/ja-phonetic'
 
 /**
  * Serbest metin cevaplarını karşılaştırmak için sadeleştirme.
- * Uygulama tek dilli olduğu için karşılaştırma her zaman Japonca kurallarıyla
- * yapılır: kana normalize edilir, romaji yazım da kabul edilir.
+ * Katakana hiraganaya çevrilir, noktalama ve boşluk atılır, büyük/küçük harf
+ * ayrımı (Türkçe İ/ı dahil) kaldırılır.
  */
 function loose(s: string): string {
   return normalize(s, 'ja')
 }
 
+const LATIN_ONLY = /^[a-zA-ZıİşŞğĞçÇöÖüÜ\s'’-]+$/
+const HAS_KANA = /[ぁ-ゟァ-ヿ]/
+
+/**
+ * Cevap doğru mu?
+ *
+ * ROMAJİ DE KABUL EDİLİR. Buradaki yorum eskiden bunu söylüyordu ama kod
+ * yapmıyordu: yalnızca kana karşılaştırılıyordu. Sonuç, Japonca klavyesi
+ * olmayan biri için çözülemeyen alıştırmalardı — すみません dikte
+ * alıştırmasında "sumimasen" yazmak yanlış sayılıyordu ve ekranda
+ * beklenen yazım biçimi de yazmıyordu.
+ *
+ * İki yönlü deneniyor, çünkü ikisi de tek başına yetmiyor:
+ *   • girdi romaji → kanaya çevrilip karşılaştırılır  (sumimasen → すみません)
+ *   • cevap kana   → romajiye çevrilip karşılaştırılır (ekler düzeltilerek:
+ *     わたしは "watashi wa" okunur, "watashi ha" değil — öğrenci duyduğunu
+ *     yazıyor, yazılışını değil)
+ */
 function accepts(input: string, answers: string[]): boolean {
   const a = loose(input)
-  return answers.some((x) => loose(x) === a)
+  if (answers.some((x) => loose(x) === a)) return true
+
+  const ham = input.trim()
+  if (!ham || !LATIN_ONLY.test(ham)) return false
+
+  const kanaGirdi = loose(toKana(ham.toLowerCase(), { IMEMode: false }))
+  return answers.some((x) => {
+    if (!HAS_KANA.test(x)) return false
+    if (loose(x) === kanaGirdi) return true
+    // Kanjili cevaplarda bu eşleşmez; zararı yok, sadece tutmaz.
+    return loose(romajiOf(x).text) === a
+  })
 }
 
 /** Metinde kana veya kanji var mı? */
@@ -325,14 +356,22 @@ function Dictation({
         <div className="tiny faint">İstediğin kadar tekrar dinleyebilirsin</div>
       </div>
 
+      {/*
+        Beklenen yazım biçimi AÇIKÇA yazıyor. Önce yalnızca "Duyduğunu yaz"
+        diyordu; Japonca klavyesi olmayan biri ne yazacağını bilemiyor ve
+        çoğu zaman Türkçe anlamı yazıp yanlış alıyordu.
+      */}
+      <div className="tiny faint">Kana ya da romaji yazabilirsin — ikisi de kabul edilir. Türkçe anlamı değil, DUYDUĞUN sesi yaz.</div>
+
       <input
         className={`field${done === null ? '' : done ? ' is-correct' : ' is-wrong'}`}
         value={val}
         onChange={(e) => setVal(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && check()}
-        placeholder="Duyduğunu yaz"
+        placeholder="ör. sumimasen"
         disabled={done !== null}
         autoComplete="off"
+        autoCapitalize="off"
         spellCheck={false}
       />
 
@@ -342,11 +381,17 @@ function Dictation({
         </button>
       ) : (
         <div className={`feedback ${done ? 'feedback--ok' : 'feedback--bad'}`}>
+          {/*
+            İki satır da ETİKETLİ. Etiketsizken Japonca metnin altındaki
+            Türkçe çeviri de "beklenen cevap" sanılıyordu: öğrenci Türkçeyi
+            yazıp yanlış alınca hatayı büyük/küçük harfte arıyordu.
+          */}
+          <div className="tiny" style={{ opacity: 0.75 }}>{done ? 'Doğru' : 'Doğrusu'}</div>
           <div className="ja bold" style={{ fontSize: '1.05rem' }}>
             {ex.text}
           </div>
           <div className="small" style={{ opacity: 0.85 }}>
-            {ex.translation}
+            anlamı: {ex.translation}
           </div>
         </div>
       )}

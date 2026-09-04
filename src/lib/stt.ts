@@ -115,9 +115,29 @@ export function listenOnce(lang: Lang, timeoutMs = 10000): { promise: Promise<Re
 
 // ————————————————————————— Puanlama —————————————————————————
 
+/**
+ * Türkçeye duyarlı küçük harfe çevirme.
+ *
+ * JavaScript'in düz toLowerCase()'i Türkçe "İ"yi "i" + BİRLEŞEN NOKTA
+ * (U+0307) yapar — göze aynı görünen ama farklı bir dizgi. Sonuç: cevabı
+ * "İyi akşamlar" olan bir alıştırmada "iyi akşamlar" yazmak YANLIŞ sayılıyordu
+ * ve öğrenci neyi yanlış yaptığını göremiyordu. İ ile başlayan her cevap
+ * (İyi, İlk, İki, İngilizce...) bu yüzden tutturulamazdı.
+ *
+ * Karşılaştırma için noktalı/noktasız i ayrımı tamamen kaldırılıyor: "IYI",
+ * "İyi", "iyi", "ıyı" hepsi eşitlenir. Burada amaç imla denetimi değil,
+ * öğrencinin doğru bildiği cevabı büyük/küçük harf yüzünden kaybetmemesi.
+ */
+function foldCase(s: string): string {
+  return s
+    .toLocaleLowerCase('tr') // İ→i, I→ı (Türkçe kuralı)
+    .replace(/̇/g, '') // artakalan birleşen nokta
+    .replace(/ı/g, 'i') // noktasız/noktalı ayrımını kaldır
+}
+
 /** Karşılaştırma öncesi metni sadeleştirir: noktalama, boşluk, büyük/küçük harf. */
 export function normalize(text: string, lang: Lang): string {
-  let t = text.trim().toLowerCase()
+  let t = foldCase(text.trim())
   // Japonca ve Latin noktalama.
   // Tam genişlikli biçimler (．，！？), tipografik tırnaklar ve 〜/～ de burada:
   // Japonca klavyeyle yazarken bunlar kolayca çıkıyor ve iki taraf arasında
