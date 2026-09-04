@@ -54,7 +54,13 @@ export const KANA_RULES: KanaRule[] = [
       'か→が (k→g) · さ→ざ (s→z) · た→だ (t→d) · は→ば (h→b)',
       'Handakuten (゜) tek bir satıra gelir: は→ぱ (h→p). Başka hiçbir satırda kullanılmaz.',
       'Kuralı bilirsen tablo kendiliğinden çıkar: き’nin dakutenlisi ぎ’dir, ezberlemeye gerek yok.',
-      'İki istisna okunuşta: し→じ "ji" olur ("zi" değil), ち→ぢ da "ji" okunur. Aynı şekilde つ→づ "zu" olur, す→ず gibi. Yani ji ve zu seslerinin İKİ yazımı vardır — ama じ ve ず çok daha yaygındır; ぢ/づ yalnızca birleşik kelimelerde ve az sayıda sözcükte görülür.',
+      'İki istisna okunuşta: し→じ "ji" olur ("zi" değil), ち→ぢ da "ji" okunur. Aynı şekilde つ→づ "zu" olur, す→ず gibi. Yani ji ve zu seslerinin İKİ yazımı vardır ve ARALARINDA SES FARKI YOKTUR (bu dörtlünün adı 四つ仮名).',
+      // Öğrencinin ilk sorusu "peki hangisini yazacağım" oluyor ve "ぢ nadirdir"
+      // demek onu cevaplamıyor — geriye "demek ki ezber" hissi kalıyor. Oysa
+      // kural resmîdir (現代仮名遣い, 1986): varsayılan じ/ず, ぢ/づ yalnızca iki
+      // durumda. Kuralı yazmayınca öğrenci her ji'de duraksıyor.
+      'HANGİSİNİ YAZACAĞIN kural: varsayılan HER ZAMAN じ ve ず. ぢ/づ yalnızca iki durumda çıkar — (1) birleşik kelimede ikinci parçanın başındaki ち/つ tonlanınca: はな+ち → はなぢ (burun kanaması), みか+つき → みかづき (hilal); (2) aynı hece kendinden hemen sonra tekrarlanınca: ちぢむ (büzülmek), つづく (devam etmek).',
+      'Pratikte: duyduğun "ji" sesini じ yaz, neredeyse her zaman doğru olur. N5 boyunca ぢ ile pek karşılaşmazsın. Klavyede de böyle — "ji" tuşları じ verir, ぢ için "di" yazman gerekir.',
     ],
     examples: [
       { kana: 'かぎ', reading: 'kagi', tr: 'anahtar', vs: { kana: 'かき', reading: 'kaki', tr: 'Trabzon hurması' } },
