@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { toRomaji } from 'wanakana'
-import { Badge, Bar, Sheet, SpeakBtn, TopBar } from '@/components/ui'
+import { Badge, Bar, RomajiText, Sheet, SpeakBtn, TopBar } from '@/components/ui'
 import { Icon } from '@/components/icons'
 import { bumpStat, db, type Card } from '@/db/db'
 import { useNote } from '@/db/hooks'
@@ -409,7 +408,7 @@ function renderCard(card: Card, revealed: boolean): { front: JSX.Element; back: 
             {v.term}
           </div>
           {v.reading && v.reading !== v.term && <div className="reading">{v.reading}</div>}
-          {v.lang === 'ja' && v.reading && <div className="romaji">{toRomaji(v.reading)}</div>}
+          {v.lang === 'ja' && v.reading && <div className="romaji"><RomajiText reading={v.reading} /></div>}
           <div className="row" style={{ justifyContent: 'center' }}>
             <SpeakBtn text={v.term} lang={v.lang} reading={v.reading} />
           </div>
@@ -430,7 +429,7 @@ function renderCard(card: Card, revealed: boolean): { front: JSX.Element; back: 
     back: (
       <div className="stack-sm">
         {v.reading && v.reading !== v.term && <div className="reading" style={{ fontSize: '1.05rem' }}>{v.reading}</div>}
-        {v.reading && <div className="romaji">{toRomaji(v.reading)}</div>}
+        {v.reading && <div className="romaji"><RomajiText reading={v.reading} /></div>}
         <div style={{ fontSize: '1.15rem', fontWeight: 620 }}>{v.tr}</div>
         <div className="tiny faint">{v.pos}</div>
         {v.examples?.[0] && (

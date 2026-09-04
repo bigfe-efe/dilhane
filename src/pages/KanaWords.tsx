@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toRomaji } from 'wanakana'
+import { particleFixedKana } from '@/lib/ja-phonetic'
 import { Chips, SpeakBtn, TopBar } from '@/components/ui'
 import { Icon } from '@/components/icons'
 import { KanaGlyph } from '@/components/KanaGlyph'
@@ -58,14 +59,26 @@ function loadSelection(): string[] {
  */
 function splitMora(kana: string): { text: string; romaji: string }[] {
   const chars = [...kana]
-  const units: string[] = []
+  // Okunuş, ekleri düzeltilmiş kopyadan üretilir; ekranda YAZILAN ise özgün
+  // karakterdir. こんにちは'nın son hecesi は yazılır ama "wa" okunur — tek
+  // başına toRomaji'ye verilince her zaman "ha" çıkıyordu. Düzeltilmiş dizgi
+  // aynı uzunlukta olduğu için indisler birebir örtüşüyor.
+  const okunacak = [...particleFixedKana(kana)]
+  const units: { text: string; read: string }[] = []
   for (let i = 0; i < chars.length; i++) {
     let unit = chars[i]
-    if (unit === 'っ' && i + 1 < chars.length) unit += chars[++i]
-    while (i + 1 < chars.length && 'ゃゅょ'.includes(chars[i + 1])) unit += chars[++i]
-    units.push(unit)
+    let read = okunacak[i]
+    if (unit === 'っ' && i + 1 < chars.length) {
+      unit += chars[++i]
+      read += okunacak[i]
+    }
+    while (i + 1 < chars.length && 'ゃゅょ'.includes(chars[i + 1])) {
+      unit += chars[++i]
+      read += okunacak[i]
+    }
+    units.push({ text: unit, read })
   }
-  return units.map((u) => ({ text: u, romaji: toRomaji(u) }))
+  return units.map((u) => ({ text: u.text, romaji: toRomaji(u.read) }))
 }
 
 export default function KanaWordsPage() {

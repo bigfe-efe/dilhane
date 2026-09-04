@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { toRomaji } from 'wanakana'
 import type { Vocab } from '@/types'
-import { Badge, Chips, Empty, Sheet, SpeakBtn, TopBar } from '@/components/ui'
+import { Badge, Chips, Empty, RomajiText, Sheet, SpeakBtn, TopBar } from '@/components/ui'
 import { Icon } from '@/components/icons'
 import { VOCAB } from '@/content'
 import { VOCAB_JA_THEMES } from '@/content/ja/vocab'
@@ -95,7 +95,7 @@ function VocabSheet({ v, onClose }: { v: Vocab; onClose: () => void }) {
         <div className="center stack-sm">
           <div className="ja-big">{v.term}</div>
           {v.reading && v.reading !== v.term && <div className="reading" style={{ fontSize: '1.05rem' }}>{v.reading}</div>}
-          <div className="romaji">{v.reading ? toRomaji(v.reading) : ''}</div>
+          <div className="romaji"><RomajiText reading={v.reading} /></div>
           <div style={{ fontSize: '1.15rem', fontWeight: 600, marginTop: 6 }}>{v.tr}</div>
           <div className="row" style={{ justifyContent: 'center' }}>
             <SpeakBtn text={v.term} lang={v.lang} reading={v.reading} />

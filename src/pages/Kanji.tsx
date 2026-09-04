@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { toRomaji } from 'wanakana'
 import type { KanjiChar } from '@/types'
-import { Badge, Chips, Sheet, SpeakBtn, TopBar } from '@/components/ui'
+import { Badge, Chips, RomajiText, Sheet, SpeakBtn, TopBar } from '@/components/ui'
 import { WritePractice } from '@/components/WritePractice'
 import { StrokeOrder } from '@/components/StrokeOrder'
 import { KANJI_BY_CHAR, KANJI_N5, KANJI_SETS } from '@/content/ja/kanji-n5'
@@ -100,7 +100,7 @@ function KanjiSheet({ k, onClose }: { k: KanjiChar; onClose: () => void }) {
                       {w.term}
                     </div>
                     <div className="reading">{w.reading}</div>
-                    <div className="romaji">{toRomaji(w.reading)}</div>
+                    <div className="romaji"><RomajiText reading={w.reading} /></div>
                     <div className="small dim" style={{ marginTop: 3 }}>
                       {w.tr}
                     </div>

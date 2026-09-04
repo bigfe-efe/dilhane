@@ -115,6 +115,11 @@ function fixTopicParticle(kana: string): string {
       // はは "anne" korunur; ama ははは üçlüsünde sonuncusu ektir
       // (「はははせんせいです」 = haha wa sensei desu)
       if (prev === 'は' && c[i - 2] !== 'は') return ch
+      // はは'nin İLK yarısı da korunmalı. Yukarıdaki kural yalnızca ikinci
+      // yarıyı kolluyordu; 「ちちとははとあね」de ilk は cümle içinde olduğu
+      // için ek sanılıp "chichi to WA ha to ane" okunuyordu.
+      // ははは'de bozmaz: oradaki i=1 zaten bir üstteki kurala takılıyor.
+      if (next === 'は' && c[i + 2] !== 'は') return ch
       if (next === 'ん') return ch // ごはん, はんぶん
 
       // Öncesinde kanji/latin var: sınır belli, は ektir (私は, AはBです)
@@ -128,8 +133,104 @@ function fixTopicParticle(kana: string): string {
     .join('')
 }
 
+/**
+ * Yazıldığı gibi okunmayan üç ek — ve okunuşları.
+ *
+ * Üçü de tarihsel kalıntıdır: yazım eski hâlinde donmuş, okunuş değişmiş.
+ * Ekranda romaji gösterilirken bunlar DÜZELTİLİR, ama sessizce değil:
+ * hangi karakterin nasıl okunduğu parantez içinde yazılır. Sebep şu — sessiz
+ * düzeltme, kuralı bilmeyen birine "こんばんは'nin sonu zaten wa'dır" diye
+ * yanlış bir şey öğretir; kuralı bilen için de doğrulama olmaz.
+ */
+export interface ParticleNote {
+  /** Yazılan karakter */
+  kana: string
+  /** Nasıl okunduğu */
+  as: string
+}
+
+export interface RomajiInfo {
+  text: string
+  /** Boşsa yazıldığı gibi okunuyor demektir */
+  notes: ParticleNote[]
+}
+
+/**
+ * へ eki "e" okunur.
+ *
+ * は ile aynı elemeyi kullanır ama へ kelime içinde çok daha az geçtiği için
+ * daha basit: kelime başında değilse (へや), ardından ん gelmiyorsa (へん) ve
+ * öncesinde kana DIŞI bir şey varsa ya da ardından kana gelmiyorsa ektir.
+ */
+function fixDirectionParticle(kana: string): string {
+  const c = [...kana]
+  return c
+    .map((ch, i) => {
+      if (ch !== 'へ') return ch
+      const prev = c[i - 1]
+      const next = c[i + 1]
+      if (i === 0 || !prev || BOUNDARY.test(prev)) return ch // へや, へた
+      if (next === 'ん') return ch // へん
+      if (!KANA_CH.test(prev)) return 'え' // 学校へ — sınır belli
+      if (!next || !KANA_CH.test(next)) return 'え' // がっこうへ␣いきます
+      return ch
+    })
+    .join('')
+}
+
+/**
+ * Ekleri düzeltir ve NEYİ değiştirdiğini söyler.
+ *
+ * を ayrı ele alınıyor: pratikte yalnızca nesne eki olarak kullanıldığı için
+ * eleme gerekmez, her zaman "o" okunur. は ve へ ise kelimenin içinde de
+ * geçebildiğinden elenerek bulunur.
+ */
+function fixParticles(kana: string): RomajiInfo {
+  const duzeltilmis = fixDirectionParticle(fixTopicParticle(kana)).replace(/を/g, 'お')
+
+  // Not listesi ÇIKTIYA değil GİRDİYE bakılarak kurulmuyor: hangi karakterin
+  // gerçekten değiştiğini ancak iki dizgiyi karşılaştırmak söyler. は kelime
+  // içinde geçip değişmediyse not da çıkmamalı.
+  const once = [...kana]
+  const sonra = [...duzeltilmis]
+  const OKUNUS: Record<string, string> = { は: 'wa', へ: 'e', を: 'o' }
+  const notlar: ParticleNote[] = []
+  for (let i = 0; i < once.length; i++) {
+    if (once[i] === sonra[i]) continue
+    const as = OKUNUS[once[i]]
+    if (!as || notlar.some((n) => n.kana === once[i])) continue
+    notlar.push({ kana: once[i], as })
+  }
+
+  return { text: duzeltilmis, notes: notlar }
+}
+
+/**
+ * Kana okunuşundan ekranda gösterilecek romaji.
+ *
+ * Doğrudan wanakana'nın toRomaji'sini çağırmak YETMEZ: o harf harf çevirir ve
+ * こんばんは'yi "konbanha" yapar. Doğrusu "konbanwa" — sondaki は konu ekidir
+ * (今晩は). Uygulamada sekiz ayrı yerde ham toRomaji çağrılıyordu ve hepsi
+ * aynı yanlışı gösteriyordu.
+ */
+export function romajiOf(kana: string): RomajiInfo {
+  const { text, notes } = fixParticles(kana)
+  return { text: toRomaji(text), notes }
+}
+
+/**
+ * Ekleri düzeltilmiş kana — karakter sayısı GİRDİYLE AYNI kalır.
+ *
+ * Kelimeyi hece hece gösteren ekranlar için: orada her hece ayrı ayrı
+ * romaji'ye çevriliyor, tek başına çevrilen は ise her zaman "ha" çıkıyor.
+ * Uzunluk korunduğu için çağıran taraf aynı indislerle çalışabilir.
+ */
+export function particleFixedKana(kana: string): string {
+  return fixParticles(kana).text
+}
+
 export function jaToTurkishSpeech(text: string): string {
-  let s = segment(fixTopicParticle(text))
+  let s = segment(fixDirectionParticle(fixTopicParticle(text)))
     .map((run) => toRomaji(run))
     .join(' ')
   for (const [re, to] of LONG) s = s.replace(re, to)

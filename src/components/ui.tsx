@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import type { Lang } from '@/types'
 import { Icon, type IconName } from './icons'
 import { onVoicesChanged, speak, speechMode, stopSpeaking, type SpeechMode } from '@/lib/tts'
+import { romajiOf } from '@/lib/ja-phonetic'
 
 export function TopBar({
   title,
@@ -225,4 +226,33 @@ export function stripFurigana(text: string): string {
  */
 export function furiganaReading(text: string): string {
   return text.replace(/[㐀-鿿々〆ヶ]+\[([^\]]+)\]/g, '$1')
+}
+
+/**
+ * Romaji okunuşu — yazıldığı gibi okunmayan ekler PARANTEZ İÇİNDE belirtilir.
+ *
+ * NEDEN BÖYLE:
+ * こんばんは harf harf çevrilince "konbanha" çıkar ama doğrusu "konbanwa" —
+ * sondaki は konu ekidir (今晩は). Uygulama sekiz ayrı yerde ham toRomaji
+ * çağırıyordu ve hepsi bu yanlışı gösteriyordu.
+ *
+ * Düzeltmeyi SESSİZCE yapmak da yanlış olurdu: kuralı bilmeyen biri
+ * "こんばんは'nin sonu zaten wa okunur" sanır ve は→wa kuralını hiç
+ * öğrenmez. Bu yüzden ne değiştiği yazılıyor:  konbanwa (は→wa)
+ */
+export function RomajiText({ reading }: { reading?: string | null }) {
+  if (!reading) return null
+  const { text, notes } = romajiOf(reading)
+  return (
+    <>
+      {text}
+      {notes.length > 0 && (
+        <span className="romaji-note">
+          {' ('}
+          {notes.map((n) => n.kana + '→' + n.as).join(', ')}
+          {')'}
+        </span>
+      )}
+    </>
+  )
 }

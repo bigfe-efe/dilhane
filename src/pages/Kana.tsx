@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { toRomaji } from 'wanakana'
 import type { KanaChar } from '@/types'
-import { Badge, Chips, Sheet, SpeakBtn, TopBar, useSpeechMode } from '@/components/ui'
+import { Badge, Chips, RomajiText, Sheet, SpeakBtn, TopBar, useSpeechMode } from '@/components/ui'
 import { Icon } from '@/components/icons'
 import { WritePractice } from '@/components/WritePractice'
 import { StrokeOrder } from '@/components/StrokeOrder'
@@ -517,7 +516,7 @@ function KanaSheet({ k, onClose, onStep }: { k: KanaChar; onClose: () => void; o
                   </span>
                   <span className="tiny dim">
                     <span className="ja">{v.reading}</span>{' '}
-                    <span className="faint mono">{toRomaji(v.reading ?? '')}</span>
+                    <span className="faint mono"><RomajiText reading={v.reading} /></span>
                   </span>
                 </div>
                 <span className="dim tiny" style={{ textAlign: 'right' }}>

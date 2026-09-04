@@ -548,6 +548,14 @@ p {
   letter-spacing: 0.04em;
 }
 
+/* Yazıldığı gibi okunmayan ek uyarısı: "konbanwa (は→wa)".
+   Vurgu renginde çünkü bu bir DÜZELTME — okunuşun kendisiyle karışmasın,
+   göz "burada bir kural var" diye takılsın. */
+.romaji-note {
+  color: var(--accent);
+  letter-spacing: 0;
+}
+
 /* Furigana — kanji üstüne okunuş */
 ruby {
   ruby-position: over;

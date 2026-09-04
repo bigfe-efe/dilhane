@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { toRomaji } from 'wanakana'
 import type { Exercise, LessonSection } from '@/types'
-import { Badge, Bar, JaText, SpeakBtn, TopBar, furiganaReading, stripFurigana } from '@/components/ui'
+import { Badge, Bar, JaText, RomajiText, SpeakBtn, TopBar, furiganaReading, stripFurigana } from '@/components/ui'
 import { Icon } from '@/components/icons'
 import { ExerciseView } from '@/components/Exercise'
 import { Markdown } from '@/lib/md'
@@ -419,7 +418,7 @@ function SectionView({ section }: { section: LessonSection }) {
                       {v.term}
                     </div>
                     {v.reading && v.reading !== v.term && <div className="reading">{v.reading}</div>}
-                    {v.reading && <div className="romaji">{toRomaji(v.reading)}</div>}
+                    {v.reading && <div className="romaji"><RomajiText reading={v.reading} /></div>}
                     <div className="small" style={{ marginTop: 4 }}>
                       {v.tr}
                     </div>

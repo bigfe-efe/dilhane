@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
-import { toRomaji } from 'wanakana'
-import { Badge, Chips, SpeakBtn, TopBar } from '@/components/ui'
+import { Badge, Chips, RomajiText, SpeakBtn, TopBar } from '@/components/ui'
 import { VOCAB_JA } from '@/content/ja/vocab'
 import { ADJ_FORMS, GROUP_NOTE, GROUP_TR, VERB_FORMS, conjugateAdjective, conjugateVerb, detectGroup } from '@/lib/conjugate-ja'
 
@@ -45,7 +44,7 @@ export default function VerbsPage() {
             <div className="card card--pad-lg center stack-sm">
               <div className="ja-big">{item.term}</div>
               <div className="reading">{item.reading}</div>
-              <div className="romaji">{toRomaji(item.reading ?? '')}</div>
+              <div className="romaji"><RomajiText reading={item.reading} /></div>
               <div style={{ fontWeight: 620 }}>{item.tr}</div>
               <div className="row" style={{ justifyContent: 'center' }}>
                 <SpeakBtn text={item.term} lang="ja" reading={item.reading} />
