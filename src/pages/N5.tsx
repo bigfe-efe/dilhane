@@ -1,52 +1,82 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge, Bar, TopBar } from '@/components/ui'
 import { Icon } from '@/components/icons'
-import { useCardStates, useLessonProgress } from '@/db/hooks'
+import { useCardStates, useExamDate, useExams, useLessonProgress } from '@/db/hooks'
+import { setSetting } from '@/db/db'
 import { GRAMMAR_JA } from '@/content/ja/grammar'
 import { VOCAB_JA } from '@/content/ja/vocab'
 import { KANJI_N5 } from '@/content/ja/kanji-n5'
 import { HIRAGANA, KATAKANA } from '@/content/ja/kana'
 import { LESSONS_JA } from '@/content/ja/lessons'
+import { EXAM_DATE_KEY, daysUntilExam } from '@/content/ja/study-plan'
+import {
+  N5_SCOPE,
+  N5_SCORING,
+  N5_SECTIONS,
+  N5_TOTAL_MAX,
+  N5_TOTAL_PASS,
+  daysLeftInPhase,
+  phaseFor,
+} from '@/content/ja/n5-prep'
 
-// N5 hazırlık sayfası.
+// N5 sınav hazırlığı.
 //
-// İki iş yapar:
-//   1. Sınavın ne olduğunu anlatır — bölümler, süre, geçme ölçütü.
-//   2. Uygulamadaki ilerlemeni sınavın gerektirdiği malzemeyle karşılaştırır,
-//      böylece "hazır mıyım" sorusuna somut bir cevap verir.
+// Bu sayfa bir tanıtım sayfası değil, SINAV ADAYININ panosu. Üç soruya cevap
+// verir, bu sırayla:
+//   1. Kaç gün kaldı ve bu dönemde ne yapmalıyım?   (faz planı)
+//   2. Müfredatın neresindeyim?                      (canlı ilerleme)
+//   3. Sınav nasıl işliyor, neyle ölçülüyorum?       (yapı ve barajlar)
 //
-// Sayılar canlı verilerden gelir; elle yazılmış hedef sayısı yoktur.
+// Sayılar canlı verilerden gelir; elle yazılmış ilerleme yoktur.
+//
+// TARİH BURADA DA GİRİLEBİLİR. Ayarlar'da zaten bir alan var ama sınav adayı
+// önce buraya geliyor; tarihi girmek için başka sayfaya göndermek gereksiz
+// bir engel.
 
-/** JLPT N5'in resmî yapısı. */
-const SECTIONS = [
-  {
-    title: 'Dil bilgisi (yazı ve kelime)',
-    ja: '言語知識（文字・語彙）',
-    minutes: 20,
-    what: 'Kanji okuma, kana yazımı, kelime seçimi, eş anlamlı bulma.',
-    ready: 'kana' as const,
-  },
-  {
-    title: 'Dil bilgisi (gramer) ve okuma',
-    ja: '言語知識（文法）・読解',
-    minutes: 40,
-    what: 'Cümleye doğru eki/yapıyı seçme, cümle sıralama, kısa metin anlama.',
-    ready: 'grammar' as const,
-  },
-  {
-    title: 'Dinleme',
-    ja: '聴解',
-    minutes: 30,
-    what: 'Kısa diyalogları anlama, doğru görseli/cevabı seçme.',
-    ready: 'listen' as const,
-  },
-]
+/** Ayarlarda saklanan biçim: YYYY-MM-DD */
+function toIso(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function ExamDateCard({ examDate }: { examDate: Date | null }) {
+  const [msg, setMsg] = useState('')
+  const kaydet = async (v: string) => {
+    await setSetting(EXAM_DATE_KEY, v || null)
+    setMsg(v ? 'Kaydedildi — geri sayım ve haftalık tempo açıldı.' : 'Tarih silindi.')
+  }
+
+  return (
+    <div className="card stack-sm">
+      <div className="card-title">Sınav tarihini gir</div>
+      <div className="card-sub">
+        Tarih olmadan bu sayfa yalnızca ilerleme gösterebilir. Tarihi girersen geri sayım, faz planı ve
+        haftalık ders temposu devreye girer.
+      </div>
+      <div className="row" style={{ gap: 10, flexWrap: 'wrap' }}>
+        <input
+          type="date"
+          className="romaji-live-input"
+          value={examDate ? toIso(examDate) : ''}
+          onChange={(e) => void kaydet(e.target.value)}
+          style={{ flex: 1, minWidth: 180 }}
+        />
+      </div>
+      {msg && <div className="tiny" style={{ color: 'var(--ok)' }}>{msg}</div>}
+    </div>
+  )
+}
 
 export default function N5Page() {
   const prog = useLessonProgress()
   const kana = useCardStates('kana')
   const kanji = useCardStates('kanji')
   const vocab = useCardStates('vocab')
+  const examDate = useExamDate()
+  const exams = useExams()
+
+  const kalan = daysUntilExam(examDate)
+  const faz = phaseFor(kalan)
 
   const knownKana = [...HIRAGANA, ...KATAKANA].filter((k) => kana.get(k.char)?.phase === 'review').length
   const totalKana = HIRAGANA.length + KATAKANA.length
@@ -55,10 +85,27 @@ export default function N5Page() {
   const grammarCount = GRAMMAR_JA.filter((g) => g.level === 'N5').length
   const jaLessons = LESSONS_JA.length
 
+  // Kalan ders / kalan hafta. Son üç hafta ÇIKARILIYOR: o dönem pekiştirme ve
+  // deneme için ayrılmış, oraya ders sıkıştırmak planı baştan yanlış kurar.
+  const kalanDers = Math.max(0, prog.total - prog.completed)
+  const calismaGunu = kalan === null ? null : Math.max(1, kalan - 21)
+  const dersPerHafta =
+    calismaGunu === null ? null : Math.max(1, Math.ceil(kalanDers / Math.max(1, calismaGunu / 7)))
+
   const bars = [
     { label: 'Kana', value: knownKana, max: totalKana, note: 'Hiragana + katakana, dakuten ve yōon dahil' },
-    { label: 'Kanji', value: knownKanji, max: KANJI_N5.length, note: 'N5’te ~100 kanji beklenir' },
-    { label: 'Kelime', value: knownVocab, max: VOCAB_JA.length, note: 'N5’te ~800 kelime beklenir; buradaki çekirdek kadro' },
+    {
+      label: 'Kanji',
+      value: knownKanji,
+      max: KANJI_N5.length,
+      note: `N5'te ~${N5_SCOPE.kanji} kanji beklenir`,
+    },
+    {
+      label: 'Kelime',
+      value: knownVocab,
+      max: VOCAB_JA.length,
+      note: `N5'te ~${N5_SCOPE.vocab} kelime beklenir; buradaki çekirdek kadro`,
+    },
     { label: 'Ders', value: prog.completed, max: prog.total, note: 'Tamamlanan ders sayısı' },
   ]
 
@@ -66,11 +113,87 @@ export default function N5Page() {
     (bars.reduce((n, b) => n + (b.max ? b.value / b.max : 0), 0) / bars.length) * 100,
   )
 
+  const denemeler = exams.filter((e) => e.kind === 'n5-deneme')
+  const sonDeneme = denemeler[0]
+
   return (
     <>
-      <TopBar title="N5 hazırlığı" sub="JLPT’nin ilk basamağı" back="/ja" />
+      <TopBar title="N5 hazırlığı" sub="JLPT'nin ilk basamağı" back="/more" />
 
       <div className="page stack-lg lang-ja">
+        {/* ————— Geri sayım ve faz ————— */}
+        {kalan !== null && kalan >= 0 && faz ? (
+          <div className="card card--pad-lg stack">
+            <div className="row" style={{ alignItems: 'flex-start' }}>
+              <div className="stack-sm" style={{ gap: 2, flex: 1 }}>
+                <div className="card-title">{faz.title} dönemi</div>
+                <div className="card-sub">{faz.focus}</div>
+              </div>
+              <div className="center" style={{ flex: 'none' }}>
+                <div style={{ fontSize: '2.6rem', fontWeight: 700, lineHeight: 1 }} className="tabular">
+                  {kalan}
+                </div>
+                <div className="tiny faint">gün kaldı</div>
+              </div>
+            </div>
+
+            <div className="tiny faint">
+              {examDate!.toLocaleDateString('tr-TR', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+                weekday: 'long',
+              })}
+              {daysLeftInPhase(kalan, faz) > 0 && ` · bu dönem ${daysLeftInPhase(kalan, faz)} gün sürüyor`}
+            </div>
+
+            <div className="stack-sm">
+              {faz.todo.map((t) => (
+                <div key={t} className="row small" style={{ gap: 8, alignItems: 'flex-start' }}>
+                  <span style={{ color: 'var(--accent)', flex: 'none' }}>·</span>
+                  <span>{t}</span>
+                </div>
+              ))}
+            </div>
+
+            {faz.avoid && (
+              <div className="feedback feedback--bad small">
+                <b>Yapma: </b>
+                {faz.avoid}
+              </div>
+            )}
+
+            {dersPerHafta !== null && kalanDers > 0 && (
+              <div className="feedback feedback--info small">
+                <b>Tempo: </b>
+                {kalanDers} ders kaldı. Son üç haftayı pekiştirmeye ayırmak için{' '}
+                <b>haftada {dersPerHafta} ders</b> bitirmen gerekiyor.
+              </div>
+            )}
+          </div>
+        ) : (
+          <ExamDateCard examDate={examDate} />
+        )}
+
+        {/* ————— Deneme sınavı ————— */}
+        <Link to="/n5-deneme" className="card card--link">
+          <div className="row">
+            <span className="entry-icon">
+              <Icon name="target" size={18} />
+            </span>
+            <div className="stack-sm" style={{ gap: 1, flex: 1 }}>
+              <div className="card-title">Deneme sınavı</div>
+              <div className="card-sub">
+                {sonDeneme
+                  ? `Son sonucun %${sonDeneme.percent} · ${denemeler.length} deneme çözüldü`
+                  : 'Gerçek sınav düzeninde, süreli. Nerede olduğunu gösteren tek ölçü.'}
+              </div>
+            </div>
+            <span className="dim">›</span>
+          </div>
+        </Link>
+
+        {/* ————— İlerleme ————— */}
         <div className="card card--pad-lg stack-sm">
           <div className="row">
             <div className="stack-sm" style={{ gap: 2, flex: 1 }}>
@@ -81,8 +204,8 @@ export default function N5Page() {
           </div>
           <Bar value={overall} />
           <div className="tiny faint">
-            Bu oran sınav puanı tahmini değildir — uygulamadaki içeriğin ne kadarının SRS’te "öğrenildi" durumuna
-            geçtiğini gösterir.
+            Bu oran sınav puanı tahmini DEĞİLDİR — uygulamadaki içeriğin ne kadarının SRS'te "öğrenildi"
+            durumuna geçtiğini gösterir. Sınavın kelime hazinesi buradakinden geniştir.
           </div>
         </div>
 
@@ -104,17 +227,18 @@ export default function N5Page() {
           ))}
         </div>
 
+        {/* ————— Sınavın yapısı ————— */}
         <div className="stack">
           <h2>Sınav nasıl işliyor?</h2>
           <div className="card stack-sm">
             <div className="card-sub">
               JLPT (日本語能力試験) yılda iki kez, temmuz ve aralık aylarında yapılır. N5 en alt seviyedir:
-              <b> temel Japoncayı anlayabilmek</b>. Konuşma ve yazma bölümü <b>yoktur</b> — sınav tamamen çoktan
-              seçmelidir.
+              <b> temel Japoncayı anlayabilmek</b>. Konuşma ve yazma bölümü <b>yoktur</b> — sınav tamamen
+              çoktan seçmelidir. Toplam sınav süresi <b>90 dakika</b>.
             </div>
           </div>
 
-          {SECTIONS.map((s) => (
+          {N5_SECTIONS.map((s) => (
             <div key={s.title} className="card stack-sm">
               <div className="row">
                 <div className="stack-sm" style={{ gap: 1, flex: 1 }}>
@@ -126,33 +250,65 @@ export default function N5Page() {
               <div className="small">{s.what}</div>
             </div>
           ))}
+        </div>
+
+        {/* ————— Puanlama ————— */}
+        <div className="stack">
+          <h2>Nasıl puanlanıyorsun</h2>
+          <div className="card stack-sm">
+            <div className="card-sub">
+              Oturum üç bölüm hâlinde yapılır ama <b>iki puan bloğu</b> olarak değerlendirilir: yazı-kelime ile
+              dilbilgisi-okuma tek blokta toplanır.
+            </div>
+            {N5_SCORING.map((b) => (
+              <div key={b.title} className="row small" style={{ gap: 10 }}>
+                <span style={{ flex: 1 }}>
+                  {b.title} <span className="tiny dim ja">{b.ja}</span>
+                </span>
+                <span className="mono dim">0–{b.max}</span>
+                <Badge tone="accent">en az {b.min}</Badge>
+              </div>
+            ))}
+            <div className="row small" style={{ gap: 10, borderTop: '1px solid var(--line-soft)', paddingTop: 8 }}>
+              <span style={{ flex: 1 }}>
+                <b>Toplam</b>
+              </span>
+              <span className="mono dim">0–{N5_TOTAL_MAX}</span>
+              <Badge tone="ok">geçme {N5_TOTAL_PASS}</Badge>
+            </div>
+          </div>
 
           <div className="feedback feedback--info small">
-            <b>Geçme ölçütü iki katmanlıdır:</b> hem toplam puanın barajı geçmeli, hem de <b>her bölümden ayrı ayrı</b>
-            asgari puanı almalısın. Yani dinlemeyi tamamen boş bırakıp gramerden çok yüksek puan alarak geçemezsin —
-            üç alanı da çalışmak zorundasın.
+            <b>Baraj iki katmanlıdır.</b> Toplamda {N5_TOTAL_PASS} almak yetmez; her bloğun kendi asgarisini de
+            geçmen gerekir. Dinlemeden {N5_SCORING[1].min} alamazsan, dilbilgisinden tam puan alsan bile
+            kalırsın. Bu yüzden dinleme "artarsa çalışılacak" bir bölüm değil.
           </div>
         </div>
 
+        {/* ————— Uygulamadaki karşılığı ————— */}
         <div className="stack">
-          <h2>Uygulamadaki karşılığı</h2>
+          <h2>Neyle çalışacaksın</h2>
 
-          <Link to="/lessons/ja" className="card card--link">
+          <Link to="/lessons" className="card card--link">
             <div className="row">
-              <span className="entry-icon"><Icon name="book" size={18} /></span>
+              <span className="entry-icon">
+                <Icon name="book" size={18} />
+              </span>
               <div className="stack-sm" style={{ gap: 1, flex: 1 }}>
                 <div className="card-title">Dersler · Genki sırası</div>
                 <div className="card-sub">
-                  {jaLessons} ders · Genki I’in 12 dersi + kana ve kanji üniteleri
+                  {jaLessons} ders · {prog.completed} tamamlandı. Sınav müfredatının omurgası.
                 </div>
               </div>
               <span className="dim">›</span>
             </div>
           </Link>
 
-          <Link to="/grammar/ja" className="card card--link">
+          <Link to="/grammar" className="card card--link">
             <div className="row">
-              <span className="entry-icon"><Icon name="ruler" size={18} /></span>
+              <span className="entry-icon">
+                <Icon name="ruler" size={18} />
+              </span>
               <div className="stack-sm" style={{ gap: 1, flex: 1 }}>
                 <div className="card-title">Dilbilgisi</div>
                 <div className="card-sub">{grammarCount} N5 konusu, Genki ders numaralarıyla etiketli</div>
@@ -168,48 +324,85 @@ export default function N5Page() {
               </span>
               <div className="stack-sm" style={{ gap: 1, flex: 1 }}>
                 <div className="card-title">Kanji</div>
-                <div className="card-sub">{KANJI_N5.length} N5 kanjisi, çizgi sırasıyla</div>
+                <div className="card-sub">
+                  {KANJI_N5.length} N5 kanjisi, çizgi sırasıyla · {knownKanji} tanesi öğrenildi
+                </div>
               </div>
               <span className="dim">›</span>
             </div>
           </Link>
 
-          <Link to="/listen/ja" className="card card--link">
+          <Link to="/kelimeler" className="card card--link">
             <div className="row">
-              <span className="entry-icon"><Icon name="headphones" size={18} /></span>
+              <span className="entry-icon">
+                <Icon name="layers" size={18} />
+              </span>
               <div className="stack-sm" style={{ gap: 1, flex: 1 }}>
-                <div className="card-title">Dinleme</div>
-                <div className="card-sub">Sınavın üçte biri dinleme — en çok ihmal edilen bölüm</div>
+                <div className="card-title">Kelimeler</div>
+                <div className="card-sub">Tema tema kelime listesi, dilbilgisi notlarıyla</div>
+              </div>
+              <span className="dim">›</span>
+            </div>
+          </Link>
+
+          <Link to="/review" className="card card--link">
+            <div className="row">
+              <span className="entry-icon">
+                <Icon name="repeat" size={18} />
+              </span>
+              <div className="stack-sm" style={{ gap: 1, flex: 1 }}>
+                <div className="card-title">Tekrar</div>
+                <div className="card-sub">
+                  Aralıklı tekrar. Sınava kadar en çok puan kazandıracak tek alışkanlık.
+                </div>
+              </div>
+              <span className="dim">›</span>
+            </div>
+          </Link>
+
+          <Link to="/zorlandiklarim" className="card card--link">
+            <div className="row">
+              <span className="entry-icon">
+                <Icon name="flame" size={18} />
+              </span>
+              <div className="stack-sm" style={{ gap: 1, flex: 1 }}>
+                <div className="card-title">Zorlandıklarım</div>
+                <div className="card-sub">Tekrar tekrar unuttuğun kartlar — sınav öncesi asıl açığın burada</div>
               </div>
               <span className="dim">›</span>
             </div>
           </Link>
         </div>
 
+        {/* ————— Hazır sayılma ölçütü ————— */}
         <div className="card stack-sm">
           <div className="card-title">Ne zaman hazır sayılırsın?</div>
           <ul className="tight small">
-            <li>Kana’yı <b>düşünmeden</b> okuyabiliyorsan — hız testinde dakikada 40+.</li>
+            <li>
+              Kana'yı <b>düşünmeden</b> okuyabiliyorsan — hız testinde dakikada 40+.
+            </li>
             <li>N5 kanjilerini kelime içinde tanıyorsan (tek başına ezberlemek yetmez).</li>
-            <li>Genki 12’ye kadar olan yapıları cümle kurarken kullanabiliyorsan.</li>
-            <li>Kısa bir diyalogu <b>metnine bakmadan</b> anlayabiliyorsan.</li>
+            <li>Genki 12'ye kadar olan yapıları cümle kurarken kullanabiliyorsan.</li>
+            <li>
+              Kısa bir diyalogu <b>metnine bakmadan</b> anlayabiliyorsan.
+            </li>
+            <li>
+              Deneme sınavını <b>süre içinde</b> bitirip {N5_TOTAL_PASS} barajının üstünde kalabiliyorsan.
+            </li>
           </ul>
-          <div className="tiny faint">
-            Uygulamadaki içerik N5’in çekirdeğini kapsar ama sınavın kelime hazinesi daha geniştir (~800 kelime).
-            Sınava yaklaşırken çıkmış sorularla çalışmak şart.
-          </div>
         </div>
 
         <div className="card stack-sm">
           <div className="card-title">Genki ile birlikte çalışmak</div>
           <div className="card-sub">
-            Buradaki dersler Genki (3. baskı) müfredat <b>sırasına</b> göre dizilmiştir. Kitabı da kullanıyorsan her
-            dersin başlığında <span className="mono">Genki 5</span> gibi bir etiket görürsün — aynı konuyu kitaptan
-            okuyup buradan alıştırma yapabilirsin.
+            Buradaki dersler Genki (3. baskı) müfredat <b>sırasına</b> göre dizilmiştir. Genki I kabaca N5'i
+            kapsar, o yüzden ayrı bir "sınav müfredatı" kurmaya gerek yok — sıra zaten doğru. Kitabı da
+            kullanıyorsan her dersin başlığında <span className="mono">Genki 5</span> gibi bir etiket görürsün.
           </div>
           <div className="tiny faint">
-            Anlatımlar, örnek cümleler ve alıştırmalar bu uygulamaya özgüdür; kitaptan alıntı değildir. Kitabın kendi
-            dinleme kayıtları yayıncının ücretsiz <span className="mono">OTO Navi</span> uygulamasından edinilebilir.
+            Anlatımlar, örnek cümleler ve alıştırmalar bu uygulamaya özgüdür; kitaptan alıntı değildir. Kitabın
+            kendi dinleme kayıtları yayıncının ücretsiz <span className="mono">OTO Navi</span> uygulamasından
+            edinilebilir.
           </div>
         </div>
       </div>
