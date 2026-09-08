@@ -58,6 +58,101 @@ function hasJapanese(t: string): boolean {
   return /[ぁ-ヿ㐀-鿿]/.test(t)
 }
 
+/** Öğrencinin yazdığını kanaya çevirir; çeviremezse null. */
+function asKana(input: string): string | null {
+  const ham = input.trim()
+  if (!ham) return null
+  if (HAS_KANA.test(ham)) return ham
+  if (!LATIN_ONLY.test(ham)) return null
+  return toKana(ham.toLowerCase(), { IMEMode: false }).replace(/[\s　]/g, '')
+}
+
+/**
+ * Doğru cevabın hangi karakterlerinin öğrencide EKSİK olduğu.
+ *
+ * NEDEN GEREKLİ:
+ * Yanlış cevapta sadece doğrusunu göstermek, farkı görmeyi öğrenciye
+ * bırakıyor. "arigatogozaimasu" yazan biri ありがとうございます'i görüp
+ * "ben de bunu yazdım, uygulama beni farklı yazdım diye eledi" sonucuna
+ * varıyor — oysa tek bir う düşmüş. Japoncada bir mora düşmesi kelimeyi
+ * bozar, yani bu görülmesi gereken bir hata.
+ *
+ * En uzun ortak alt dizi (LCS) ile eşleşmeyen konumlar işaretleniyor;
+ * karakter karakter karşılaştırmak, bir harf kayınca sonrasının tamamını
+ * yanlış gösterirdi.
+ */
+function missingMask(answer: string, user: string): boolean[] {
+  const a = [...answer]
+  const b = [...user]
+  const n = a.length
+  const m = b.length
+  const dp: number[][] = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0))
+  for (let i = n - 1; i >= 0; i--) {
+    for (let j = m - 1; j >= 0; j--) {
+      dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1])
+    }
+  }
+  const mask = new Array<boolean>(n).fill(true)
+  let i = 0
+  let j = 0
+  while (i < n && j < m) {
+    if (a[i] === b[j]) {
+      mask[i] = false
+      i++
+      j++
+    } else if (dp[i + 1][j] >= dp[i][j + 1]) {
+      i++
+    } else {
+      j++
+    }
+  }
+  return mask
+}
+
+/**
+ * Yanlış cevapta farkı GÖSTEREN kutu.
+ *
+ * Yalnızca yakın cevaplarda çıkar: öğrenci tamamen alakasız bir şey
+ * yazdıysa (Türkçe anlamı gibi) karakter karşılaştırması gürültüden başka
+ * bir şey vermiyor, o durumda hiç gösterilmiyor.
+ */
+function NearMiss({ answer, input }: { answer: string; input: string }) {
+  const kana = asKana(input)
+  if (!kana) return null
+
+  const hedef = answer.replace(/[\s　]/g, '')
+  if (!HAS_KANA.test(hedef)) return null
+
+  const mask = missingMask(hedef, kana)
+  const eksik = mask.filter(Boolean).length
+  // Yarısından fazlası tutmuyorsa "yakın" sayılmaz
+  if (eksik === 0 || eksik > hedef.length / 2) return null
+
+  return (
+    <div className="stack-sm" style={{ marginTop: 8 }}>
+      <div className="tiny" style={{ opacity: 0.75 }}>Sen şunu yazdın</div>
+      <div className="ja" style={{ fontSize: '1.02rem', opacity: 0.9 }}>{kana}</div>
+      <div className="tiny" style={{ opacity: 0.75 }}>
+        {eksik === 1 ? 'Bir karakter eksik' : `${eksik} karakter eksik`} — vurgulu olanlar:
+      </div>
+      <div className="ja" style={{ fontSize: '1.02rem' }}>
+        {[...hedef].map((c, i) => (
+          <span
+            key={i}
+            style={
+              mask[i]
+                ? { color: 'var(--accent)', fontWeight: 700, textDecoration: 'underline' }
+                : { opacity: 0.5 }
+            }
+          >
+            {c}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function ExerciseView({ exercise, onDone }: { exercise: Exercise; onDone: (correct: boolean) => void }) {
   // Alıştırma değiştiğinde iç durum sıfırlansın diye key kullanılıyor
   return <Inner key={exercise.id} exercise={exercise} onDone={onDone} />
@@ -393,6 +488,7 @@ function Dictation({
           <div className="small" style={{ opacity: 0.85 }}>
             anlamı: {ex.translation}
           </div>
+          {!done && <NearMiss answer={ex.text} input={val} />}
         </div>
       )}
     </div>
