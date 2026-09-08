@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import type { Exercise, LessonSection } from '@/types'
+import type { Exercise, KanjiChar, Lesson, LessonSection } from '@/types'
 import { Badge, Bar, JaText, RomajiText, SpeakBtn, TopBar, furiganaReading, stripFurigana } from '@/components/ui'
 import { Icon } from '@/components/icons'
 import { ExerciseView } from '@/components/Exercise'
@@ -10,6 +10,113 @@ import { KANA_BY_CHAR } from '@/content/ja/kana'
 import { KANJI_BY_CHAR } from '@/content/ja/kanji-n5'
 import { bumpStat, db, ensureCards } from '@/db/db'
 import { speak } from '@/lib/tts'
+
+const KANJI_RE = /[㐀-鿿]/
+
+/**
+ * Dersin içinde geçen kanjiler.
+ *
+ * NEDEN TÜRETİLİYOR, DERSE YAZILMIYOR:
+ * Ders verisinde kanji listesi yok ve elle yazılsaydı içerik değiştikçe
+ * listeyle metin birbirinden ayrı düşerdi — bir örneğe 花 eklenince listeye
+ * eklemeyi unutmak yeterli. Metnin kendisinden çıkarılınca liste her zaman
+ * doğru oluyor.
+ *
+ * Ders gövdesi JSON'a çevrilip taranıyor; bu, alıştırma şıkları ve
+ * açıklamalar dahil HER yeri kapsıyor. Kimlikle bağlanan kelime ve
+ * dilbilgisi kayıtları ayrı çözülüyor, çünkü onlar derste yalnızca id
+ * olarak duruyor.
+ *
+ * N5 tablosunda olmayan kanji atlanıyor: elimizde okunuşu ve anlamı
+ * olmadığı için gösterecek bir şey yok, karakteri tek başına göstermek
+ * hatırlatma değil kafa karışıklığı olurdu.
+ */
+function lessonKanji(lesson: Lesson): KanjiChar[] {
+  const parcalar: string[] = [JSON.stringify(lesson)]
+  for (const s of lesson.sections) {
+    if (s.kind === 'vocab') {
+      for (const id of s.vocabIds) {
+        const v = VOCAB_BY_ID.get(id)
+        if (v) parcalar.push(v.term + (v.examples?.map((e) => e.text).join('') ?? ''))
+      }
+    } else if (s.kind === 'grammar') {
+      for (const id of s.grammarIds) {
+        const g = GRAMMAR_BY_ID.get(id)
+        if (g) parcalar.push(g.explanationTr + g.examples.map((e) => e.text).join(''))
+      }
+    }
+  }
+
+  const gorulen = new Set<string>()
+  const out: KanjiChar[] = []
+  for (const ch of parcalar.join('')) {
+    if (!KANJI_RE.test(ch) || gorulen.has(ch)) continue
+    gorulen.add(ch)
+    const k = KANJI_BY_CHAR.get(ch)
+    if (k) out.push(k)
+  }
+  return out
+}
+
+/**
+ * Ders başındaki kanji hatırlatıcısı.
+ *
+ * Kapalı başlar ve yalnızca karakterleri gösterir: ders sırasında sürekli
+ * açık durursa asıl içeriğin yerini yiyor. Takıldığında bir tıkla açılıyor,
+ * açık kalıp kalmayacağına öğrenci karar veriyor — ders adımları arasında
+ * durum korunuyor ki her adımda yeniden açmak gerekmesin.
+ */
+function LessonKanjiPanel({ items }: { items: KanjiChar[] }) {
+  const [acik, setAcik] = useState(false)
+  if (items.length === 0) return null
+
+  return (
+    <div className="lk">
+      <button className="lk-bar" onClick={() => setAcik((a) => !a)} aria-expanded={acik}>
+        <span className="lk-label">Bu derste {items.length} kanji</span>
+        <span className="lk-glyphs ja">
+          {items.map((k) => (
+            <span key={k.char}>{k.char}</span>
+          ))}
+        </span>
+        <span className="lk-caret">{acik ? '▾' : '▸'}</span>
+      </button>
+
+      {acik && (
+        <div className="lk-list">
+          {items.map((k) => (
+            <div key={k.char} className="lk-item">
+              <span className="ja lk-char">{k.char}</span>
+              <div className="lk-info">
+                <div className="lk-mean">{k.meaningsTr.join(', ')}</div>
+                <div className="tiny faint">
+                  {k.on.length > 0 && (
+                    <>
+                      on: <span className="ja">{k.on.join('・')}</span>
+                    </>
+                  )}
+                  {k.on.length > 0 && k.kun.length > 0 && ' · '}
+                  {k.kun.length > 0 && (
+                    <>
+                      kun: <span className="ja">{k.kun.join('・')}</span>
+                    </>
+                  )}
+                  {` · ${k.strokes} çizgi`}
+                </div>
+                {k.words[0] && (
+                  <div className="tiny dim">
+                    <span className="ja">{k.words[0].term}</span>{' '}
+                    <span className="ja faint">{k.words[0].reading}</span> — {k.words[0].tr}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 /** Bölümler tek tek adımlara açılır; alıştırmalar her biri ayrı adım olur. */
 type Step =
@@ -35,6 +142,9 @@ export default function LessonPlayer() {
     }
     return out
   }, [lesson])
+
+  // Ders başına bir kez hesaplanır; her adımda yeniden taramak gereksiz.
+  const kanjiler = useMemo(() => (lesson ? lessonKanji(lesson) : []), [lesson])
 
   const [i, setI] = useState(0)
   const [correct, setCorrect] = useState(0)
@@ -334,6 +444,12 @@ export default function LessonPlayer() {
             <span className="tiny faint">Geri gitmek puanını değiştirmez</span>
           </div>
         )}
+      </div>
+
+      {/* Kanji hatırlatıcısı ilerleme çubuğunun altında, içeriğin üstünde:
+          takıldığın an orada, ama kapalıyken tek satır yer kaplıyor. */}
+      <div style={{ padding: '10px var(--pad) 0' }}>
+        <LessonKanjiPanel items={kanjiler} />
       </div>
 
       <div className={`page stack-lg lang-${lesson.lang}`} ref={top}>

@@ -3485,3 +3485,31 @@ ul.tight li {
   color: var(--dim);
   word-break: break-all;
 }
+
+/* ————— Ders içi kanji hatırlatıcısı —————
+   Kapalıyken tek satır: ders sırasında içeriğin yerini yemesin. Açıkken
+   anlam, on/kun ve bir örnek kelime — kanjiyi tek başına göstermek
+   hatırlatma değil, kelimeyle birlikte anlam kazanıyor. */
+.lk { border: 1px solid var(--line); border-radius: 12px; background: var(--bg-elev); overflow: hidden; }
+.lk-bar {
+  width: 100%; display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; background: none; border: none; color: inherit;
+  font: inherit; cursor: pointer; text-align: left;
+}
+.lk-bar:hover { background: var(--bg-elev-2); }
+.lk-label { font-size: 0.78rem; color: var(--text-faint); white-space: nowrap; }
+.lk-glyphs {
+  flex: 1; min-width: 0; display: flex; gap: 8px; overflow-x: auto;
+  font-size: 1.15rem; scrollbar-width: none;
+}
+.lk-glyphs::-webkit-scrollbar { display: none; }
+.lk-caret { color: var(--text-faint); font-size: 0.8rem; flex: none; }
+.lk-list { border-top: 1px solid var(--line-soft); padding: 6px 12px 12px; display: grid; gap: 10px; }
+.lk-item { display: flex; gap: 12px; align-items: flex-start; }
+.lk-char { font-size: 2rem; line-height: 1.1; width: 42px; text-align: center; flex: none; }
+.lk-info { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.lk-mean { font-weight: 600; font-size: 0.94rem; }
+
+@media (min-width: 1080px) {
+  .lk-list { grid-template-columns: 1fr 1fr; column-gap: 20px; }
+}
