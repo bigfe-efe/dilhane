@@ -12,14 +12,32 @@ import { ensureStrokeData, strokeGlyph, type StrokeGlyph } from '@/lib/strokes'
 // KanjiVG verisi 109x109 kutuya çizilidir; きゃ gibi çok karakterli metinlerde
 // kutular yan yana eklenir.
 
+/** Döngüde iki tur arasındaki bekleme — bitmiş karakter bir an görünsün diye */
+const LOOP_PAUSE_MS = 1500
+
 export function StrokeOrder({
   char,
   height = 210,
   showNumbers: initialNumbers = true,
+  autoPlay = false,
+  loop = false,
+  compact = false,
 }: {
   char: string
   height?: number
   showNumbers?: boolean
+  /**
+   * Karakter ekrana girince kendiliğinden çizmeye başlar.
+   *
+   * Görünürlüğe bağlı: kart listesinde 14 kanji alt alta dururken hepsinin
+   * aynı anda çizmesi hem dikkat dağıtıyor hem de işlemciyi boşa yoruyor.
+   * Yalnızca ekranda olan oynar, ekrandan çıkan durur.
+   */
+  autoPlay?: boolean
+  /** Bitince kısa bir aradan sonra baştan çizer — gif gibi */
+  loop?: boolean
+  /** Alttaki kullanım açıklamasını gizler (kartlarda yer kaplamasın) */
+  compact?: boolean
 }) {
   const [glyph, setGlyph] = useState<StrokeGlyph | null>(null)
   const [missing, setMissing] = useState(false)
@@ -34,6 +52,14 @@ export function StrokeOrder({
   const raf = useRef<number | null>(null)
   /** Animasyon bitince ucu söndüren zamanlayıcı — durdurulurken iptal edilmeli */
   const tipTimer = useRef<number | null>(null)
+  /** Döngüde bir sonraki turu başlatan zamanlayıcı */
+  const loopTimer = useRef<number | null>(null)
+  /**
+   * Döngü şu an açık mı. State değil ref: animasyon karesi içinden okunuyor
+   * ve kapanış (closure) eski değeri görmemeli.
+   */
+  const looping = useRef(false)
+  const box = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     let alive = true
@@ -58,6 +84,9 @@ export function StrokeOrder({
     raf.current = null
     if (tipTimer.current !== null) clearTimeout(tipTimer.current)
     tipTimer.current = null
+    if (loopTimer.current !== null) clearTimeout(loopTimer.current)
+    loopTimer.current = null
+    looping.current = false
     setPlaying(false)
     if (tip.current) tip.current.style.opacity = '0'
   }, [])
@@ -119,6 +148,12 @@ export function StrokeOrder({
             tipTimer.current = null
             if (tip.current) tip.current.style.opacity = '0'
           }, 450)
+          if (looping.current) {
+            loopTimer.current = window.setTimeout(() => {
+              loopTimer.current = null
+              if (looping.current) playRef.current()
+            }, LOOP_PAUSE_MS)
+          }
           return
         }
       }
@@ -137,6 +172,39 @@ export function StrokeOrder({
     raf.current = requestAnimationFrame(frame)
   }, [glyph, slow])
 
+  // Döngü zamanlayıcısı her zaman EN GÜNCEL play'i çağırsın: yavaş/normal
+  // değiştirildiğinde bir sonraki tur yeni hızla başlamalı.
+  const playRef = useRef(play)
+  useEffect(() => {
+    playRef.current = play
+  }, [play])
+
+  // Görününce oynat, görünmeyince durdur.
+  useEffect(() => {
+    if (!autoPlay || !glyph) return
+    const el = box.current
+    if (!el) return
+    // "Hareketi azalt" sistem tercihi BİLEREK dikkate alınmıyor. Windows'ta
+    // animasyon efektleri kapalıysa Chrome bu tercihi açık bildiriyor ve
+    // ilk sürümde çizim o makinede hiç dönmüyordu. Burada animasyon süs
+    // değil, öğrenilen şeyin kendisi (çizgi sırası) ve açıkça istendi.
+    // Döngüyü durdurmak isteyen "Dur" düğmesini kullanıyor.
+
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          looping.current = loop
+          playRef.current()
+        } else {
+          stop()
+        }
+      },
+      { threshold: 0.35 },
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [autoPlay, loop, glyph, stop])
+
   const step = (delta: number) => {
     stop()
     clearDashes()
@@ -154,7 +222,7 @@ export function StrokeOrder({
 
   return (
     <div className="stack-sm">
-      <div className="stroke-box" style={{ height }}>
+      <div className="stroke-box" style={{ height }} ref={box}>
         <svg viewBox={`0 0 ${w} ${unit}`} className="stroke-svg" role="img" aria-label={`${char} çizgi sırası`}>
           {Array.from({ length: glyph.boxes }, (_, b) => {
             const ox = b * unit
@@ -208,7 +276,19 @@ export function StrokeOrder({
       </div>
 
       <div className="row-wrap" style={{ gap: 6 }}>
-        <button className="btn btn--sm btn--primary" onClick={playing ? stop : play}>
+        <button
+          className="btn btn--sm btn--primary"
+          onClick={
+            playing
+              ? stop
+              : () => {
+                  // Elle başlatınca da döngü tercihi geri gelsin; "Dur"a
+                  // basınca kapanmıştı.
+                  looping.current = loop
+                  play()
+                }
+          }
+        >
           <Icon name={playing ? 'pause' : 'play'} size={15} />
           {playing ? 'Dur' : 'Çizimi izle'}
         </button>
@@ -234,9 +314,11 @@ export function StrokeOrder({
         </button>
       </div>
 
-      <div className="tiny faint">
-        ‹ › ile çizgi çizgi ilerle. Halka çizginin <b>başladığı</b> yeri, koşan nokta ise kalemin <b>yönünü</b> gösterir.
-      </div>
+      {!compact && (
+        <div className="tiny faint">
+          ‹ › ile çizgi çizgi ilerle. Halka çizginin <b>başladığı</b> yeri, koşan nokta ise kalemin <b>yönünü</b> gösterir.
+        </div>
+      )}
     </div>
   )
 }

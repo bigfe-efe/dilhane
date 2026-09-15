@@ -3513,3 +3513,39 @@ ul.tight li {
 @media (min-width: 1080px) {
   .lk-list { grid-template-columns: 1fr 1fr; column-gap: 20px; }
 }
+
+/* ————— N5 kanji kartları —————
+   Punto bilerek büyük: çok çizgili karakterlerde (曜, 語, 聞) sayfayı
+   büyütmeden okunabilsin. Geniş ekranda çizim solda, bilgiler sağda;
+   dar ekranda alt alta. */
+.kc-list { display: grid; gap: 18px; max-width: 980px; }
+.kc { padding: 20px 22px; display: grid; gap: 16px; }
+.kc-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.kc-no { font-size: 1.1rem; color: var(--text-faint); font-weight: 600; }
+.kc-title { font-size: 1.55rem; font-weight: 650; letter-spacing: 0; text-transform: none; color: var(--text); margin: 0; }
+.kc-title .ja { font-size: 1.9rem; }
+.kc-body { display: grid; gap: 18px; }
+.kc-facts { display: grid; gap: 8px; margin: 0; align-content: start; }
+.kc-row { display: grid; grid-template-columns: 96px 1fr; gap: 12px; align-items: baseline; }
+.kc-row dt { font-size: 0.9rem; color: var(--text-faint); }
+.kc-row dd { margin: 0; font-size: 1.2rem; font-weight: 560; }
+.kc-row--sub dd { font-size: 1.05rem; font-weight: 400; color: var(--text-dim); }
+.kc-kana { font-size: 1.55rem !important; }
+.kc-latin { font-family: var(--ff-mono); letter-spacing: 0.02em; }
+.kc-section { display: grid; gap: 8px; }
+.kc-section h3 { font-size: 0.82rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); margin: 0; }
+.kc-ex { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.kc-ex li { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 1.08rem; }
+.kc-term { font-size: 1.6rem; font-weight: 600; }
+.kc-hit { color: var(--lang, var(--accent)); }
+.kc-read { color: var(--text-dim); }
+.kc-tr { color: var(--text); }
+.kc-others { font-size: 0.95rem; color: var(--text-faint); border: 1px solid var(--line); border-radius: 999px; padding: 1px 9px; }
+.kc-note { background: var(--bg-elev-2); border-radius: 12px; padding: 12px 14px; }
+.kc-pairs { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 1.1rem; }
+.kc-pairs .ja { font-size: 1.25rem; }
+.kc-note p { margin: 0; font-size: 0.98rem; color: var(--text-dim); line-height: 1.6; }
+
+@media (min-width: 820px) {
+  .kc-body { grid-template-columns: minmax(280px, 380px) 1fr; align-items: start; }
+}

@@ -33,6 +33,13 @@ const GROUPS: { title: string; note?: string; items: Tool[] }[] = [
       { to: '/kana/hiragana', glyph: 'あ', title: 'Hiragana', sub: '46 karakter, dakuten ve yōon', stages: ['hiragana'] },
       { to: '/kana/katakana', glyph: 'ア', title: 'Katakana', sub: 'Yabancı kelimelerin alfabesi', stages: ['katakana'] },
       { to: '/kanji', glyph: '漢', title: 'Kanji', sub: 'N5 karakterleri ve okunuşları', stages: ['genki-1-4', 'genki-5-8', 'genki-9-12', 'n5'] },
+      {
+        to: '/kanji-kartlar',
+        glyph: '字',
+        title: 'N5 kanji kartları',
+        sub: 'Büyük kart, döngülü çizim, yalnızca N5 birleşimleri',
+        stages: ['genki-1-4', 'genki-5-8', 'genki-9-12', 'n5'],
+      },
     ],
   },
   {

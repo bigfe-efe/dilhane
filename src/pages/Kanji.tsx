@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { toRomaji } from 'wanakana'
 import type { KanjiChar } from '@/types'
 import { Badge, Chips, RomajiText, Sheet, SpeakBtn, TopBar } from '@/components/ui'
@@ -19,9 +20,26 @@ export default function KanjiPage() {
 
   return (
     <>
-      <TopBar title="Kanji 漢字" sub={`${known} / ${KANJI_N5.length} öğrenildi (N5)`} back="/ja" />
+      {/* Geri hedefi eskiden "/ja" idi — çok dilli sürümden kalma ölü bir yol,
+          ana sayfaya atıyordu. */}
+      <TopBar title="Kanji 漢字" sub={`${known} / ${KANJI_N5.length} öğrenildi (N5)`} back="/calis" />
 
       <div className="page stack-lg lang-ja">
+        <Link to="/kanji-kartlar" className="card card--link">
+          <div className="row">
+            <span className="ja" style={{ fontSize: '1.6rem', width: 34, textAlign: 'center' }}>
+              字
+            </span>
+            <div className="stack-sm" style={{ gap: 1, flex: 1 }}>
+              <div className="card-title">N5 kanji kartları</div>
+              <div className="card-sub">
+                Büyük punto, döngülü çizim, anlam · onyomi · kunyomi · N5 örnekleri · not
+              </div>
+            </div>
+            <span className="dim">›</span>
+          </div>
+        </Link>
+
         <Chips items={KANJI_SETS.map((s) => ({ id: s.id, label: s.title }))} value={set} onChange={setSet} />
 
         <div className="grid grid-kana">
@@ -59,7 +77,11 @@ function KanjiSheet({ k, onClose }: { k: KanjiChar; onClose: () => void }) {
   return (
     <Sheet onClose={onClose}>
       <div className="stack lang-ja">
-        <div className="ja-huge">{k.char}</div>
+        {/* Çizim EN ÜSTTE ve kendiliğinden döner. Önce pencerenin en dibindeydi
+            ve düğmeye basmadan oynamıyordu; öğrenci varlığını fark etmiyordu.
+            Bitmiş hâli karakterin kendisi olduğu için ayrıca büyük harf
+            göstermeye gerek kalmadı. */}
+        <StrokeOrder char={k.char} height={300} autoPlay loop compact />
 
         <div className="center stack-sm">
           <div style={{ fontSize: '1.35rem', fontWeight: 700 }}>{k.meaningsTr.join(' · ')}</div>
@@ -113,16 +135,11 @@ function KanjiSheet({ k, onClose }: { k: KanjiChar; onClose: () => void }) {
         )}
 
         <div className="stack-sm">
-          <h3>Çizgi sırası</h3>
-          <StrokeOrder char={k.char} height={230} />
-        </div>
-
-        <div className="stack-sm">
           <h3>Yazarak çalış</h3>
           <WritePractice key={k.char} char={k.char} />
           <div className="tiny faint center">
             Genel kural: yukarıdan aşağı, soldan sağa; yatay çizgi dikeyden önce gelir. Bu karakterin kendi sırası için
-            yukarıdaki bölüme bak — {k.strokes} çizgi.
+            en üstteki çizime bak — {k.strokes} çizgi.
           </div>
         </div>
 
