@@ -3549,3 +3549,22 @@ ul.tight li {
 @media (min-width: 820px) {
   .kc-body { grid-template-columns: minmax(280px, 380px) 1fr; align-items: start; }
 }
+
+/* ————— Çalış sayfası —————
+   Başlık, altında açıklama, sonra kartlar. Izgara CSS kolonları (cols-2)
+   yerine gerçek grid: kolonlar dikey doldurduğu için kartların okuma sırası
+   soldan sağa değil yukarıdan aşağı gidiyordu. */
+.calis-group { display: grid; gap: 6px; }
+.calis-head { margin: 0; }
+.calis-note { margin: 0 0 6px; font-size: 0.93rem; color: var(--text-dim); max-width: 70ch; }
+.calis-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px; }
+.calis-toggle {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 0; border: none; background: none; cursor: pointer;
+  color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit;
+}
+.calis-toggle:hover { color: var(--text); }
+.calis-count {
+  font-size: 0.72rem; letter-spacing: 0; padding: 1px 8px; border-radius: 999px;
+  border: 1px solid var(--line); color: var(--text-faint);
+}

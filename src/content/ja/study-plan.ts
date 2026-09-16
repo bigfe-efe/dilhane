@@ -238,21 +238,23 @@ export function buildDailyPlan(ctx: PlanContext, now = new Date()): DailyPlan {
     })
   }
 
-  // ————— 4. Yazma —————
+  // ————— 4. Kanji —————
   //
-  // El yazısı sınavda sorulmaz ama karakteri YAZABİLMEK, tanımayı da
-  // sağlamlaştırıyor: çizerken karakterin parçalarına dikkat etmek zorundasın.
-  tasks.push({
-    id: 'write',
-    kind: 'write',
-    title: 'Yazı çalışması',
-    detail:
-      rota.stageId === 'hiragana' || rota.stageId === 'katakana'
-        ? 'Birkaç karakteri çizerek yaz — çizgi sırası denetlensin.'
-        : 'O dersin kanjilerini çizerek yaz.',
-    minutes: 10,
-    to: '/write',
-  })
+  // Burada her gün 10 dakikalık "Yazı çalışması" (/write) görevi vardı ve
+  // atlanamaz çekirdek görevdi. Kullanıcı o sayfayı kullanmıyor; görev
+  // 60 dakikalık bütçenin 10'unu boşa ayırıyordu. Genki aşamasında onun
+  // yerine kanjiyi fiilen çalıştığı yer geliyor: kanji kartları. Alfabe
+  // aşamasında bu adım yok — orada kanji henüz başlamadı.
+  if (rota.stageId !== 'hiragana' && rota.stageId !== 'katakana') {
+    tasks.push({
+      id: 'kanji:kart',
+      kind: 'drill',
+      title: 'Kanji kartları',
+      detail: 'O dersteki kanjilerin kartına bak: çizimi izle, örnek kelimeleri sesli oku.',
+      minutes: 10,
+      to: '/kanji-kartlar',
+    })
+  }
 
   // ————— 5. Takılan kartlar —————
   if (ctx.leeches > 0) {
@@ -282,16 +284,9 @@ export function buildDailyPlan(ctx: PlanContext, now = new Date()): DailyPlan {
     })
   }
 
-  // ————— 7. Dinleme / video —————
-  tasks.push({
-    id: 'video',
-    kind: 'video',
-    title: 'Dinleme (video)',
-    detail: 'Gerçek Japonca duymadan telaffuz oturmuyor. Günde bir video yeter.',
-    minutes: 10,
-    to: '/kaynaklar',
-    optional: true,
-  })
+  // (Burada her gün "Dinleme (video)" ek görevi vardı; kullanıcı o sayfayı
+  // kullanmadığı için kaldırıldı. Dinleme sınavda ayrı barajlı bölüm —
+  // yerine uygulama içi bir dinleme alıştırması gelmeli, harici video değil.)
 
   const minutes = tasks.reduce((a, t) => a + t.minutes, 0)
 
