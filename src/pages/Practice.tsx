@@ -40,6 +40,7 @@ const GROUPS: Group[] = [
     note: 'N5’in 106 kanjisi. Kartlarla öğren, tabloda göz gezdir.',
     items: [
       { to: '/kanji-kartlar', glyph: '字', title: 'N5 kanji kartları', sub: 'Büyük kart, döngülü çizim ve N5 örnekleri' },
+      { to: '/kanji-testi', glyph: '試', title: 'Kanji testi', sub: 'Cümlede boşluk doldur — şıklı ya da yazarak' },
       { to: '/kanji', glyph: '漢', title: 'Kanji tablosu', sub: 'Tema tema; tıkla, okunuşunu ve çizimini gör' },
     ],
   },

@@ -3568,3 +3568,30 @@ ul.tight li {
   font-size: 0.72rem; letter-spacing: 0; padding: 1px 8px; border-radius: 999px;
   border: 1px solid var(--line); color: var(--text-faint);
 }
+
+/* ————— Kanji kartındaki örnek cümle ve çözümlemesi ————— */
+.kc-sent-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.kc-sent { font-size: 1.55rem; font-weight: 600; line-height: 1.5; }
+.kc-sent-kana { font-size: 1.05rem; color: var(--text-dim); }
+.kc-sent-tr { font-size: 1.05rem; margin-top: 2px; }
+.kc-pattern {
+  margin-top: 4px; font-size: 0.82rem; color: var(--text-faint);
+  font-family: var(--ff-mono);
+}
+.kc-tokens {
+  list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 8px;
+  border-top: 1px solid var(--line-soft); padding-top: 10px;
+}
+.kc-tok-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.kc-tok-w { font-size: 1.25rem; font-weight: 600; }
+.kc-tok-r { font-size: 0.95rem; color: var(--text-faint); }
+.kc-tok-tr { font-size: 1rem; }
+.kc-tok-kind {
+  font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-faint); border: 1px solid var(--line); border-radius: 999px; padding: 0 7px;
+}
+.kc-tok-note { margin-top: 2px; line-height: 1.5; }
+
+/* ————— Kanji testi ————— */
+.kt-sentence { font-size: clamp(1.5rem, 4.5vw, 2.1rem); font-weight: 600; line-height: 1.6; }
+.kt-tr { font-size: 1rem; color: var(--text-dim); margin-top: 6px; }

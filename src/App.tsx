@@ -24,6 +24,7 @@ import LeechesPage from '@/pages/Leeches'
 import N5Page from '@/pages/N5'
 import KanjiPage from '@/pages/Kanji'
 import KanjiCardsPage from '@/pages/KanjiCards'
+import KanjiTestPage from '@/pages/KanjiTest'
 import LessonsPage from '@/pages/Lessons'
 import LessonPlayer from '@/pages/LessonPlayer'
 import ReviewPage from '@/pages/Review'
@@ -145,6 +146,7 @@ export default function App() {
         <Route path="/gun-sonu-testi/:day" element={<DayEndTestPage />} />
         <Route path="/kanji" element={<KanjiPage />} />
         <Route path="/kanji-kartlar" element={<KanjiCardsPage />} />
+        <Route path="/kanji-testi" element={<KanjiTestPage />} />
 
         <Route path="/lessons" element={<LessonsPage />} />
         <Route path="/lesson/:id" element={<LessonPlayer />} />

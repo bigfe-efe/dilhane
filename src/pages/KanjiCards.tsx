@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Chips, SpeakBtn, TopBar } from '@/components/ui'
 import { StrokeOrder } from '@/components/StrokeOrder'
 import { KANJI_CARDS, KANJI_CARD_SETS, type KanjiCard } from '@/content/ja/kanji-cards'
+import { SENTENCE_BY_KANJI } from '@/content/ja/kanji-sentences'
 
 // N5 kanji kartları.
 //
@@ -52,6 +54,19 @@ export default function KanjiCardsPage() {
           onChange={setSet}
         />
 
+        <Link to="/kanji-testi" className="card card--link">
+          <div className="row">
+            <span className="ja" style={{ fontSize: '1.5rem', width: 32, textAlign: 'center' }}>
+              試
+            </span>
+            <div className="stack-sm" style={{ gap: 1, flex: 1 }}>
+              <div className="card-title">Kanji testi</div>
+              <div className="card-sub">Cümlede boşluk doldur — şıklı ya da yazarak</div>
+            </div>
+            <span className="dim">›</span>
+          </div>
+        </Link>
+
         <div className="card stack-sm">
           <div className="small">
             Örneklerde yalnızca <b>bütün kanjileri N5 olan</b> kelimeler var — bir kanjiyi, onunla birleşen diğer
@@ -92,6 +107,7 @@ function Marked({ term, char }: { term: string; char: string }) {
 function KanjiCardView({ c }: { c: KanjiCard }) {
   const { k } = c
   const okunus = (k.kun[0] ?? k.on[0] ?? '').replace(/-/g, '')
+  const cumle = SENTENCE_BY_KANJI.get(k.char)
 
   return (
     <article className="card kc">
@@ -160,6 +176,35 @@ function KanjiCardView({ c }: { c: KanjiCard }) {
           ))}
         </ul>
       </section>
+
+      {cumle && (
+        <section className="kc-section">
+          <h3>Cümle</h3>
+          <div className="kc-sent-head">
+            <div className="ja kc-sent">
+              <Marked term={cumle.ja} char={k.char} />
+            </div>
+            <SpeakBtn text={cumle.ja} lang="ja" size="sm" reading={cumle.kana} />
+          </div>
+          <div className="ja kc-sent-kana">{cumle.kana}</div>
+          <div className="kc-sent-tr">{cumle.tr}</div>
+          <div className="kc-pattern">Kalıp: {cumle.pattern}</div>
+
+          <ul className="kc-tokens">
+            {cumle.tokens.map((t, i) => (
+              <li key={i}>
+                <div className="kc-tok-head">
+                  <span className="ja kc-tok-w">{t.s}</span>
+                  {t.r !== t.s && <span className="ja kc-tok-r">{t.r}</span>}
+                  <span className="kc-tok-tr">{t.tr}</span>
+                  <span className="kc-tok-kind">{t.kind}</span>
+                </div>
+                {t.note && <div className="tiny dim kc-tok-note">{t.note}</div>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {c.note && (
         <section className="kc-section kc-note">
