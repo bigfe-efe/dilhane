@@ -24,8 +24,14 @@
  *    numaralı daireler kalabalık karakterlerde küçülüyor, yoksa üst üste
  *    binip rakamlar okunmuyordu.
  *
- * 4. DAHA UZUN BEKLEME. Okunacak şey arttı (anlam + iki okunuş dizisi + üç
- *    kelime), 6–8 saniye yetmiyordu. 9–12 saniye.
+ * 4. UZUN BEKLEME: 18–22 SANİYE. Kullanıcının isteği (2026-09-19). Ekranda
+ *    anlam, iki okunuş, dört örnek, bir cümle ve çoğu zaman bir not var;
+ *    9–12 saniye bunları okumaya yetmiyordu. Bekleme uzayınca çizim bir kez
+ *    çizip durmasın diye kısa aralarla yeniden çiziliyor (kartlardaki döngü
+ *    gibi).
+ *
+ * 5. VERİ KANJİ KARTLARINDAN (scripts/lib/kanji-data.ts): yalnızca N5
+ *    birleşimleri, notlar ve cümleler kartlarla aynı kaynaktan geliyor.
  *
  * NEDEN ÜRETİLİYOR, ELLE YAZILMIYOR:
  * Dosya tamamen bağımsız olmalı — Wallpaper Engine ona tek bir dosya olarak
@@ -110,7 +116,7 @@ function syncToWallpaperEngine() {
 const PROJECT = {
   title: 'Dilhane — N5 Kanji',
   description:
-    'JLPT N5 kanjileri sırayla, numaralı çizgi sırası canlandırmasıyla. Türkçe anlam, on/kun okunuşları ve okunuşun kelimeye göre nasıl değiştiğini gösteren örnek kelimeler her karakterle birlikte görünür.',
+    'JLPT N5 kanjileri, numaralı ve döngülü çizgi sırası canlandırmasıyla. Türkçe anlam, on/kun okunuşları (Latin dahil), yalnızca N5 kanjilerinden oluşan örnekler, örnek cümle ve not her karakterle birlikte görünür. Her kanji ~20 saniye kalır.',
   type: 'web',
   file: 'index.html',
   preview: 'preview.png',
@@ -249,7 +255,9 @@ const TEMPLATE = String.raw`<!doctype html>
     justify-content: center; gap: 4.5vw; min-height: 0;
   }
   #glyphWrap { position: relative; display: grid; place-items: center; }
-  #glyph { height: min(48vh, 34vw); width: auto; display: block; overflow: visible; }
+  /* Karakter 48vh'den 40vh'ye indi: altta artık örnek listesi, cümle ve not
+     var; ikinci monitör 1366x768 olduğu için dar ekranda da sığmalı. */
+  #glyph { height: min(40vh, 30vw); width: auto; display: block; overflow: visible; }
   #glyph path {
     fill: none; stroke: var(--text);
     stroke-width: 5.5; stroke-linecap: round; stroke-linejoin: round;
@@ -302,6 +310,29 @@ const TEMPLATE = String.raw`<!doctype html>
   .hit { color: var(--accent); }
   .jaBig { font-size: 3.4vh; letter-spacing: .06em; font-family: var(--ja); }
   .jaRead { font-family: var(--ja); }
+
+  /* Okunuşun yanındaki Latin karşılığı: "イチ・イツ  ichi / itsu" */
+  .rdLatin { font-size: 1.7vh; color: var(--faint); font-family: Consolas, 'Cascadia Code', monospace; }
+
+  /* Örnek listesi: kartlarla aynı içerik, dört satır */
+  .exList { display: grid; gap: .55vh; }
+  .exRow { display: flex; align-items: baseline; gap: .7vw; flex-wrap: wrap; }
+  .exTerm { font-family: var(--ja); font-size: 2.5vh; font-weight: 600; }
+  .exRead { font-family: var(--ja); font-size: 1.6vh; color: var(--dim); }
+  .exRo { font-size: 1.45vh; color: var(--faint); }
+  .exTr { font-size: 1.6vh; color: var(--text); }
+
+  /* Cümle */
+  .sentJa { font-family: var(--ja); font-size: 2.6vh; font-weight: 600; line-height: 1.45; }
+  .sentKana { font-family: var(--ja); font-size: 1.55vh; color: var(--dim); }
+  .sentTr { font-size: 1.7vh; color: var(--text); }
+
+  /* Not — katakana sürümündeki "karıştırma" kartı gibi vurgulu: düzensiz
+     okunuş ve tuzaklar burada, gözden kaçmasın. */
+  .card.is-note { border-color: rgba(224,113,79,.34); background: var(--accent-soft); }
+  .notePairs { display: grid; gap: .35vh; font-size: 1.75vh; }
+  .notePairs .ja { font-family: var(--ja); }
+  .noteText { font-size: 1.55vh; color: var(--dim); line-height: 1.5; }
 
   /* Geçiş: içerik topluca solup yeniden beliriyor. */
   #app.is-out #stage, #app.is-out #info { opacity: 0; transform: translateY(.8vh); }
@@ -461,10 +492,11 @@ function mark(word, ch) {
     .join('');
 }
 
-function readingBlock(cls, label, list) {
+function readingBlock(cls, label, list, latin) {
   if (!list || !list.length) return '';
   return '<div class="rd ' + cls + '"><span class="rdLabel">' + label + '</span>' +
-    '<span class="rdVal">' + esc(list.join('・')) + '</span></div>';
+    '<span class="rdVal">' + esc(list.join('・')) + '</span>' +
+    (latin ? '<span class="rdLatin">' + esc(latin) + '</span>' : '') + '</div>';
 }
 
 function render(item) {
@@ -473,8 +505,8 @@ function render(item) {
   el('meaningTr').textContent = item.m.join(' · ');
 
   const rd = [
-    readingBlock('rd--on', "on'yomi", item.on),
-    readingBlock('rd--kun', "kun'yomi", item.kun),
+    readingBlock('rd--on', "on'yomi", item.on, item.onL),
+    readingBlock('rd--kun', "kun'yomi", item.kun, item.kunL),
   ].filter(Boolean).join('');
 
   // Tire açıklaması SADECE tire varken çıkar; her karakterde durursa
@@ -488,14 +520,43 @@ function render(item) {
 
   const total = drawGlyph(item);
 
-  // Örnek kelimeler: kanjinin okunuşunun kelimeye göre DEĞİŞTİĞİNİ gösteren
-  // asıl kısım burası. Kanji her kelimede renkli, okunuş altında.
-  el('cards').innerHTML = item.w.map((w) =>
-    '<div class="card"><div class="cardLabel">Örnek kelime</div>' +
-    '<div class="cardBody"><span class="jaBig">' + mark(w.k, item.c) + '</span></div>' +
-    '<div class="cardBody muted jaRead">' + esc(w.r) + '</div>' +
-    '<div class="cardBody muted">' + esc(w.t) + '</div></div>'
-  ).join('');
+  // Üç kart, kanji kartlarıyla aynı içerik: örnekler, cümle, not.
+  // Örnekler okunuşun kelimeye göre DEĞİŞTİĞİNİ gösteren asıl kısım; kanji
+  // her kelimede renkli.
+  const kartlar = [];
+
+  if (item.w.length) {
+    kartlar.push(
+      '<div class="card"><div class="cardLabel">Örnekler · yalnızca N5</div><div class="exList">' +
+      item.w.map((w) =>
+        '<div class="exRow"><span class="exTerm">' + mark(w.k, item.c) + '</span>' +
+        '<span class="exRead">' + esc(w.r) + '</span>' +
+        '<span class="exRo">' + esc(w.ro) + '</span>' +
+        '<span class="exTr">— ' + esc(w.t) + '</span></div>'
+      ).join('') + '</div></div>'
+    );
+  }
+
+  if (item.sent) {
+    kartlar.push(
+      '<div class="card"><div class="cardLabel">Cümle</div>' +
+      '<div class="sentJa">' + mark(item.sent.ja, item.c) + '</div>' +
+      '<div class="sentKana">' + esc(item.sent.kana) + '</div>' +
+      '<div class="sentTr">' + esc(item.sent.tr) + '</div></div>'
+    );
+  }
+
+  if (item.note) {
+    kartlar.push(
+      '<div class="card is-note"><div class="cardLabel">Not</div>' +
+      '<div class="notePairs">' + item.note.pairs.map((p) =>
+        '<div><span class="ja">' + esc(p[0]) + '</span> → <span class="ja">' + esc(p[1]) + '</span></div>'
+      ).join('') + '</div>' +
+      '<div class="noteText">' + esc(item.note.text) + '</div></div>'
+    );
+  }
+
+  el('cards').innerHTML = kartlar.join('');
 
   return total;
 }
@@ -506,18 +567,32 @@ function render(item) {
 // dizisi + üç kelime) ve çizgi canlandırması 18 çizgide 3.4 saniye sürüyor;
 // bekleme süresi canlandırma bitmeden dolmamalı. Alt sınır bu yüzden
 // canlandırma süresine bağlı.
-const MIN_MS = 9000;
-const MAX_MS = 12000;
+const MIN_MS = 18000;
+const MAX_MS = 22000;
 const FADE = 450;
+/** Çizim bitince yeniden çizmeden önceki ara */
+const REDRAW_PAUSE = 3500;
 
 const barFill = document.getElementById('barFill');
 let timer = null;
+// Yeniden çizim zamanlayıcısı AYRI tutuluyor ve her yerde temizleniyor.
+// Katakana sürümünde takip edilmeyen bir iç zamanlayıcı iki döngünün birden
+// dönmesine yol açmıştı; aynı hata burada eski kanjinin yeni kanjinin
+// üstüne çizilmesi olarak çıkardı.
+let redraw = null;
+
+function loopGlyph(item, anim) {
+  clearTimeout(redraw);
+  redraw = setTimeout(() => loopGlyph(item, drawGlyph(item)), anim + REDRAW_PAUSE);
+}
 
 function show() {
   const item = nextCard();
 
+  clearTimeout(redraw);
   app.classList.remove('is-out');
   const anim = render(item);
+  loopGlyph(item, anim);
 
   // Canlandırma bitmeden geçmesin: uzun kanjilerde son çizgiler çizilirken
   // ekran değişiyordu.
@@ -534,6 +609,7 @@ function show() {
   // görünürlük tam solma anında değişince iki döngü birden dönmeye başlıyor
   // ve karakterler iki kat hızlı geçiyor.
   timer = setTimeout(() => {
+    clearTimeout(redraw);
     app.classList.add('is-out');
     timer = setTimeout(show, FADE);
   }, hold);
@@ -542,8 +618,8 @@ function show() {
 // Sekme arkaplandayken tarayıcı zamanlayıcıyı kısıyor ve geri dönünce
 // birikmiş turlar peş peşe akıyor. Görünür olunca döngü baştan kurulur.
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) { clearTimeout(timer); }
-  else { clearTimeout(timer); app.classList.remove('is-out'); show(); }
+  if (document.hidden) { clearTimeout(timer); clearTimeout(redraw); }
+  else { clearTimeout(timer); clearTimeout(redraw); app.classList.remove('is-out'); show(); }
 });
 
 show();

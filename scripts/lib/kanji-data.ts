@@ -1,20 +1,20 @@
 /**
  * Kanji duvar kâğıdının verisi.
  *
- * Katakana tarafındaki `katakana-data.ts` ile aynı gerekçeyle ayrı dosya:
- * ileride bir iPhone sürümü de aynı hazırlığı isteyecek ve iki yerde ayrı
- * liste tutmak, birinde düzeltilenin ötekinde eski kalmasıyla sonuçlanıyor.
+ * KAYNAK ARTIK KANJİ KARTLARI (2026-09-19). İlk sürüm doğrudan kanji
+ * tablosundan besleniyordu; kartlar sonradan yazıldı ve ondan iyi hâle
+ * geldi: örneklerde yalnızca N5 kanjisi var, 54 kanjide not var, her
+ * kanjinin kelime kelime çözümlenmiş bir cümlesi var. Duvar kâğıdı ayrı bir
+ * listeden beslenseydi ikisi birbirinden ayrı düşerdi — kartta düzeltilen
+ * bir örnek duvar kâğıdında eski kalırdı.
  *
- * KANA'DAN FARKLI OLAN NE:
- * Kanada gösterilecek şey "bu harf hangi ses". Kanjide böyle tek bir cevap
- * YOK — bir kanjinin okunuşu içinde bulunduğu kelimeye göre değişir
- * (人 tek başına hito, 三人 sannin, 日本人 nihonjin). Bu yüzden burada asıl
- * yük ÖRNEK KELİMELERDE: okunuşun kelimeye göre değiştiğini ancak yan yana
- * duran kelimeler gösterebilir. Karakterin altına tek bir okunuş yazmak
- * yanlış bir şey öğretirdi.
+ * Kanjinin okunuşu kelimeye göre değiştiği için (人: ひと / じん / にん)
+ * asıl yük hâlâ örneklerde ve cümlede; karakterin altına tek bir okunuş
+ * yazmak yanlış bir şey öğretirdi.
  */
 import { readFileSync } from 'node:fs'
-import { KANJI_N5, KANJI_SETS } from '../../src/content/ja/kanji-n5'
+import { KANJI_CARDS } from '../../src/content/ja/kanji-cards'
+import { SENTENCE_BY_KANJI } from '../../src/content/ja/kanji-sentences'
 
 export interface StrokeData {
   s: string[]
@@ -26,66 +26,63 @@ export interface StrokeData {
 export interface KanjiCard {
   /** Karakterin kendisi */
   c: string
+  /** Kart numarası (1 = 一) */
+  no: number
   /** Türkçe anlamlar */
   m: string[]
-  /** on'yomi — Çinceden gelen okunuş, katakana yazılır */
   on: string[]
-  /** kun'yomi — Japonca okunuş, hiragana yazılır */
   kun: string[]
+  /** on/kun Latin okunuşları — "ichi / itsu" */
+  onL: string
+  kunL: string
   /** Çizgi sayısı */
   s: number
-  /** Tema başlığı: "Gün ve zaman" */
+  /** Tema başlığı */
   g: string
-  /** Japon okul sınıfı — sıklık ağırlığı buradan çıkıyor */
+  /** Japon okul sınıfı — sıklık ağırlığı */
   grade: number
   /** Çizgi yolları (SVG path) */
   p: string[]
   /** Çizgi başlangıç noktaları; i = kaçıncı çizgi */
   n: { x: number; y: number; i: number }[]
-  /** Örnek kelimeler: kelime, okunuşu, Türkçesi */
-  w: { k: string; r: string; t: string }[]
-}
-
-/**
- * Karakter → tema başlığı.
- *
- * KANJI_SETS zaten konu konu gruplanmış; duvar kâğıdında "hangi aileden"
- * bilgisi bağlam veriyor. Hiçbir sete girmeyen karakter olursa boş kalır,
- * uydurma bir başlık yazılmaz.
- */
-function themeMap(): Map<string, string> {
-  const m = new Map<string, string>()
-  for (const set of KANJI_SETS) {
-    for (const c of set.chars) if (!m.has(c)) m.set(c, set.title)
-  }
-  return m
+  /** Örnekler — yalnızca bütün kanjileri N5 olan kelimeler */
+  w: { k: string; r: string; ro: string; t: string }[]
+  /** Kartın notu: düzensiz okunuş, ses değişimi, karışıklık */
+  note: { pairs: [string, string][]; text: string } | null
+  /** Örnek cümle */
+  sent: { ja: string; kana: string; tr: string } | null
 }
 
 export function buildKanjiCards(strokesPath: string): KanjiCard[] {
   const strokes: Record<string, StrokeData> = JSON.parse(readFileSync(strokesPath, 'utf8'))
-  const tema = themeMap()
 
   return (
-    KANJI_N5
-      // Çizgi verisi olmayan karakter ATLANIR. Duvar kâğıdının asıl işi çizgi
-      // sırasını göstermek; verisi olmayan karakter boş bir kare olarak çıkar
-      // ve o turu boşa harcar.
-      .filter((k) => (strokes[k.char]?.s?.length ?? 0) > 0)
-      .map((k) => {
-        const sd = strokes[k.char]
+    KANJI_CARDS
+      // Çizgi verisi olmayan kanji ATLANIR: duvar kâğıdının asıl işi çizgi
+      // sırası, boş kare o turu boşa harcar.
+      .filter((c) => (strokes[c.k.char]?.s?.length ?? 0) > 0)
+      .map((c) => {
+        const sd = strokes[c.k.char]
+        const cumle = SENTENCE_BY_KANJI.get(c.k.char)
         return {
-          c: k.char,
-          m: k.meaningsTr,
-          on: k.on,
-          kun: k.kun,
-          s: k.strokes,
-          g: tema.get(k.char) ?? '',
-          grade: k.grade ?? 9,
+          c: c.k.char,
+          no: c.no,
+          m: c.k.meaningsTr,
+          on: c.k.on,
+          kun: c.k.kun,
+          onL: c.onLatin,
+          kunL: c.kunLatin,
+          s: c.k.strokes,
+          g: c.setTitle,
+          grade: c.k.grade ?? 9,
           p: sd.s,
           n: sd.n.map(([x, y], i) => ({ x, y, i: i + 1 })),
-          // En fazla üç kelime — ekranda üç kart yeri var. Sıra veri
-          // dosyasındaki sıra: orada en yaygın kullanım başa yazılmış.
-          w: k.words.slice(0, 3).map((w) => ({ k: w.term, r: w.reading, t: w.tr })),
+          // Kartlardaki örneklerin TAMAMI (en fazla beş). Önce dörde
+          // kısılmıştı ve 一'in kartındaki 一年 duvar kâğıdında düşüyordu;
+          // beş satırın 1366x768'de de sığdığı ölçüldü.
+          w: c.examples.map((e) => ({ k: e.term, r: e.reading, ro: e.romaji, t: e.tr })),
+          note: c.note ?? null,
+          sent: cumle ? { ja: cumle.ja, kana: cumle.kana, tr: cumle.tr } : null,
         }
       })
   )
