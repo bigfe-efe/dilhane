@@ -207,3 +207,14 @@ export function usePendingSession() {
     return hepsi.find((s) => s.day < bugun && !s.testedAt)
   }, [])
 }
+
+/** Bütün ünitelerin ilerlemesi — ünite listesi ve ünite sayfası kullanır. */
+export function useUnitProgress() {
+  const rows = useLiveQuery(async () => db.units.toArray(), [], [])
+  return new Map(rows.map((r) => [r.unitId, r]))
+}
+
+/** Tek bir ünitenin ilerlemesi. */
+export function useUnit(unitId: string | undefined) {
+  return useLiveQuery(async () => (unitId ? await db.units.get(unitId) : undefined), [unitId])
+}

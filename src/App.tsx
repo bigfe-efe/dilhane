@@ -26,6 +26,8 @@ import KanjiPage from '@/pages/Kanji'
 import KanjiCardsPage from '@/pages/KanjiCards'
 import KanjiTestPage from '@/pages/KanjiTest'
 import CountersPage from '@/pages/Counters'
+import UnitsPage from '@/pages/Units'
+import UnitPage from '@/pages/Unit'
 import LessonsPage from '@/pages/Lessons'
 import LessonPlayer from '@/pages/LessonPlayer'
 import ReviewPage from '@/pages/Review'
@@ -56,7 +58,8 @@ import { useExamDate, useExams, useLessonProgress } from '@/db/hooks'
 const NAV: { to: string; icon: IconName; label: string; end?: boolean }[] = [
   { to: '/', icon: 'home', label: 'Bugün', end: true },
   { to: '/calis', icon: 'grid', label: 'Çalış' },
-  { to: '/lessons', icon: 'book', label: 'Dersler' },
+  // Üniteler ana yol; Genki dersleri ünitelerin içinden açılıyor.
+  { to: '/uniteler', icon: 'book', label: 'Üniteler' },
   { to: '/review', icon: 'repeat', label: 'Tekrar' },
   { to: '/more', icon: 'more', label: 'Daha' },
 ]
@@ -149,6 +152,8 @@ export default function App() {
         <Route path="/kanji-kartlar" element={<KanjiCardsPage />} />
         <Route path="/kanji-testi" element={<KanjiTestPage />} />
         <Route path="/sayaclar" element={<CountersPage />} />
+        <Route path="/uniteler" element={<UnitsPage />} />
+        <Route path="/unite/:id" element={<UnitPage />} />
 
         <Route path="/lessons" element={<LessonsPage />} />
         <Route path="/lesson/:id" element={<LessonPlayer />} />

@@ -79,6 +79,23 @@ export interface DayStat {
   en: number
 }
 
+/**
+ * Ünite ilerlemesi.
+ *
+ * Ödev işaretleri ve test sonucu burada; ders ilerlemesinden (lessons)
+ * ayrı tutuluyor çünkü ünite bir dersten fazlasını içeriyor.
+ */
+export interface UnitProgress {
+  unitId: string
+  status: 'in-progress' | 'completed'
+  /** Tamamlanmış ödev kimlikleri */
+  homework: string[]
+  /** En iyi ünite testi yüzdesi */
+  testBest: number
+  testAt?: number
+  updated: number
+}
+
 export interface Setting {
   key: string
   value: unknown
@@ -162,6 +179,7 @@ class DilhaneDB extends Dexie {
   submissions!: Table<Submission, number>
   stats!: Table<DayStat, string>
   settings!: Table<Setting, string>
+  units!: Table<UnitProgress, string>
   notes!: Table<Note, string>
   exams!: Table<ExamRecord, number>
   daily!: Table<DailyDone, string>
@@ -195,6 +213,13 @@ class DilhaneDB extends Dexie {
     // gün var mı" diye soruyor ve bu sorgu her açılışta çalışıyor.
     this.version(4).stores({
       sessions: 'day, at, testedAt',
+    })
+
+    // v5: ünite ilerlemesi. Dersten ayrı bir tablo çünkü ünitede ders
+    // ilerlemesinde olmayan iki şey var: ödev işaretleri ve ünite testi
+    // sonucu. Mevcut lessons tablosuna sıkıştırmak ikisini de bulanıklaştırırdı.
+    this.version(5).stores({
+      units: 'unitId, status',
     })
   }
 }

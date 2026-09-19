@@ -3612,3 +3612,22 @@ ul.tight li {
 }
 .ct-note { font-size: 0.8rem; color: var(--text-dim); flex: 1; min-width: 160px; }
 .ct-q { font-size: clamp(2.4rem, 8vw, 3.4rem); font-weight: 650; line-height: 1.2; }
+
+/* ————— Üniteler ————— */
+.unit-ex { display: flex; align-items: flex-start; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--bg-elev-2); }
+.unit-ex-ja { font-size: 1.15rem; font-weight: 560; line-height: 1.5; }
+.unit-vocab { padding: 11px 13px; }
+.unit-vocab-ja { font-size: 1.3rem; font-weight: 600; }
+.unit-line { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+.unit-line:last-child { border-bottom: none; }
+.unit-line-ja { font-size: 1.25rem; line-height: 1.7; }
+.unit-hw {
+  width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer;
+  border: 1px solid var(--line); background: var(--surface);
+}
+.unit-hw.is-done { border-color: var(--ok); background: var(--ok-dim); }
+.unit-check {
+  width: 24px; height: 24px; flex: none; border-radius: 7px;
+  border: 1px solid var(--line-strong); display: grid; place-items: center; color: var(--ok);
+}
+.unit-check.is-on { border-color: var(--ok); background: var(--ok-dim); }
