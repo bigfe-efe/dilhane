@@ -18,7 +18,7 @@ import { bumpStat } from '@/db/db'
 // İKİ KİP:
 //   Şıklı  — sınav biçimi; eleyerek de olsa bulabilirsin.
 //   Yazarak — eleme yok. Japonca klavye gerekmesin diye kanjinin kendisi,
-//            kelimenin kanası ya da romajisi kabul edilir.
+//            kanjinin okunuşu ya da kelimenin kanası/romajisi kabul edilir.
 
 type Mode = 'karma' | 'mcq' | 'yaz'
 type Count = 10 | 20 | 0
@@ -53,6 +53,25 @@ function buildQuestions(setId: string, mode: Mode, count: Count): Q[] {
     const soruKipi: 'mcq' | 'yaz' = mode === 'karma' ? (i % 2 === 0 ? 'mcq' : 'yaz') : mode
     return { kanji: s.k, s, word, mode: soruKipi, options, answer: options.indexOf(s.k) }
   })
+}
+
+/**
+ * Yazarak kipinde kabul edilen cevaplar.
+ *
+ * Başta yalnızca kanji, kelime ve KELİMENİN okunuşu kabul ediliyordu. Soru
+ * "boşluğa hangi kanji gelir" diye sorduğu için öğrenci doğal olarak
+ * KANJİNİN okunuşunu yazıyor: 二人 sorusuna "futa" (二'nin kun okunuşu) ya da
+ * "ni" (on okunuşu) yazmak kanjiyi doğru tanımaktır, ama yanlış sayılıyordu.
+ *
+ * Kun okunuşlarındaki tireden sonrası kanjinin dışında kalan hiragana
+ * (い-きる → 行 yalnızca い'yi karşılar), o yüzden tireye kadarı alınıyor.
+ */
+function kabulEdilenler(q: Q): string[] {
+  const k = KANJI_BY_CHAR.get(q.kanji)
+  const okunuslar = [...(k?.on ?? []), ...(k?.kun ?? [])]
+    .map((r) => r.replace(/^-/, '').split('-')[0])
+    .filter(Boolean)
+  return [q.kanji, q.word.s, q.word.r, ...okunuslar]
 }
 
 /** Cümlede o kanjinin GEÇTİĞİ HER YERİ boşluğa çevirir. */
@@ -119,8 +138,8 @@ export default function KanjiTestPage() {
               kanjiyi cümlenin içinde sorar.
             </div>
             <div className="tiny faint">
-              Yazarak kipinde Japonca klavye gerekmez: kanjinin kendisini, kelimenin kanasını ya da romajisini
-              yazabilirsin.
+              Yazarak kipinde Japonca klavye gerekmez: kanjinin kendisini, okunuşunu ya da kelimenin
+              kanasını/romajisini yazabilirsin.
             </div>
           </div>
 
@@ -270,7 +289,7 @@ export default function KanjiTestPage() {
               onChange={(e) => setYazilan(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && dogruMu === null && yazilan.trim()) {
-                  cevapla(acceptsJa(yazilan, [q.kanji, q.word.s, q.word.r]))
+                  cevapla(acceptsJa(yazilan, kabulEdilenler(q)))
                 }
               }}
               placeholder={`ör. ${q.word.r}`}
@@ -280,13 +299,13 @@ export default function KanjiTestPage() {
               spellCheck={false}
             />
             <div className="tiny faint">
-              Kanjiyi, kelimenin kanasını ya da romajisini yazabilirsin.
+              Kanjiyi, kanjinin okunuşunu ya da kelimenin kanasını/romajisini yazabilirsin.
             </div>
             {dogruMu === null && (
               <button
                 className="btn btn--primary btn--block"
                 disabled={!yazilan.trim()}
-                onClick={() => cevapla(acceptsJa(yazilan, [q.kanji, q.word.s, q.word.r]))}
+                onClick={() => cevapla(acceptsJa(yazilan, kabulEdilenler(q)))}
               >
                 Kontrol et
               </button>
