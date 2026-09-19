@@ -25,6 +25,7 @@ import N5Page from '@/pages/N5'
 import KanjiPage from '@/pages/Kanji'
 import KanjiCardsPage from '@/pages/KanjiCards'
 import KanjiTestPage from '@/pages/KanjiTest'
+import CountersPage from '@/pages/Counters'
 import LessonsPage from '@/pages/Lessons'
 import LessonPlayer from '@/pages/LessonPlayer'
 import ReviewPage from '@/pages/Review'
@@ -147,6 +148,7 @@ export default function App() {
         <Route path="/kanji" element={<KanjiPage />} />
         <Route path="/kanji-kartlar" element={<KanjiCardsPage />} />
         <Route path="/kanji-testi" element={<KanjiTestPage />} />
+        <Route path="/sayaclar" element={<CountersPage />} />
 
         <Route path="/lessons" element={<LessonsPage />} />
         <Route path="/lesson/:id" element={<LessonPlayer />} />

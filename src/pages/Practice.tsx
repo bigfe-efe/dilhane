@@ -53,6 +53,7 @@ const GROUPS: Group[] = [
       { to: '/katakana-kelime', glyph: '外', title: 'Katakana kelime listesi', sub: 'Yabancı kökenli kelimeler, kaynağıyla' },
       { to: '/kana-kelime', glyph: '読', title: 'Kelime okuma', sub: 'Hiragana kelimeleri hece hece sök' },
       { to: '/kelime-yazma', glyph: '筆', title: 'Kelime yazma', sub: 'Okunuşu gör, kanasını yaz' },
+      { to: '/sayaclar', glyph: '数', title: 'Sayaçlar', sub: 'Kaç kişi, kaç tane, saat kaç — düzensizleriyle' },
     ],
   },
   {

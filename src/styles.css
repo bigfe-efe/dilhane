@@ -3595,3 +3595,20 @@ ul.tight li {
 /* ————— Kanji testi ————— */
 .kt-sentence { font-size: clamp(1.5rem, 4.5vw, 2.1rem); font-weight: 600; line-height: 1.6; }
 .kt-tr { font-size: 1rem; color: var(--text-dim); margin-top: 6px; }
+
+/* ————— Sayaç tablosu ————— */
+.ct-table { display: grid; gap: 4px; }
+.ct-row {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 7px 10px; border-radius: 10px; background: var(--bg-elev-2);
+}
+.ct-row.is-irr { background: var(--accent-dim, rgba(224,113,79,.13)); }
+.ct-n { min-width: 42px; font-family: var(--ff-mono); color: var(--text-faint); font-size: 0.85rem; }
+.ct-ja { min-width: 96px; font-size: 1.3rem; font-weight: 600; }
+.ct-r { font-size: 1.15rem; color: var(--text); }
+.ct-tag {
+  font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 0 7px;
+}
+.ct-note { font-size: 0.8rem; color: var(--text-dim); flex: 1; min-width: 160px; }
+.ct-q { font-size: clamp(2.4rem, 8vw, 3.4rem); font-weight: 650; line-height: 1.2; }
