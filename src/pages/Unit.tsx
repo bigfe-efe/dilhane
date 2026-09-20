@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { Badge, Chips, SpeakBtn, TopBar } from '@/components/ui'
+import { Badge, Chips, Sheet, SpeakBtn, TopBar } from '@/components/ui'
 import { Icon } from '@/components/icons'
 import { ExerciseRunner } from '@/components/ExerciseRunner'
-import { UNIT_BY_ID, type Unit } from '@/content/ja/units'
+import { UNIT_BY_ID, type Unit, type UnitVocab } from '@/content/ja/units'
+import { StrokeOrder } from '@/components/StrokeOrder'
+import { KANJI_BY_CHAR } from '@/content/ja/kanji-n5'
 import { LESSONS_BY_ID } from '@/content'
 import { db } from '@/db/db'
 import { useUnit } from '@/db/hooks'
@@ -186,25 +188,116 @@ function Gramer({ unit }: { unit: Unit }) {
 // ————————————————————————— Kelime —————————————————————————
 
 function Kelime({ unit }: { unit: Unit }) {
+  const [acik, setAcik] = useState<UnitVocab | null>(null)
+
   return (
     <div className="stack-sm">
-      <div className="card-sub">Ünite boyunca geçen kelimeler. Okunuşu bilmediğini işaretleyip tekrar et.</div>
+      <div className="card-sub">
+        Ünite boyunca geçen kelimeler. <b>Karta dokunursan çizgi sırasını</b> görürsün.
+      </div>
       <div className="cols-2">
         {unit.vocab.map((v) => (
-          <div key={v.ja} className="card unit-vocab">
+          <div
+            key={v.ja}
+            className="card unit-vocab"
+            role="button"
+            tabIndex={0}
+            onClick={() => setAcik(v)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                setAcik(v)
+              }
+            }}
+          >
             <div className="row">
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="ja unit-vocab-ja">{v.ja}</div>
-                {v.kana !== v.ja && <div className="ja tiny faint">{v.kana}</div>}
-                <div className="small">{v.tr}</div>
+                {v.kana !== v.ja && <div className="ja unit-vocab-kana">{v.kana}</div>}
+                <div className="unit-vocab-tr">{v.tr}</div>
                 {v.note && <div className="tiny dim">{v.note}</div>}
               </div>
-              <SpeakBtn text={v.ja} lang="ja" size="sm" reading={v.kana} />
+              {/* Ses düğmesi kartın kendi tıklamasını tetiklemesin */}
+              <span onClick={(e) => e.stopPropagation()}>
+                <SpeakBtn text={v.ja} lang="ja" size="sm" reading={v.kana} />
+              </span>
             </div>
           </div>
         ))}
       </div>
+
+      {acik && <KelimeSheet v={acik} onClose={() => setAcik(null)} />}
     </div>
+  )
+}
+
+/**
+ * Kelimenin çizgi sırası.
+ *
+ * Kanjili kelimede her kanji ayrı ayrı gösterilir — 名前 tek bir çizim
+ * değil, iki karakterin çizimidir ve ikisi ayrı öğrenilir. Kanjisi olmayan
+ * kelimelerde (はじめまして) kana karakterlerinin çizimi gösterilir; elle
+ * yazarken asıl takılınan yer orası.
+ */
+function KelimeSheet({ v, onClose }: { v: UnitVocab; onClose: () => void }) {
+  const kanjiler = [...new Set([...v.ja].filter((c) => KANJI_BY_CHAR.has(c)))]
+  // Kanji yoksa kanaya düşülüyor; uzun kelimelerde ilk altı karakter yeter
+  const kanalar = kanjiler.length ? [] : [...new Set([...v.kana].filter((c) => /[ぁ-ゟァ-ヿ]/.test(c)))].slice(0, 6)
+  const karakterler = kanjiler.length ? kanjiler : kanalar
+
+  return (
+    <Sheet onClose={onClose}>
+      <div className="stack lang-ja">
+        <div className="center stack-sm">
+          <div className="ja unit-sheet-word">{v.ja}</div>
+          {v.kana !== v.ja && <div className="ja unit-sheet-kana">{v.kana}</div>}
+          <div style={{ fontSize: '1.15rem' }}>{v.tr}</div>
+          {v.note && <div className="tiny dim">{v.note}</div>}
+          <SpeakBtn text={v.ja} lang="ja" reading={v.kana} />
+        </div>
+
+        {karakterler.length === 0 ? (
+          <div className="tiny faint center">Bu kelime için çizgi verisi yok.</div>
+        ) : (
+          karakterler.map((ch) => {
+            const k = KANJI_BY_CHAR.get(ch)
+            return (
+              <div key={ch} className="stack-sm">
+                <div className="row">
+                  <span className="ja" style={{ fontSize: '1.8rem', width: 40, textAlign: 'center' }}>
+                    {ch}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {k ? (
+                      <>
+                        <div className="card-title">{k.meaningsTr.join(', ')}</div>
+                        <div className="tiny faint">
+                          {k.on.length > 0 && (
+                            <>
+                              on: <span className="ja">{k.on.join('・')}</span>
+                            </>
+                          )}
+                          {k.on.length > 0 && k.kun.length > 0 && ' · '}
+                          {k.kun.length > 0 && (
+                            <>
+                              kun: <span className="ja">{k.kun.join('・')}</span>
+                            </>
+                          )}
+                          {` · ${k.strokes} çizgi`}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="card-title">Kana</div>
+                    )}
+                  </div>
+                </div>
+                <StrokeOrder char={ch} height={240} autoPlay loop compact />
+              </div>
+            )
+          })
+        )}
+      </div>
+    </Sheet>
   )
 }
 
