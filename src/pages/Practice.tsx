@@ -35,6 +35,20 @@ interface Group {
 
 const GROUPS: Group[] = [
   {
+    // Kanji tablosu dışındaki temel her şey. Başa kondu: sayı, saat ve
+    // tanışma her ünitede ve sınavın her bölümünde geçiyor.
+    id: 'temel',
+    title: 'Temel bilgiler',
+    note: 'Sayılar, tarih, saat, bu/şu/o ve kendini tanıtma. Düzensizler yıldızlı; takıldığında dönüp bakacağın yer.',
+    items: [
+      { to: '/temel?b=sayilar', glyph: '数', title: 'Sayılar', sub: '0–100 tam liste, yüzler, binler, 万 ve okunuş aracı' },
+      { to: '/temel?b=tarih', glyph: '月', title: 'Tarih', sub: 'Aylar, haftanın günleri, ayın günleri 1–31' },
+      { to: '/temel?b=saat', glyph: '時', title: 'Saat', sub: 'Saat, dakika, buçuk, çeyrek, 午前・午後' },
+      { to: '/temel?b=kosoado', glyph: 'こ', title: 'Bu · şu · o', sub: 'これ・この・ここ — eşya ve canlı farkıyla' },
+      { to: '/temel?b=tanitim', glyph: '私', title: 'Kendini tanıt', sub: 'Ad, yaş, okul — ve watashi ne zaman söylenir' },
+    ],
+  },
+  {
     id: 'kanji',
     title: 'Kanji',
     note: 'N5’in 106 kanjisi. Kartlarla öğren, tabloda göz gezdir.',

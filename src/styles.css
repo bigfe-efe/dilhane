@@ -3613,6 +3613,70 @@ ul.tight li {
 .ct-note { font-size: 0.8rem; color: var(--text-dim); flex: 1; min-width: 160px; }
 .ct-q { font-size: clamp(2.4rem, 8vw, 3.4rem); font-weight: 650; line-height: 1.2; }
 
+/* ————— Temel bilgiler ————— */
+.tb-star { color: var(--warn); font-weight: 700; font-size: 0.95rem; line-height: 1; flex: none; }
+.tb-table { display: grid; gap: 4px; }
+/* Satır: sayı | yazılış | okunuş (kana + Latin) | anlam | ★ | not | ses.
+   flex-wrap ile telefonda not alt satıra iner, masaüstünde tek satır kalır. */
+.tb-row {
+  display: flex; align-items: center; gap: 6px 12px; flex-wrap: wrap;
+  padding: 8px 10px; border-radius: 10px; background: var(--bg-elev-2);
+  border-left: 3px solid transparent;
+}
+.tb-row.is-star { border-left-color: var(--warn); background: var(--warn-soft); }
+.tb-n { min-width: 44px; font-family: var(--ff-mono); color: var(--text-faint); font-size: 0.85rem; }
+.tb-ja { min-width: 64px; font-size: 1.35rem; font-weight: 600; }
+.tb-read { display: grid; min-width: 120px; }
+.tb-kana { font-size: 1.1rem; }
+.tb-latin { font-size: 0.8rem; color: var(--accent); letter-spacing: 0.01em; }
+.tb-tr { font-size: 0.9rem; color: var(--text); min-width: 80px; }
+.tb-not { font-size: 0.8rem; color: var(--text-dim); flex: 1; min-width: 150px; }
+.tb-speak { margin-left: auto; }
+.tb-sub {
+  font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-dim); font-weight: 650;
+}
+.tb-latin-line { color: var(--accent); line-height: 1.6; }
+.tb-cnot { color: var(--warn); margin-top: 2px; }
+
+/* 0–100 ve ayın günleri: küçük kartlardan ızgara */
+.tb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 6px; }
+.tb-grid--days { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.tb-cell {
+  display: grid; gap: 2px; padding: 8px 10px; border-radius: 10px;
+  background: var(--bg-elev-2); border: 1px solid transparent;
+}
+.tb-cell.is-star { border-color: var(--warn); background: var(--warn-soft); }
+.tb-cell-n { font-family: var(--ff-mono); font-weight: 650; font-size: 0.95rem; }
+.tb-cell-kana { font-size: 1.05rem; font-weight: 560; line-height: 1.4; word-break: break-all; }
+
+/* Büyük sayı açılımı */
+.tb-big-n { font-family: var(--ff-mono); font-size: 1.35rem; font-weight: 700; }
+.tb-parts { display: flex; flex-wrap: wrap; gap: 6px; }
+.tb-part {
+  display: grid; gap: 1px; padding: 6px 10px; border-radius: 10px;
+  background: var(--bg-elev-2); border: 1px dashed var(--line-strong);
+}
+.tb-part-n { font-family: var(--ff-mono); font-weight: 650; }
+.tb-part-n b { color: var(--accent); margin-left: 2px; }
+.tb-part-kana { font-size: 1.05rem; }
+.tb-input { font-size: 1.3rem; font-family: var(--ff-mono); max-width: 280px; }
+
+/* Saat kartı */
+.tb-clock { display: flex; align-items: center; gap: 10px; justify-content: space-between; padding: 6px 10px; border-radius: 10px; background: var(--bg-elev-2); }
+.tb-clock-ja { font-size: 1.2rem; font-weight: 600; }
+
+/* こそあど: dört eşit sütun; satır adı satırın üstünde (telefonda taşmasın) */
+.tb-ko { display: grid; gap: 10px; }
+.tb-ko-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.tb-ko-head { display: grid; justify-items: start; padding: 0 10px; }
+.tb-ko-head .ja { font-size: 1.3rem; font-weight: 700; color: var(--accent); }
+.tb-ko-head small { font-size: 0.68rem; color: var(--text-dim); }
+.tb-ko-cell { display: grid; padding: 8px 10px; border-radius: 10px; background: var(--bg-elev-2); min-width: 0; }
+.tb-ko-ja { font-size: clamp(1.05rem, 4vw, 1.3rem); font-weight: 600; white-space: nowrap; }
+.tb-vs { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
+.tb-kalip { font-size: 1.2rem; font-weight: 650; color: var(--accent); }
+
 /* ————— Üniteler ————— */
 .unit-ex { display: flex; align-items: flex-start; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--bg-elev-2); }
 .unit-ex-ja { font-size: 1.15rem; font-weight: 560; line-height: 1.5; }

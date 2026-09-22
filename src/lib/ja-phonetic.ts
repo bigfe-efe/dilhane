@@ -238,6 +238,14 @@ function romaji(kana: string): string {
 }
 
 /**
+ * Tek bir KELİMENİN romajisi — ek düzeltmesi YAPILMADAN.
+ *
+ * Sayı ve tarih listeleri için: はっせん, はたち, はつか gibi kelimelerde は
+ * zaten kelimenin parçası; ek sezgisi devreye girip "wa" yapmasın.
+ */
+export const kanaToRomaji = romaji
+
+/**
  * Kana okunuşunu KELİMELERE AYIRARAK romaji'ye çevirir.
  *
  * NEDEN AYRI BİR İŞLEV:
@@ -290,11 +298,15 @@ export function romajiWords(ja: string, kana: string): string {
       continue
     }
 
-    const r = romaji(duzeltilmis.slice(p.a, p.b)).trim()
+    // Kanjinin okunuşunda ek OLAMAZ: 「までは働きます」da 働’ın okunuşu
+    // はたらき; ek sezgisi までは sanıp "watarakimasu" yapıyordu. Ek
+    // düzeltmesi yalnızca kana öbeklerine uygulanır.
+    const kaynak = p.tur === 'kanji' ? kana : duzeltilmis
+    const r = romaji(kaynak.slice(p.a, p.b)).trim()
     if (!r) continue
     // Kanjinin ardındaki kana çoğu zaman okurigana'dır: 早+く → hayaku,
     // 寝+ました → nemashita. Ayrı yazılsa kelime ortasından bölünmüş olurdu.
-    if ((yapistir || (p.tur === 'kana' && oncekiKanji)) && kelimeler.length > 0)
+    if ((yapistir || (p.tur === 'kana' && oncekiKanji && !p.ayri)) && kelimeler.length > 0)
       kelimeler[kelimeler.length - 1] += r
     else kelimeler.push(r)
     yapistir = !!p.onek
@@ -334,7 +346,17 @@ interface Parca {
   ek?: boolean
   /** Ön ek: kendinden sonraki parça aynı kelimeye yazılır (お茶 → ocha) */
   onek?: boolean
+  /** Kanjiden sonra gelse de okurigana değil, ayrı kelime (です) */
+  ayri?: boolean
 }
+
+/**
+ * Kanjinin ardından gelip yine de ona YAPIŞMAYAN kana: yüklem ekleri.
+ *
+ * です hiçbir kelimenin okuriganası değildir; 「学生です」 "gakuseidesu"
+ * değil "gakusei desu". Öğrenci Latin satırından kelimeyi ayırt edebilmeli.
+ */
+const YUKLEM = /^(です|でした|じゃ|では)/
 
 const KANJI_RUN = /[㐀-鿿]/
 
@@ -408,7 +430,7 @@ function hizala(ja: string, kana: string): Parca[] | null {
       }
     }
 
-    parcalar.push({ a, b, tur: kanaObek ? 'kana' : 'isaret' })
+    parcalar.push({ a, b, tur: kanaObek ? 'kana' : 'isaret', ayri: kanaObek && YUKLEM.test(kana.slice(a, b)) })
     pos = b
   }
 

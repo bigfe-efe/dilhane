@@ -26,6 +26,7 @@ import KanjiPage from '@/pages/Kanji'
 import KanjiCardsPage from '@/pages/KanjiCards'
 import KanjiTestPage from '@/pages/KanjiTest'
 import CountersPage from '@/pages/Counters'
+import BasicsPage from '@/pages/Basics'
 import UnitsPage from '@/pages/Units'
 import UnitPage from '@/pages/Unit'
 import LessonsPage from '@/pages/Lessons'
@@ -152,6 +153,7 @@ export default function App() {
         <Route path="/kanji-kartlar" element={<KanjiCardsPage />} />
         <Route path="/kanji-testi" element={<KanjiTestPage />} />
         <Route path="/sayaclar" element={<CountersPage />} />
+        <Route path="/temel" element={<BasicsPage />} />
         <Route path="/uniteler" element={<UnitsPage />} />
         <Route path="/unite/:id" element={<UnitPage />} />
 
