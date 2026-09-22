@@ -17,6 +17,7 @@ export const u3: Unit = {
   grammar: [
     {
       title: 'ます biçimi — kibar fiil',
+      star: true,
       pattern: 'V-ます / V-ません / V-ました / V-ませんでした',
       explain:
         'Japonca fiil dört temel hâlde çekilir. Şimdiki ve gelecek zaman aynıdır: 行きます hem “gidiyorum” hem “gideceğim” demektir.',
@@ -52,6 +53,7 @@ export const u3: Unit = {
     },
     {
       title: 'Saat söylemek',
+      star: true,
       pattern: '〜時〜分 / 〜時半',
       explain:
         'Saat + 時, dakika + 分. Buçuk için 半 kullanılır. 4, 7, 9 saatlerinde okunuş düzensizdir: よじ, しちじ, くじ.',
@@ -73,26 +75,27 @@ export const u3: Unit = {
     },
     {
       title: 'を nesne eki',
+      star: true,
       body:
         'Fiilin neye yapıldığını を gösterir: ご飯を食べます, 日本語をべんきょうします. Yazılışı を, okunuşu “o”.',
     },
   ],
 
   vocab: [
-    { ja: '今', kana: 'いま', tr: 'şu an' },
-    { ja: '何時', kana: 'なんじ', tr: 'saat kaç' },
+    { star: true, ja: '今', kana: 'いま', tr: 'şu an' },
+    { star: true, ja: '何時', kana: 'なんじ', tr: 'saat kaç' },
     { ja: '半', kana: 'はん', tr: 'buçuk' },
     { ja: '午前', kana: 'ごぜん', tr: 'öğleden önce' },
     { ja: '午後', kana: 'ごご', tr: 'öğleden sonra' },
     { ja: '毎日', kana: 'まいにち', tr: 'her gün' },
     { ja: '毎朝', kana: 'まいあさ', tr: 'her sabah' },
-    { ja: '起きます', kana: 'おきます', tr: 'kalkmak, uyanmak' },
+    { star: true, ja: '起きます', kana: 'おきます', tr: 'kalkmak, uyanmak' },
     { ja: '寝ます', kana: 'ねます', tr: 'yatmak, uyumak' },
-    { ja: '食べます', kana: 'たべます', tr: 'yemek' },
+    { star: true, ja: '食べます', kana: 'たべます', tr: 'yemek' },
     { ja: '飲みます', kana: 'のみます', tr: 'içmek' },
     { ja: 'べんきょうします', kana: 'べんきょうします', tr: 'ders çalışmak' },
     { ja: '働きます', kana: 'はたらきます', tr: 'çalışmak (iş)' },
-    { ja: '行きます', kana: 'いきます', tr: 'gitmek' },
+    { star: true, ja: '行きます', kana: 'いきます', tr: 'gitmek' },
     { ja: '帰ります', kana: 'かえります', tr: 'eve dönmek' },
     { ja: '休みます', kana: 'やすみます', tr: 'dinlenmek, izin yapmak' },
     { ja: '昨日', kana: 'きのう', tr: 'dün' },
@@ -126,6 +129,24 @@ export const u3: Unit = {
       detail:
         'Kendi gününü altı cümleyle yaz. Her cümlede bir saat ve bir fiil olsun. En az bir tanesinde から〜まで kullan.',
       minutes: 12,
+      star: true,
+      steps: [
+        'Sabahtan geceye altı iş seç: kalkmak, yemek, gitmek, çalışmak, dönmek, yatmak.',
+        'Her cümlede sırayı koru: saat + に + (nesne + を) + fiil.',
+        'Bir cümlede 〜から〜まで kullan: 九時から五時まで働きます。',
+        'Nesnesi olan fiillere を eklemeyi unutma: ご飯を食べます。',
+        'Bitince saatleri sesli oku — 4, 7 ve 9 farklı okunur.',
+      ],
+      example: [
+        { ja: '毎朝、七時に起きます。', kana: 'まいあさ、しちじにおきます。', tr: 'Her sabah yedide kalkarım.' },
+        { ja: '九時から三時まで大学です。', kana: 'くじからさんじまでだいがくです。', tr: 'Dokuzdan üçe kadar üniversitedeyim.' },
+        { ja: '十二時に寝ます。', kana: 'じゅうにじにねます。', tr: 'On ikide yatarım.' },
+      ],
+      tips: [
+        'Saatin arkasına に gelir ama 毎日 ve 毎朝 に ALMAZ.',
+        '4時 よじ, 7時 しちじ, 9時 くじ — よんじ ve ななじ diye okunmaz.',
+        '〜時半 buçuk demek: 四時半 dört buçuk.',
+      ],
     },
     {
       id: 'u3-h2',
@@ -133,6 +154,21 @@ export const u3: Unit = {
       detail:
         '1’den 12’ye kadar bütün saatleri sesli söyle: いちじ, にじ, さんじ… 4, 7 ve 9’da duraksarsan o üçünü ayrıca tekrar et.',
       minutes: 6,
+      steps: [
+        '1’den 12’ye sırayla söyle: いちじ, にじ, さんじ, よじ…',
+        'Sonra tersten say: じゅうにじ, じゅういちじ, じゅうじ…',
+        '4, 7 ve 9’u ayrıca onar kez tekrarla: よじ, しちじ, くじ.',
+        'Son olarak buçukları söyle: 一時半, 四時半, 七時半, 九時半.',
+      ],
+      example: [
+        { ja: '四時です。', kana: 'よじです。', tr: 'Saat dört. よんじ değil.' },
+        { ja: '七時半です。', kana: 'しちじはんです。', tr: 'Yedi buçuk.' },
+        { ja: '九時十分です。', kana: 'くじじゅっぷんです。', tr: 'Dokuzu on geçiyor.' },
+      ],
+      tips: [
+        'Dakika eki 分, bazı sayılardan sonra ぷん olur: 十分 → じゅっぷん.',
+        'Saat sorusu: 今、何時ですか。 — 何時 なんじ okunur.',
+      ],
     },
     {
       id: 'u3-h3',
@@ -140,6 +176,20 @@ export const u3: Unit = {
       detail:
         'Yazdığın altı cümlenin üçünü olumsuz (ません), üçünü geçmiş (ました) yap. Biçimi değiştirmenin anlamı nasıl değiştirdiğini gör.',
       minutes: 10,
+      steps: [
+        'Altı cümlenden üçünü seç ve ます’i ません yap.',
+        'Kalan üçünde ます’i ました yap — cümle geçmiş oldu.',
+        'Her cümlenin Türkçesini yanına yaz; anlamın nasıl döndüğünü gör.',
+        'Geçmiş cümlelere 昨日, olumsuzlara 今日 ekle — zaman zarfı biçime uysun.',
+      ],
+      example: [
+        { ja: '朝ご飯を食べません。', kana: 'あさごはんをたべません。', tr: 'Kahvaltı etmem.' },
+        { ja: '昨日、早く寝ました。', kana: 'きのう、はやくねました。', tr: 'Dün erken yattım.' },
+      ],
+      tips: [
+        'ます → ません (olumsuz), ました (geçmiş), ませんでした (geçmiş olumsuz).',
+        'Kök hiç değişmez: 食べます → 食べません → 食べました.',
+      ],
     },
   ],
 

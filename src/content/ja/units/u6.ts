@@ -17,6 +17,7 @@ export const u6: Unit = {
   grammar: [
     {
       title: 'Üç hareket fiili',
+      star: true,
       pattern: '行きます / 来ます / 帰ります',
       explain:
         '行きます konuşanın bulunduğu yerden UZAKLAŞMAK, 来ます konuşana DOĞRU gelmek, 帰ります ait olunan yere (ev, ülke) dönmek demektir.',
@@ -30,6 +31,7 @@ export const u6: Unit = {
     },
     {
       title: 'へ / に — yön',
+      star: true,
       pattern: 'yer + へ（に）+ hareket fiili',
       explain:
         'Hareket fiilleriyle ikisi de kullanılır ve anlam neredeyse aynıdır. へ yönü, に varış noktasını vurgular. Yazılışı へ, okunuşu “e”.',
@@ -66,16 +68,17 @@ export const u6: Unit = {
   rules: [
     {
       title: 'Cümle sırası',
+      star: true,
       body:
         'Japoncada öğe sırası esnektir ama alışılmış dizilim şudur: ZAMAN → KİŞİ → YER → ARAÇ → FİİL. 「明日友だちと電車で東京へ行きます」. Yüklem her zaman sonda kalır.',
     },
   ],
 
   vocab: [
-    { ja: '行きます', kana: 'いきます', tr: 'gitmek' },
-    { ja: '来ます', kana: 'きます', tr: 'gelmek' },
-    { ja: '帰ります', kana: 'かえります', tr: 'eve dönmek' },
-    { ja: '電車', kana: 'でんしゃ', tr: 'tren' },
+    { star: true, ja: '行きます', kana: 'いきます', tr: 'gitmek' },
+    { star: true, ja: '来ます', kana: 'きます', tr: 'gelmek' },
+    { star: true, ja: '帰ります', kana: 'かえります', tr: 'eve dönmek' },
+    { star: true, ja: '電車', kana: 'でんしゃ', tr: 'tren' },
     { ja: 'バス', kana: 'バス', tr: 'otobüs' },
     { ja: '車', kana: 'くるま', tr: 'araba' },
     { ja: '自転車', kana: 'じてんしゃ', tr: 'bisiklet' },
@@ -116,6 +119,21 @@ export const u6: Unit = {
       detail:
         'Bu hafta gittiğin beş yeri yaz: 「月曜日に〜へ〜で行きました」. Araç ve gün bilgisi olsun.',
       minutes: 10,
+      steps: [
+        'Bu haftadan beş yer ve her birine gittiğin günü seç.',
+        'Sırayı koru: gün + に + yer + へ + araç + で + fiil.',
+        'Olan bitmişse ました, olacaksa ます kullan.',
+        'Bir cümlede 歩いて, bir cümlede 一人で geçsin — bunlar で almaz.',
+      ],
+      example: [
+        { ja: '月曜日に学校へ電車で行きました。', kana: 'げつようびにがっこうへでんしゃでいきました。', tr: 'Pazartesi okula trenle gittim.' },
+        { ja: '土曜日に友だちと東京へ行きます。', kana: 'どようびにともだちととうきょうへいきます。', tr: 'Cumartesi arkadaşımla Tokyo’ya gideceğim.' },
+        { ja: '歩いて帰りました。', kana: 'あるいてかえりました。', tr: 'Yürüyerek döndüm.' },
+      ],
+      tips: [
+        '歩いて zaten “yürüyerek” demek; 歩いてで yanlıştır.',
+        '一人で = tek başına. Buradaki で araç eki değil, kalıbın parçası.',
+      ],
     },
     {
       id: 'u6-h2',
@@ -123,6 +141,20 @@ export const u6: Unit = {
       detail:
         'Şu öğeleri doğru sıraya diz ve cümleyi yaz: 東京へ / 明日 / 電車で / 友だちと / 行きます. Sıra ZAMAN → KİŞİ → YER → ARAÇ → FİİL.',
       minutes: 6,
+      star: true,
+      steps: [
+        'Öğeleri kâğıda karışık yaz, sonra sırayı numaralandır.',
+        'Sıra şu: ZAMAN → KİŞİ → YER → ARAÇ → FİİL.',
+        'Cümleyi tek satırda yeniden yaz ve sesli oku.',
+        'Aynı sırayla kendi hayatından iki cümle daha kur.',
+      ],
+      example: [
+        { ja: '明日友だちと東京へ電車で行きます。', kana: 'あしたともだちととうきょうへでんしゃでいきます。', tr: 'Yarın arkadaşımla Tokyo’ya trenle gideceğim.' },
+      ],
+      tips: [
+        'Fiil HER ZAMAN sonda — Türkçedeki gibi.',
+        'Zaman zarfı cümlenin en başına da alınabilir; fiil yine sonda kalır.',
+      ],
     },
     {
       id: 'u6-h3',
@@ -130,6 +162,21 @@ export const u6: Unit = {
       detail:
         'Şu durumlarda hangisi kullanılır, yaz: (1) Sen okula gidiyorsun. (2) Arkadaşın senin evine geliyor. (3) İşten eve dönüyorsun.',
       minutes: 6,
+      steps: [
+        'Her durumda önce “konuşan kişi nerede” sorusunu sor.',
+        'Konuşandan UZAKLAŞMA varsa 行きます.',
+        'Konuşana YAKLAŞMA varsa 来ます.',
+        'Kendi evine dönüş için 帰ります — bu üçüncü, ayrı bir fiil.',
+      ],
+      example: [
+        { ja: '学校へ行きます。', kana: 'がっこうへいきます。', tr: 'Okula gidiyorum.' },
+        { ja: '友だちが家へ来ます。', kana: 'ともだちがうちへきます。', tr: 'Arkadaşım evime geliyor.' },
+        { ja: '六時に帰ります。', kana: 'ろくじにかえります。', tr: 'Altıda eve dönerim.' },
+      ],
+      tips: [
+        'Türkçede “geliyorum” dediğimiz yerde Japonca 行きます der: senden uzaklaşıp ona gidiyorum.',
+        '来ます düzensizdir: 来る → 来ます → 来て (きて).',
+      ],
     },
   ],
 

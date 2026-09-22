@@ -17,6 +17,7 @@ export const u9: Unit = {
   grammar: [
     {
       title: 'て formu nasıl kurulur',
+      star: true,
       pattern: 'ます biçiminden て biçimine',
       explain:
         'て formu Japoncanın kalbidir; birçok yapı onun üstüne kurulur. ます biçiminin kökü esas alınır: い/ち/り → って, み/び/に → んで, き → いて, ぎ → いで, し → して.',
@@ -31,6 +32,7 @@ export const u9: Unit = {
     },
     {
       title: '〜てください — rica',
+      star: true,
       pattern: 'V-て + ください',
       explain: 'Kibarca bir şey istemenin en yaygın yolu. Emir değil, rica bildirir.',
       examples: [
@@ -75,19 +77,21 @@ export const u9: Unit = {
   rules: [
     {
       title: 'て formu neden bu kadar önemli',
+      star: true,
       body:
         'Bu ünitedeki dört yapı da aynı kökten çıkıyor: てください, てもいいです, てはいけません, ています. Ayrıca cümleleri birbirine bağlamak için de kullanılır: 朝起きて、ご飯を食べて、学校へ行きます. Bir kez oturursa N5’in kalanı kolaylaşır.',
     },
     {
       title: 'Gruplara göre kural',
+      star: true,
       body:
         'ru-fiillerde (食べます, 見ます) kolay: ます yerine て. u-fiillerde son heceye bakılır. Düzensiz olan yalnızca üç tane: します → して, 来ます → 来て, 行きます → 行って.',
     },
   ],
 
   vocab: [
-    { ja: '待ちます', kana: 'まちます', tr: 'beklemek' },
-    { ja: '書きます', kana: 'かきます', tr: 'yazmak' },
+    { star: true, ja: '待ちます', kana: 'まちます', tr: 'beklemek' },
+    { star: true, ja: '書きます', kana: 'かきます', tr: 'yazmak' },
     { ja: '読みます', kana: 'よみます', tr: 'okumak' },
     { ja: '座ります', kana: 'すわります', tr: 'oturmak' },
     { ja: '立ちます', kana: 'たちます', tr: 'ayağa kalkmak' },
@@ -95,10 +99,10 @@ export const u9: Unit = {
     { ja: '住みます', kana: 'すみます', tr: 'yaşamak, ikamet etmek' },
     { ja: '結婚します', kana: 'けっこんします', tr: 'evlenmek' },
     { ja: '写真', kana: 'しゃしん', tr: 'fotoğraf' },
-    { ja: 'ちょっと', kana: 'ちょっと', tr: 'biraz' },
+    { star: true, ja: 'ちょっと', kana: 'ちょっと', tr: 'biraz' },
     { ja: 'もう一度', kana: 'もういちど', tr: 'bir kez daha' },
     { ja: 'ゆっくり', kana: 'ゆっくり', tr: 'yavaşça' },
-    { ja: 'すみません', kana: 'すみません', tr: 'affedersiniz, pardon' },
+    { star: true, ja: 'すみません', kana: 'すみません', tr: 'affedersiniz, pardon' },
     { ja: 'いいですよ', kana: 'いいですよ', tr: 'olur, tabii' },
     { ja: 'だめです', kana: 'だめです', tr: 'olmaz' },
     { ja: '今', kana: 'いま', tr: 'şu an' },
@@ -132,6 +136,25 @@ export const u9: Unit = {
       detail:
         'Şunları て formuna çevir: 買います, 読みます, 書きます, 待ちます, 食べます, 見ます, 話します, 行きます, 来ます, します. Son üçünün düzensiz olduğunu unutma.',
       minutes: 12,
+      star: true,
+      steps: [
+        'Fiilleri alt alta yaz, yanlarında ます hâllerini bırak.',
+        'ます’ten önceki heceye bak: い・ち・り ise って olur (買います → 買って).',
+        'み・に・び ise んで olur (読みます → 読んで); き → いて, ぎ → いで.',
+        'し ise して olur (話します → 話して).',
+        'Düzensizleri ezberle: 行きます → 行って, 来ます → 来て, します → して.',
+        'Bitince listeyi kapat ve on fiili ezberden söyle.',
+      ],
+      example: [
+        { ja: '買います → 買って', kana: 'かいます → かって', tr: 'almak → alıp (い → って)' },
+        { ja: '読みます → 読んで', kana: 'よみます → よんで', tr: 'okumak → okuyup (み → んで)' },
+        { ja: '行きます → 行って', kana: 'いきます → いって', tr: 'gitmek → gidip. Düzensiz: 行いて DEĞİL.' },
+      ],
+      tips: [
+        'Ezber kolaylığı: い・ち・り → って, み・に・び → んで, き → いて, し → して.',
+        '行く kurala uymaz; き ile bitse de 行って olur. En sık yapılan hata budur.',
+        'て formu tek başına cümle bitirmez; arkasına ください, もいいです ya da います gelir.',
+      ],
     },
     {
       id: 'u9-h2',
@@ -139,6 +162,21 @@ export const u9: Unit = {
       detail:
         'Günlük hayattan üç rica (〜てください) ve üç izin sorusu (〜てもいいですか) yaz. Gerçekten kullanabileceğin cümleler olsun.',
       minutes: 10,
+      steps: [
+        'Gerçekten söyleyeceğin üç ricayı önce Türkçe yaz.',
+        'Fiilleri て formuna çevir, sonuna ください ekle.',
+        'Üç izin sorusu kur: て formu + もいいですか.',
+        'Her ricanın başına すみません koy — kibarlık bununla tamamlanır.',
+      ],
+      example: [
+        { ja: 'ちょっと待ってください。', kana: 'ちょっとまってください。', tr: 'Biraz bekleyin lütfen.' },
+        { ja: 'もう一度言ってください。', kana: 'もういちどいってください。', tr: 'Bir daha söyleyin lütfen.' },
+        { ja: 'ここに座ってもいいですか。', kana: 'ここにすわってもいいですか。', tr: 'Buraya oturabilir miyim?' },
+      ],
+      tips: [
+        'Cevap: はい、いいですよ (olur) ya da いいえ、だめです (olmaz).',
+        'Yasak için 〜てはいけません: ここで写真をとってはいけません。',
+      ],
     },
     {
       id: 'u9-h3',
@@ -146,6 +184,20 @@ export const u9: Unit = {
       detail:
         'Evdeki üç kişinin (ya da hayalî üç kişinin) şu an ne yaptığını 〜ています ile yaz.',
       minutes: 8,
+      steps: [
+        'Üç kişi seç ve şu an ne yaptıklarını Türkçe yaz.',
+        'Fiili て formuna çevir, sonuna います ekle.',
+        'Kişiyi は ile işaretle: 田中さんは〜ています。',
+        'Bir cümlede 住んでいます kullan — bu süregelen bir durumu anlatır.',
+      ],
+      example: [
+        { ja: '今、日本語をべんきょうしています。', kana: 'いま、にほんごをべんきょうしています。', tr: 'Şu an Japonca çalışıyorum.' },
+        { ja: '東京に住んでいます。', kana: 'とうきょうにすんでいます。', tr: 'Tokyo’da yaşıyorum.' },
+      ],
+      tips: [
+        '住んでいます “şu anda yaşıyor” değil, “ikamet ediyor” demektir — sürekli hâl.',
+        'Soru biçimi: 何をしていますか。',
+      ],
     },
   ],
 

@@ -17,6 +17,7 @@ export const u5: Unit = {
   grammar: [
     {
       title: 'あります / います — “var”',
+      star: true,
       pattern: 'A に B が あります／います',
       explain:
         'İkisi de “var” demektir ama あります cansız şeyler için, います canlılar (insan, hayvan) içindir. Bitki ve eşya あります alır.',
@@ -40,6 +41,7 @@ export const u5: Unit = {
     },
     {
       title: 'に ile で farkı',
+      star: true,
       pattern: 'A に います / A で 〜ます',
       explain:
         'に varlığın bulunduğu yeri gösterir, で ise eylemin geçtiği yeri. “Evdeyim” に, “evde çalışıyorum” で alır.',
@@ -65,24 +67,25 @@ export const u5: Unit = {
   rules: [
     {
       title: 'は ile が nerede kullanılır',
+      star: true,
       body:
         'Varlık cümlelerinde YENİ bilgi が alır: 「つくえの上に本があります」. Ama konuyu zaten biliyorsak は kullanılır: 「本はつくえの上にあります」 — “kitap (hani o kitap) masanın üstünde”. İkisi de doğru, vurgu farklı.',
     },
   ],
 
   vocab: [
-    { ja: '上', kana: 'うえ', tr: 'üst' },
+    { star: true, ja: '上', kana: 'うえ', tr: 'üst' },
     { ja: '下', kana: 'した', tr: 'alt' },
-    { ja: '中', kana: 'なか', tr: 'iç' },
+    { star: true, ja: '中', kana: 'なか', tr: 'iç' },
     { ja: '前', kana: 'まえ', tr: 'ön' },
     { ja: '後ろ', kana: 'うしろ', tr: 'arka' },
-    { ja: 'となり', kana: 'となり', tr: 'yan (bitişik)' },
+    { star: true, ja: 'となり', kana: 'となり', tr: 'yan (bitişik)' },
     { ja: '近く', kana: 'ちかく', tr: 'yakın' },
     { ja: 'ここ', kana: 'ここ', tr: 'burası' },
     { ja: 'そこ', kana: 'そこ', tr: 'şurası' },
     { ja: 'あそこ', kana: 'あそこ', tr: 'orası' },
-    { ja: 'どこ', kana: 'どこ', tr: 'neresi' },
-    { ja: '家', kana: 'いえ', tr: 'ev' },
+    { star: true, ja: 'どこ', kana: 'どこ', tr: 'neresi' },
+    { star: true, ja: '家', kana: 'いえ', tr: 'ev' },
     { ja: '教室', kana: 'きょうしつ', tr: 'sınıf' },
     { ja: '駅', kana: 'えき', tr: 'istasyon' },
     { ja: '銀行', kana: 'ぎんこう', tr: 'banka' },
@@ -117,6 +120,24 @@ export const u5: Unit = {
       detail:
         'Odandaki altı eşyanın yerini yaz: 「つくえの上に〜があります」. En az birinde となり, birinde 中 kullan.',
       minutes: 12,
+      star: true,
+      steps: [
+        'Odandan altı eşya seç ve her birinin nerede olduğunu belirle.',
+        'Kalıp: yer + の + konum + に + eşya + が + あります.',
+        'Canlı bir varlık (kedi, insan) varsa あります değil います kullan.',
+        'Bir cümlede となり, bir cümlede 中 geçsin.',
+        'Bitince cümleleri oku ve her birinde が mı は mı gerektiğini kendine sor.',
+      ],
+      example: [
+        { ja: 'つくえの上に本があります。', kana: 'つくえのうえにほんがあります。', tr: 'Masanın üstünde kitap var.' },
+        { ja: 'かばんの中にさいふがあります。', kana: 'かばんのなかにさいふがあります。', tr: 'Çantanın içinde cüzdan var.' },
+        { ja: '教室に先生がいます。', kana: 'きょうしつにせんせいがいます。', tr: 'Sınıfta öğretmen var.' },
+      ],
+      tips: [
+        'Konum kelimesi の’dan SONRA gelir: つくえの上 = masanın üstü.',
+        'あります cansız, います canlı içindir. Bitki cansız sayılır.',
+        'Yeni bilgi が ile gelir; konu olarak öne çekilen şey は alır.',
+      ],
     },
     {
       id: 'u5-h2',
@@ -124,12 +145,42 @@ export const u5: Unit = {
       detail:
         'Şu cümleleri tamamla ve neden o eki seçtiğini yanına yaz: 家（　）います / 家（　）本を読みます / 学校（　）友だちがいます / 教室（　）べんきょうします.',
       minutes: 8,
+      star: true,
+      steps: [
+        'Dört cümleyi kâğıda geçir, parantezleri boş bırak.',
+        'Cümlede bir eylem var mı diye bak: okuyor, çalışıyor, yiyor → で.',
+        'Yalnızca varlık bildiriyorsa (います, あります) に kullan.',
+        'Her cümlenin yanına tek kelimeyle sebebini yaz: “varlık” ya da “eylem”.',
+      ],
+      example: [
+        { ja: '家にいます。', kana: 'うちにいます。', tr: 'Evdeyim. Yalnızca varlık bildiriyor → に' },
+        { ja: '家で日本語をべんきょうします。', kana: 'うちでにほんごをべんきょうします。', tr: 'Evde Japonca çalışırım. Eylem var → で' },
+      ],
+      tips: [
+        'Kısa kural: VARLIK に, EYLEM で.',
+        'Aynı yer iki eki de alabilir; belirleyen şey fiildir.',
+      ],
     },
     {
       id: 'u5-h3',
       title: 'Yol tarifi',
       detail: 'Evinden en yakın markete giden yolu Japonca dört cümleyle anlat. Konum kelimelerini kullan.',
       minutes: 10,
+      steps: [
+        'Evinden markete giden yolu düşün: hangi binaların yanından geçiyorsun.',
+        'Her cümlede bir konum kelimesi kullan: 前, となり, 近く.',
+        'Bir soruyla başla: 〜はどこですか。 sonra cevabı yaz.',
+        'Son cümleyi ありがとうございます ile kapat.',
+      ],
+      example: [
+        { ja: 'すみません、銀行はどこですか。', kana: 'すみません、ぎんこうはどこですか。', tr: 'Affedersiniz, banka nerede?' },
+        { ja: '駅の前にあります。', kana: 'えきのまえにあります。', tr: 'İstasyonun önünde.' },
+        { ja: '病院は銀行のとなりです。', kana: 'びょういんはぎんこうのとなりです。', tr: 'Hastane bankanın yanında.' },
+      ],
+      tips: [
+        'Yer sorarken は kullanılır: トイレはどこですか。',
+        'Cevapta konu zaten bilindiği için あそこです demek yeterli.',
+      ],
     },
   ],
 

@@ -96,10 +96,12 @@ function segment(text: string): string[] {
  * ARDINDAN gelir, kelimenin ikinci harfi olmaz. Öncesinde kanji varsa
  * (私は, 猫は) sınır zaten bellidir ve は kesinlikle ektir.
  */
-const SENTENCE_MARK = /[㐀-鿿\s、。「」！？!?,.]/
+const SENTENCE_MARK = /[㐀-鿿\s、。「」『』：:；;！？!?,.]/
 const PREDICATE_END = /(です|ですか|ます|ますか|ました|ません|でした|ください|でしょう)$/
 const KANA_CH = /[ぁ-ゟァ-ヿー]/
-const BOUNDARY = /[\s、。「」！？!?,.]/
+// Diyalog satırlarında ad ile söz ： ile ayrılır; ： sınır sayılmayınca
+// 「女の人：はい。」deki は ek sanılıyor ve はい "wai" okunuyordu.
+const BOUNDARY = /[\s、。「」『』：:；;！？!?,.…]/
 
 function fixTopicParticle(kana: string): string {
   const c = [...kana]
@@ -215,8 +217,293 @@ function fixParticles(kana: string): RomajiInfo {
  */
 export function romajiOf(kana: string): RomajiInfo {
   const { text, notes } = fixParticles(kana)
-  return { text: toRomaji(text), notes }
+  return { text: romaji(text), notes }
 }
+
+/**
+ * toRomaji + wanakana'nın iki eksiğinin düzeltilmesi.
+ *
+ * 1) Uzatma çizgisi olduğu gibi kalıyor: こーひー → "ko-hi-". Latin okunuşta
+ *    çizgi bir ses değil; ünlüyü ikilemek doğru okutur: "koohii".
+ * 2) ふぇ "fye", ふぃ "fyi" çıkıyor. Öğrencinin kendi adı エフェ ekranda
+ *    "efye" diye duruyordu. Yalnızca bu ikisi düzeltiliyor — ふぁ "fua" ve
+ *    てぃ "tei" düzeltilemez, çünkü ふあん (fuan) ve ていねい (teinei) gerçekten
+ *    öyle okunur; düzeltmek doğru kelimeleri bozardı.
+ */
+function romaji(kana: string): string {
+  return toRomaji(kana)
+    .replace(/([aeiou])-/g, '$1$1')
+    .replace(/fye/g, 'fe')
+    .replace(/fyi/g, 'fi')
+}
+
+/**
+ * Kana okunuşunu KELİMELERE AYIRARAK romaji'ye çevirir.
+ *
+ * NEDEN AYRI BİR İŞLEV:
+ * Japonca boşluksuz yazılır. `romajiOf` bir cümleyi olduğu gibi çevirince
+ * 「わたしのなまえはエフェです。」 → "watashinonamaewaefedesu." çıkıyor; satır
+ * teknik olarak doğru ama gözle okunamıyor, yani hiç yokmuş gibi.
+ *
+ * Kelime sınırları KANA satırında değil, JAPONCA satırında görünür: yazı türü
+ * her değiştiğinde (kanji → kana → katakana) neredeyse her zaman bir sınır
+ * vardır. Sınırlar japonca satırdan çıkarılıp okunuşun üstüne bindiriliyor:
+ *
+ *   ja:   私 | の | 名前 | は | エフェ | です
+ *   kana: わたし   のなまえ   は   えふぇです
+ *   →     watashi no namae wa efe desu
+ *
+ * Ekler de buradan anlaşılıyor ve bu, kana üstünden tahmin etmekten çok daha
+ * güvenilir: 「昨日は早く寝ました」da は tek başına bir kana öbeği olarak iki
+ * kanjinin arasında durur, yani kesin ektir. Yalnız kanaya bakan sezgi orada
+ * (ははやく → はは sanıp) yanılıyordu.
+ *
+ * Hizalama tutmazsa bölmekten vazgeçilir, bütün satır tek parça çevrilir:
+ * yanlış yerden bölmek, hiç bölmemekten kötüdür.
+ */
+export function romajiWords(ja: string, kana: string): string {
+  const duzeltilmis = particleFixedKana(kana)
+  const parcalar = hizala(ja, kana)
+  // Uzunluk korunmazsa indisler kayar; o durumda bölmeden çevir.
+  if (!parcalar || duzeltilmis.length !== kana.length) return romaji(duzeltilmis)
+
+  const kelimeler: string[] = []
+  let oncekiKanji = false // son kelime kanjiyle mi bitti (okurigana yapışsın)
+  let yapistir = false // saygı ön ekinden sonra gelen parça aynı kelimeye
+
+  for (const p of parcalar) {
+    const ham = kana.slice(p.a, p.b)
+
+    if (p.tur === 'isaret') {
+      const r = romaji(ham).trim()
+      if (r && kelimeler.length > 0) kelimeler[kelimeler.length - 1] += r
+      else if (r) kelimeler.push(r)
+      // Noktalama kelimeyi bitirir: ardından gelen kana okurigana olamaz.
+      // Bu satır olmadan 「女の人：はい」 → "hito:hai" diye yapışıyordu.
+      oncekiKanji = false
+      continue
+    }
+
+    if (p.ek) {
+      kelimeler.push(EK_OKUNUS[ham] ?? romaji(ham))
+      oncekiKanji = false
+      continue
+    }
+
+    const r = romaji(duzeltilmis.slice(p.a, p.b)).trim()
+    if (!r) continue
+    // Kanjinin ardındaki kana çoğu zaman okurigana'dır: 早+く → hayaku,
+    // 寝+ました → nemashita. Ayrı yazılsa kelime ortasından bölünmüş olurdu.
+    if ((yapistir || (p.tur === 'kana' && oncekiKanji)) && kelimeler.length > 0)
+      kelimeler[kelimeler.length - 1] += r
+    else kelimeler.push(r)
+    yapistir = !!p.onek
+    oncekiKanji = p.tur === 'kanji'
+  }
+
+  return kelimeler.join(' ')
+}
+
+/** Ekin okunuşu — yazıldığı gibi değil. */
+const EK_OKUNUS: Record<string, string> = { は: 'wa', へ: 'e', を: 'o' }
+
+/**
+ * Bir kana öbeğinin BAŞINDAN ek olarak koparılabilecek karakterler.
+ *
+ * で ve か bilerek yok: 「です」 ve 「から」 de aynı harfle başlıyor ve
+ * 「学生です」 → "gakusei de su" diye bölünürdü.
+ */
+const BAS_EK = new Set(['は', 'が', 'を', 'に', 'へ', 'も', 'と', 'の'])
+/**
+ * Tek başına duran bir kana ancak bu listedeyse ektir.
+ *
+ * Liste olmadan 「早く」daki く de ek sayılıyor ve satır "haya ku" diye
+ * kelimenin ortasından bölünüyordu — okurigana ile eki ayıran şey bu.
+ */
+const TEK_EK = new Set(['は', 'が', 'を', 'に', 'へ', 'も', 'と', 'の', 'で', 'や'])
+/** Kendinden sonraki kelimeye yapışan saygı ön ekleri: お茶, ご飯 */
+const ONEK = new Set(['お', 'ご'])
+/** Öbeğin SONUNDAN koparılabilecekler — 「まで」 bölünmesin diye で yok. */
+const SON_EK = new Set(['は', 'が', 'を', 'に', 'へ', 'も', 'と', 'の'])
+
+interface Parca {
+  a: number
+  b: number
+  tur: 'kanji' | 'kana' | 'isaret'
+  /** Tek başına duran ek: okunuşu zorlanır, kelime olarak ayrı yazılır */
+  ek?: boolean
+  /** Ön ek: kendinden sonraki parça aynı kelimeye yazılır (お茶 → ocha) */
+  onek?: boolean
+}
+
+const KANJI_RUN = /[㐀-鿿]/
+
+/**
+ * Katakana → hiragana, KARAKTER SAYISI DEĞİŞMEDEN.
+ *
+ * wanakana'nın hazır dönüştürücüsü burada işe yaramıyor: uzun ünlü işaretini
+ * açıyor (コーヒー → こうひい) ama okunuş satırında ー olduğu gibi duruyor
+ * (こーひー). İkisi eşleşmediği için hizalama başarısız oluyor ve satır hiç
+ * bölünmüyordu. Kod noktası kaydırması hem ー’ye hem uzunluğa dokunmaz.
+ */
+const hiraganaya = (s: string) => s.replace(/[ァ-ヶ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x60))
+const KANA_RUN = /^[ぁ-ゟァ-ヿー]+$/
+
+/**
+ * Japonca satırın parçalarını okunuş satırındaki aralıklarla eşler.
+ * Eşleyemezse null döner.
+ */
+function hizala(ja: string, kana: string): Parca[] | null {
+  // Katakana kelimeler okunuşta hiragana yazılmış olabilir (パン → ぱん);
+  // ikisi de hiraganaya çevrilip karşılaştırılıyor.
+  const hedefKana = hiraganaya(kana)
+  if (hedefKana.length !== kana.length) return null
+
+  const oberler = segment(ja)
+  const yerler = enIyiYerler(oberler, hedefKana)
+  if (!yerler) return null
+
+  const parcalar: Parca[] = []
+  let pos = 0
+  let capa = 0
+
+  for (let i = 0; i < oberler.length; i++) {
+    const run = oberler[i]
+    if (KANJI_RUN.test(run)) continue // okunuşunun yerini çapalar belirledi
+
+    const bas = yerler[capa++]
+    const uzunluk = [...hiraganaya(run)].length
+    if (bas > pos) parcalar.push({ a: pos, b: bas, tur: 'kanji' }) // kanjinin okunuşu
+
+    // Kanji kadar katakana da sınırdır: 「コーヒーは」daki は de ektir.
+    const kanaObek = KANA_RUN.test(run)
+    const oncesiSinir = i > 0 && sinirMi(oberler[i - 1])
+    const sonrasiSinir = sinirMi(oberler[i + 1])
+    let a = bas
+    let b = bas + uzunluk
+
+    if (kanaObek) {
+      // Tek karakterlik kana öbeği iki kanjinin arasındaysa ektir: 電車で行く
+      if (b - a === 1 && oncesiSinir && TEK_EK.has(kana[a])) {
+        parcalar.push({ a, b, tur: 'kana', ek: true })
+        pos = b
+        continue
+      }
+      if (b - a === 1 && ONEK.has(run) && sonrasiSinir) {
+        parcalar.push({ a, b, tur: 'kana', onek: true })
+        pos = b
+        continue
+      }
+      // Kalan en az iki karakter olmalı: 「その」dan の koparılırsa 「そ」
+      // diye bir kelime kalır ve "so no" diye saçma bir satır çıkar.
+      if (b - a > 2 && oncesiSinir && BAS_EK.has(kana[a]) && !ekDegil(kana, a)) {
+        parcalar.push({ a, b: a + 1, tur: 'kana', ek: true })
+        a += 1
+      }
+      if (b - a > 2 && sonrasiSinir && SON_EK.has(kana[b - 1]) && !ekDegil(kana, b - 1)) {
+        parcalar.push({ a, b: b - 1, tur: 'kana' })
+        parcalar.push({ a: b - 1, b, tur: 'kana', ek: true })
+        pos = b
+        continue
+      }
+    }
+
+    parcalar.push({ a, b, tur: kanaObek ? 'kana' : 'isaret' })
+    pos = b
+  }
+
+  if (pos < kana.length) parcalar.push({ a: pos, b: kana.length, tur: 'kanji' })
+  return parcalar.length > 0 ? parcalar : null
+}
+
+/** Bir kanjinin okunuşu en çok bu kadar kana olabilir (N5 için bol bol yeter). */
+const EN_UZUN_OKUNUS = 4
+
+/**
+ * Kana öbeklerinin okunuş satırındaki yerlerini seçer.
+ *
+ * NEDEN ARAMA GEREKİYOR:
+ * Aynı kana okunuşun birkaç yerinde bulunabilir ve hangisinin kelime sınırı
+ * olduğu tek başına belli değildir:
+ *   電車で   → でんしゃで : で iki yerde, ilki 電車’ın İÇİNDE
+ *   十二時に → じゅうにじに : に iki yerde, ilki 十二時’in İÇİNDE
+ *   昨日は早く → きのうははやく : は iki yerde, ilki EK olan
+ * İlk eşleşmeyi almak ilk ikisini, son eşleşmeyi almak üçüncüsünü bozuyordu.
+ *
+ * Ölçüt şu: kanjinin okunuşu ne saçma kısa ne saçma uzun olmalı. Bütün
+ * olasılıklar denenip KANJİ BAŞINA EN UZUN OKUNUŞU en küçük tutan dizilim
+ * seçiliyor. 昨日 için きのう (1,5 kana/kanji) 「きのうは」dan (2,0) iyidir;
+ * 十二時 için じゅうにじ (1,67) 「じゅう」dan (1,0 ama ardından 寝 = じにね, 3,0)
+ * iyidir. Eşitlikte en erken yer alınır.
+ */
+function enIyiYerler(oberler: string[], hedefKana: string): number[] | null {
+  interface Capa {
+    hedef: string
+    bekleyen: number // bu çapadan önce okunuşu bulunmamış kanji sayısı
+  }
+  const capalar: Capa[] = []
+  let bekleyen = 0
+  for (const run of oberler) {
+    if (KANJI_RUN.test(run)) {
+      bekleyen += [...run].length
+      continue
+    }
+    capalar.push({ hedef: hiraganaya(run), bekleyen })
+    bekleyen = 0
+  }
+  const kuyruk = bekleyen // son çapadan sonraki kanjiler
+
+  const not = new Map<string, { skor: number; yerler: number[] } | null>()
+
+  const ara = (k: number, pos: number): { skor: number; yerler: number[] } | null => {
+    const anahtar = k + '|' + pos
+    const hazir = not.get(anahtar)
+    if (hazir !== undefined) return hazir
+
+    let sonuc: { skor: number; yerler: number[] } | null = null
+
+    if (k === capalar.length) {
+      const artan = hedefKana.length - pos
+      if (kuyruk === 0) sonuc = artan === 0 ? { skor: 0, yerler: [] } : null
+      else sonuc = artan >= kuyruk && artan <= kuyruk * EN_UZUN_OKUNUS ? { skor: artan / kuyruk, yerler: [] } : null
+    } else {
+      const { hedef, bekleyen: bk } = capalar[k]
+      const enAz = pos + bk
+      const enCok = bk === 0 ? pos : Math.min(pos + bk * EN_UZUN_OKUNUS, hedefKana.length - hedef.length)
+      for (let i = enAz; i <= enCok; i++) {
+        if (!hedefKana.startsWith(hedef, i)) continue
+        const kalan = ara(k + 1, i + hedef.length)
+        if (!kalan) continue
+        const skor = Math.max(bk === 0 ? 0 : (i - pos) / bk, kalan.skor)
+        if (!sonuc || skor < sonuc.skor) sonuc = { skor, yerler: [i, ...kalan.yerler] }
+      }
+    }
+
+    not.set(anahtar, sonuc)
+    return sonuc
+  }
+
+  return ara(0, 0)?.yerler ?? null
+}
+
+function sinirMi(obek?: string): boolean {
+  return !!obek && (KANJI_RUN.test(obek) || /^[ァ-ヿー]+$/.test(obek))
+}
+
+/**
+ * Ek gibi görünen ama ek OLMAYAN karakterler.
+ *
+ * とても’nin sonundaki も ek sanılıp 「とても楽しい」 "tote mo" diye
+ * bölünüyordu; ちょっと de 「ちょっと待って」de "chot to" oluyordu. İkisinin de
+ * ortak yanı bir önceki karakter: 〜ても / 〜っと bir bütündür.
+ */
+function ekDegil(kana: string, i: number): boolean {
+  const once = kana[i - 1]
+  if (kana[i] === 'も' && (once === 'て' || once === 'で')) return true
+  if (kana[i] === 'と' && once === 'っ') return true
+  return false
+}
+
 
 /**
  * Ekleri düzeltilmiş kana — karakter sayısı GİRDİYLE AYNI kalır.

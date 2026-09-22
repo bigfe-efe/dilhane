@@ -3630,6 +3630,9 @@ ul.tight li {
 .unit-line { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
 .unit-line:last-child { border-bottom: none; }
 .unit-line-ja { font-size: 1.25rem; line-height: 1.7; }
+/* Latin okunuş: kanadan ayırt edilsin diye ayrı renk ve eğik değil —
+   eğik yazı uzun romaji satırlarında okunurluğu düşürüyor. */
+.unit-line-latin { color: var(--accent); letter-spacing: 0.01em; line-height: 1.6; }
 .unit-hw {
   width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer;
   border: 1px solid var(--line); background: var(--surface);
@@ -3640,3 +3643,31 @@ ul.tight li {
   border: 1px solid var(--line-strong); display: grid; place-items: center; color: var(--ok);
 }
 .unit-check.is-on { border-color: var(--ok); background: var(--ok-dim); }
+.unit-check { cursor: pointer; background: transparent; }
+.unit-check:hover { border-color: var(--ok); }
+.unit-check:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Ödev ayrıntıları: yönerge tek cümleydi, "nasıl başlayacağım" sorusu
+   cevapsız kalıyordu. Adımlar, örnek ve ipuçları ayrı bloklar hâlinde. */
+.unit-hw { cursor: default; }
+.unit-hw-block { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line-soft); }
+.unit-hw-label {
+  font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-dim); font-weight: 650; margin-bottom: 5px;
+}
+.unit-steps, .unit-tips { margin: 0; padding-left: 1.25em; font-size: 0.9rem; line-height: 1.65; }
+.unit-steps li, .unit-tips li { margin: 2px 0; }
+.unit-steps li::marker { color: var(--accent); font-weight: 650; }
+.unit-hw-ex { display: grid; gap: 8px; }
+.unit-hw-exline { padding: 8px 10px; border-radius: 10px; background: var(--bg-elev-2); }
+.unit-hw-exja { font-size: 1.1rem; font-weight: 560; line-height: 1.5; }
+
+/* Yıldız: atlanmaması gereken bilgi. Rozet + kartın kenarında ince şerit;
+   şerit olmadan altı sekme arasında yıldızlar göze çarpmıyordu. */
+.unit-star {
+  display: inline-flex; align-items: center; gap: 3px; flex: none;
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.02em;
+  padding: 2px 7px; border-radius: 999px;
+  color: var(--warn); background: var(--warn-soft); border: 1px solid var(--warn-soft);
+}
+.card.is-star { border-left: 3px solid var(--warn); }

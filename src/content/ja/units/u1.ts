@@ -17,6 +17,7 @@ export const u1: Unit = {
   grammar: [
     {
       title: 'AはBです — “A, B’dir”',
+      star: true,
       pattern: 'A は B です',
       explain:
         'Japoncanın ilk ve en önemli kalıbı. は konuyu işaretler, です cümleyi kibar biçimde bitirir. Türkçedeki “-dir” gibi düşünebilirsin: yüklem sonda.',
@@ -29,6 +30,7 @@ export const u1: Unit = {
     },
     {
       title: 'じゃないです — olumsuz',
+      star: true,
       pattern: 'A は B じゃないです',
       explain:
         'です’nin olumsuzu. Daha resmî hâli ではありません’dir ama konuşmada じゃないです yaygındır.',
@@ -75,7 +77,14 @@ export const u1: Unit = {
 
   rules: [
     {
+      title: 'は eki “ha” değil “wa” okunur',
+      star: true,
+      body:
+        'Konu eki olarak kullanılan は, tek başına “ha” okunmasına rağmen cümlede “wa” diye okunur: 私は → watashi wa. Aynı şey yön eki へ (→ e) ve nesne eki を (→ o) için de geçerli. Yazılışı değişmez, yalnızca okunuşu değişir; metinde Latin okunuşunu açtığında bunu satır satır görebilirsin.',
+    },
+    {
       title: 'さん kendine kullanılmaz',
+      star: true,
       body:
         'İsimden sonra さん gelir: 田中さん. Ama kendinden bahsederken asla 私さん demezsin. Unvan verirken de kullanılmaz: 田中先生 der, 田中さん先生 demezsin.',
     },
@@ -87,9 +96,9 @@ export const u1: Unit = {
   ],
 
   vocab: [
-    { ja: '私', kana: 'わたし', tr: 'ben' },
-    { ja: '名前', kana: 'なまえ', tr: 'isim, ad' },
-    { ja: '学生', kana: 'がくせい', tr: 'öğrenci' },
+    { star: true, ja: '私', kana: 'わたし', tr: 'ben' },
+    { star: true, ja: '名前', kana: 'なまえ', tr: 'isim, ad' },
+    { star: true, ja: '学生', kana: 'がくせい', tr: 'öğrenci' },
     { ja: '先生', kana: 'せんせい', tr: 'öğretmen', note: 'Doktor, avukat gibi uzmanlara da denir.' },
     { ja: '大学', kana: 'だいがく', tr: 'üniversite' },
     { ja: '日本人', kana: 'にほんじん', tr: 'Japon' },
@@ -98,8 +107,8 @@ export const u1: Unit = {
     { ja: '友だち', kana: 'ともだち', tr: 'arkadaş' },
     { ja: '人', kana: 'ひと', tr: 'kişi, insan' },
     { ja: '何', kana: 'なに / なん', tr: 'ne', note: 'です ve sayaç önünde なん: 何ですか.' },
-    { ja: 'はじめまして', kana: 'はじめまして', tr: 'Memnun oldum', note: 'Yalnızca ilk tanışmada.' },
-    { ja: 'よろしくおねがいします', kana: 'よろしくおねがいします', tr: 'Tanıştığımıza memnun oldum / rica ederim' },
+    { star: true, ja: 'はじめまして', kana: 'はじめまして', tr: 'Memnun oldum', note: 'Yalnızca ilk tanışmada.' },
+    { star: true, ja: 'よろしくおねがいします', kana: 'よろしくおねがいします', tr: 'Tanıştığımıza memnun oldum / rica ederim' },
     { ja: 'そうです', kana: 'そうです', tr: 'Evet, öyle' },
     { ja: 'ちがいます', kana: 'ちがいます', tr: 'Hayır, değil / yanlış' },
     { ja: 'あの人', kana: 'あのひと', tr: 'o kişi' },
@@ -139,12 +148,43 @@ export const u1: Unit = {
       detail:
         'Metindeki kalıpları kullanarak kendi tanıtımını beş cümle hâlinde kâğıda yaz. Adın, ülken, mesleğin, ne öğrendiğin ve bir de “… değilim” cümlesi olsun.',
       minutes: 10,
+      star: true,
+      steps: [
+        'Kâğıdı beş satıra böl; her satıra tek cümle yazacaksın.',
+        'Sıra: selamlama (はじめまして), ad, ülke, ne olduğun, ne öğrendiğin.',
+        'Beşinci cümleyi 〜じゃないです ile kur: olmadığın bir şeyi söyle.',
+        'Sonuna よろしくおねがいします ekle — tanıtım bu cümleyle kapanır.',
+        'Bitince her cümlede は ve です var mı diye tek tek kontrol et.',
+      ],
+      example: [
+        { ja: 'はじめまして。', kana: 'はじめまして。', tr: 'Merhaba, tanıştığımıza memnun oldum.' },
+        { ja: '私の名前はエフェです。', kana: 'わたしのなまえはエフェです。', tr: 'Benim adım Efe.' },
+        { ja: 'トルコ人です。', kana: 'トルコじんです。', tr: 'Türküm.' },
+        { ja: '大学の学生です。', kana: 'だいがくのがくせいです。', tr: 'Üniversite öğrencisiyim.' },
+        { ja: '先生じゃないです。', kana: 'せんせいじゃないです。', tr: 'Öğretmen değilim.' },
+      ],
+      tips: [
+        '私は her cümlede gerekmez; ilk cümlede söyledin, gerisi bağlamdan anlaşılır.',
+        'Buradaki は eki “wa” okunur: わたしは → watashi wa.',
+        'Ülke adı + 人 = o ülkeden kişi: トルコ人, 日本人.',
+        'です olumsuzda じゃないです olur; ですない diye bir biçim yok.',
+      ],
     },
     {
       id: 'u1-h2',
       title: 'Sesli söyle',
       detail: 'Yazdığın tanıtımı kâğıda bakmadan sesli söyle. Takıldığın yeri işaretle, o kalıbı tekrar oku.',
       minutes: 5,
+      steps: [
+        'Önce kâğıda bakarak iki kez oku, sonra kâğıdı ters çevir.',
+        'Ezberden söyle; takıldığın cümlede dur ve yalnızca o cümleye bak.',
+        'Takıldığın cümleyi üç kez tek başına söyle, sonra baştan başla.',
+        'Kâğıda hiç bakmadan baştan sona söyleyebiliyorsan ödev bitti.',
+      ],
+      tips: [
+        'Kelime kartlarındaki ses düğmesine basıp kendi söyleyişinle karşılaştır.',
+        'です sonundaki u neredeyse duyulmaz; “des” gibi çıkar.',
+      ],
     },
     {
       id: 'u1-h3',
@@ -152,6 +192,21 @@ export const u1: Unit = {
       detail:
         'Tanıdığın üç kişiyi Japonca tanıt: 「〜さんは〜です」. En az birinde も, birinde de じゃないです kullan.',
       minutes: 10,
+      steps: [
+        'Üç kişi seç: bir arkadaş, bir aile üyesi, bir de tanıdığın biri.',
+        'Her biri için 〜さんは〜です kalıbıyla bir cümle yaz.',
+        'İkinci kişide も kullan: “o da öğrenci”.',
+        'Üçüncü kişide じゃないです kullan: olmadığı bir şeyi söyle.',
+      ],
+      example: [
+        { ja: '友だちの田中さんは日本人です。', kana: 'ともだちのたなかさんはにほんじんです。', tr: 'Arkadaşım Tanaka Japon.' },
+        { ja: '田中さんも学生です。', kana: 'たなかさんもがくせいです。', tr: 'Tanaka da öğrenci.' },
+        { ja: 'あの人は先生じゃないです。', kana: 'あのひとはせんせいじゃないです。', tr: 'O kişi öğretmen değil.' },
+      ],
+      tips: [
+        'Kendine さん denmez: 私さん yanlıştır.',
+        'も gelince は düşer: 田中さんも doğru, 田中さんはも yanlış.',
+      ],
     },
   ],
 

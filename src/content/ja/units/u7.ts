@@ -17,6 +17,7 @@ export const u7: Unit = {
   grammar: [
     {
       title: 'い-sıfatlar',
+      star: true,
       pattern: '大きいです / 大きくないです / 大きかったです',
       explain:
         'Sonu い ile biten sıfatlar. Çekim い üzerinden yapılır: olumsuzda い → くない, geçmişte い → かった.',
@@ -30,6 +31,7 @@ export const u7: Unit = {
     },
     {
       title: 'な-sıfatlar',
+      star: true,
       pattern: 'しずかです / しずかじゃないです / しずかな + isim',
       explain:
         'Sonu い ile bitmeyen sıfatlar isim gibi çekilir. İsimden önce geldiklerinde araya な girer.',
@@ -54,6 +56,7 @@ export const u7: Unit = {
     },
     {
       title: 'とても / あまり',
+      star: true,
       pattern: 'とても + olumlu · あまり + olumsuz',
       explain:
         'とても “çok” demektir ve olumlu cümlede kullanılır. あまり ise “pek” demektir ve MUTLAKA olumsuzla biter.',
@@ -68,13 +71,14 @@ export const u7: Unit = {
   rules: [
     {
       title: 'Hangi sıfat hangi türden',
+      star: true,
       body:
         'Sonu い ile bitiyorsa genelde い-sıfattır. İstisnalar: きれい (güzel, temiz), ゆうめい (ünlü), きらい (sevmemek) — üçü de な-sıfattır. Bunları ezberle, gerisi kurala uyar.',
     },
   ],
 
   vocab: [
-    { ja: '大きい', kana: 'おおきい', tr: 'büyük' },
+    { star: true, ja: '大きい', kana: 'おおきい', tr: 'büyük' },
     { ja: '小さい', kana: 'ちいさい', tr: 'küçük' },
     { ja: '新しい', kana: 'あたらしい', tr: 'yeni' },
     { ja: '古い', kana: 'ふるい', tr: 'eski' },
@@ -83,14 +87,14 @@ export const u7: Unit = {
     { ja: 'おいしい', kana: 'おいしい', tr: 'lezzetli' },
     { ja: 'いい', kana: 'いい', tr: 'iyi', note: 'Düzensiz: よくない, よかった.' },
     { ja: '忙しい', kana: 'いそがしい', tr: 'meşgul' },
-    { ja: 'しずか', kana: 'しずか', tr: 'sakin', note: 'な-sıfat' },
+    { star: true, ja: 'しずか', kana: 'しずか', tr: 'sakin', note: 'な-sıfat' },
     { ja: 'にぎやか', kana: 'にぎやか', tr: 'hareketli, canlı', note: 'な-sıfat' },
     { ja: 'きれい', kana: 'きれい', tr: 'güzel, temiz', note: 'い ile bitse de な-sıfat' },
     { ja: 'ゆうめい', kana: 'ゆうめい', tr: 'ünlü', note: 'な-sıfat' },
-    { ja: '好き', kana: 'すき', tr: 'sevilen', note: 'な-sıfat; sevilen şey が alır.' },
+    { star: true, ja: '好き', kana: 'すき', tr: 'sevilen', note: 'な-sıfat; sevilen şey が alır.' },
     { ja: 'きらい', kana: 'きらい', tr: 'sevilmeyen', note: 'な-sıfat' },
     { ja: 'とても', kana: 'とても', tr: 'çok' },
-    { ja: 'あまり', kana: 'あまり', tr: 'pek', note: 'Olumsuzla kullanılır.' },
+    { star: true, ja: 'あまり', kana: 'あまり', tr: 'pek', note: 'Olumsuzla kullanılır.' },
     { ja: '町', kana: 'まち', tr: 'kasaba, şehir' },
   ],
 
@@ -121,6 +125,21 @@ export const u7: Unit = {
       detail:
         'Ünitedeki 18 kelimeyi い-sıfat ve な-sıfat diye iki sütuna ayır. きれい, ゆうめい ve きらい’yi doğru sütuna koymayı unutma.',
       minutes: 8,
+      star: true,
+      steps: [
+        'Kâğıdı iki sütuna böl: solda い-sıfatlar, sağda な-sıfatlar.',
+        'Kelimeyi bir isme bağlamayı dene: 〜町. Araya な gerekiyorsa な-sıfattır.',
+        'きれい, ゆうめい ve きらい sonu い ile bitse de な-sıfattır — sağ sütuna yaz.',
+        'Her sütundan üç kelime seçip birer örnek cümle kur.',
+      ],
+      example: [
+        { ja: '大きい、新しい、忙しい', kana: 'おおきい、あたらしい、いそがしい', tr: 'い-sıfat sütunu: isme doğrudan bağlanır (大きい町).' },
+        { ja: 'しずか、にぎやか、ゆうめい', kana: 'しずか、にぎやか、ゆうめい', tr: 'な-sıfat sütunu: isme bağlanırken な alır (しずかな町).' },
+      ],
+      tips: [
+        'Tuzak: きれい ve ゆうめい sonu い ama な-sıfattır; buradaki い kökün parçası.',
+        'い-sıfat olumsuzu 〜くないです, な-sıfat olumsuzu 〜じゃないです.',
+      ],
     },
     {
       id: 'u7-h2',
@@ -128,6 +147,21 @@ export const u7: Unit = {
       detail:
         'Yaşadığın yeri altı cümleyle anlat. En az iki い-sıfat, iki な-sıfat, bir とても ve bir あまり kullan.',
       minutes: 12,
+      steps: [
+        'Şehrin hakkında altı cümle planla: büyüklük, sessizlik, fiyatlar, yemek, insanlar, kendi görüşün.',
+        'İki cümlede い-sıfat, iki cümlede な-sıfat kullan.',
+        'Bir cümlede とても, bir cümlede あまり geçsin.',
+        'あまり kullandığın cümleyi MUTLAKA olumsuz bitir.',
+      ],
+      example: [
+        { ja: '私の町は大きいです。', kana: 'わたしのまちはおおきいです。', tr: 'Şehrim büyük.' },
+        { ja: 'とてもしずかです。', kana: 'とてもしずかです。', tr: 'Çok sessiz.' },
+        { ja: 'あまりにぎやかじゃないです。', kana: 'あまりにぎやかじゃないです。', tr: 'Pek hareketli değil.' },
+      ],
+      tips: [
+        'あまり olumlu cümlede kullanılmaz: あまり高いです yanlış, あまり高くないです doğru.',
+        'い-sıfat cümle sonunda です alır ama çekimi kendi yapar: 高いです → 高くないです.',
+      ],
     },
     {
       id: 'u7-h3',
@@ -135,6 +169,20 @@ export const u7: Unit = {
       detail:
         '「私は〜が好きです」 kalıbıyla üç sevdiğin, 「〜があまり好きじゃないです」 ile iki sevmediğin şeyi yaz.',
       minutes: 8,
+      steps: [
+        'Üç sevdiğin, iki sevmediğin şeyi önce Türkçe listele.',
+        'Her biri için 私は〜が好きです kalıbını doldur.',
+        'Sevmediklerinde 〜があまり好きじゃないです kullan — きらい sert durur.',
+        'Neden sevdiğini bir sıfatla ekle: おいしいです, 楽しいです.',
+      ],
+      example: [
+        { ja: '私は日本語が好きです。', kana: 'わたしはにほんごがすきです。', tr: 'Japoncayı severim.' },
+        { ja: '魚があまり好きじゃないです。', kana: 'さかながあまりすきじゃないです。', tr: 'Balığı pek sevmem.' },
+      ],
+      tips: [
+        '好き ile を DEĞİL が kullanılır: 日本語が好きです.',
+        'きらい “nefret ederim” kadar güçlü; günlük dilde あまり好きじゃないです daha kibar.',
+      ],
     },
   ],
 

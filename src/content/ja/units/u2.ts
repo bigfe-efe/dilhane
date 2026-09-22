@@ -17,6 +17,7 @@ export const u2: Unit = {
   grammar: [
     {
       title: 'これ・それ・あれ — “bu, şu, o”',
+      star: true,
       pattern: 'これ は 〜 です',
       explain:
         'Üçü de TEK BAŞINA kullanılır, arkasına isim almaz. これ sana yakın, それ karşındakine yakın, あれ ikinize de uzak.',
@@ -30,6 +31,7 @@ export const u2: Unit = {
     },
     {
       title: 'この・その・あの — “bu … , şu … , o …”',
+      star: true,
       pattern: 'この + isim',
       explain:
         'Bunlar isimden ÖNCE gelir ve tek başına kullanılmaz. これ/それ/あれ ile karıştırmamak N5’te sık sorulan bir ayrım.',
@@ -66,15 +68,16 @@ export const u2: Unit = {
   rules: [
     {
       title: 'こ・そ・あ・ど ailesi',
+      star: true,
       body:
         'Japoncada işaret kelimeleri dörtlü bir sistemdir: こ (yakın), そ (karşıdakine yakın), あ (uzak), ど (soru). これ/それ/あれ/どれ, この/その/あの/どの, ここ/そこ/あそこ/どこ. Baş harfi görünce hangi mesafeden bahsedildiğini anlarsın.',
     },
   ],
 
   vocab: [
-    { ja: 'これ', kana: 'これ', tr: 'bu (yakın)' },
-    { ja: 'それ', kana: 'それ', tr: 'şu (karşıdakine yakın)' },
-    { ja: 'あれ', kana: 'あれ', tr: 'o (uzak)' },
+    { star: true, ja: 'これ', kana: 'これ', tr: 'bu (yakın)' },
+    { star: true, ja: 'それ', kana: 'それ', tr: 'şu (karşıdakine yakın)' },
+    { star: true, ja: 'あれ', kana: 'あれ', tr: 'o (uzak)' },
     { ja: 'どれ', kana: 'どれ', tr: 'hangisi' },
     { ja: 'この', kana: 'この', tr: 'bu …', note: 'Arkasına isim gelir.' },
     { ja: '本', kana: 'ほん', tr: 'kitap' },
@@ -88,7 +91,7 @@ export const u2: Unit = {
     { ja: 'けいたい', kana: 'けいたい', tr: 'cep telefonu' },
     { ja: 'つくえ', kana: 'つくえ', tr: 'masa, sıra' },
     { ja: 'いす', kana: 'いす', tr: 'sandalye' },
-    { ja: 'だれ', kana: 'だれ', tr: 'kim' },
+    { star: true, ja: 'だれ', kana: 'だれ', tr: 'kim' },
     { ja: 'ちがいます', kana: 'ちがいます', tr: 'değil, yanlış' },
   ],
 
@@ -119,6 +122,21 @@ export const u2: Unit = {
       detail:
         'Masandaki ya da odandaki beş eşyayı Japonca yaz: 「これは〜です」. Bilmediğin kelimeye sözlükten bak, listene ekle.',
       minutes: 10,
+      steps: [
+        'Elinin altındaki beş eşyayı seç: kalem, saat, çanta, defter, telefon gibi.',
+        'Her biri için これは〜です yaz — eşya senin yanındaysa これ kullanılır.',
+        'Bilmediğin kelimeyi sözlükten bul; kana okunuşunu da yanına yaz.',
+        'Bir cümleyi soru yap: これは何ですか。 ve kendin cevapla.',
+      ],
+      example: [
+        { ja: 'これはとけいです。', kana: 'これはとけいです。', tr: 'Bu bir saat.' },
+        { ja: 'それは私のかばんです。', kana: 'それはわたしのかばんです。', tr: 'Şu benim çantam.' },
+        { ja: 'あれは何ですか。', kana: 'あれはなんですか。', tr: 'O nedir?' },
+      ],
+      tips: [
+        'Uzaklık: これ sende, それ karşındakinin yanında, あれ ikinizden de uzakta.',
+        '何 burada なん okunur: 何ですか → nan desu ka.',
+      ],
     },
     {
       id: 'u2-h2',
@@ -126,12 +144,42 @@ export const u2: Unit = {
       detail:
         'Yazdığın beş cümleyi bir de この kullanarak yeniden yaz: 「このかばんは私のです」. İkisi arasındaki farkı kendi cümlelerinde gör.',
       minutes: 8,
+      star: true,
+      steps: [
+        'Beş cümleni alt alta yeniden yaz, ama これ yerine この + eşya kullan.',
+        'この’dan sonra MUTLAKA bir isim gelmeli: この本, このかばん.',
+        'Yanına Türkçesini yaz; anlam aynı, yapı farklı — bunu gör.',
+        'Son olarak iki biçimi karşılaştır ve hangisinin tek başına durduğunu söyle.',
+      ],
+      example: [
+        { ja: 'これは本です。', kana: 'これはほんです。', tr: 'Bu bir kitap. これ tek başına durur.' },
+        { ja: 'この本は新しいです。', kana: 'このほんはあたらしいです。', tr: 'Bu kitap yeni. この isme bağlanır.' },
+      ],
+      tips: [
+        'この tek başına cümlede duramaz; arkasına isim şart.',
+        'Aynı aile: それ → その, あれ → あの, どれ → どの.',
+      ],
     },
     {
       id: 'u2-h3',
       title: 'Sahiplik diyaloğu',
       detail: 'Kendi kendine üç soruluk bir diyalog kur: だれの…ですか sorusu ve 〜のです cevabı olsun.',
       minutes: 7,
+      steps: [
+        'İki kişi düşün: sen ve bir arkadaş. Aranızda üç soru geçecek.',
+        'Soruları これはだれの〜ですか。 kalıbıyla kur.',
+        'Cevaplarda sahibi の ile ver: 先生のです, 私のです.',
+        'Bir cevabı はい、そうです, birini いいえ、ちがいます ile başlat.',
+      ],
+      example: [
+        { ja: 'これはだれのかばんですか。', kana: 'これはだれのかばんですか。', tr: 'Bu kimin çantası?' },
+        { ja: 'それは先生のです。', kana: 'それはせんせいのです。', tr: 'Şu, öğretmenin.' },
+        { ja: 'いいえ、ちがいます。私のです。', kana: 'いいえ、ちがいます。わたしのです。', tr: 'Hayır, değil. Benim.' },
+      ],
+      tips: [
+        '私のです derken eşyanın adı tekrarlanmaz; の zaten “…-e ait olan” demek.',
+        'だれの = kimin, だれ = kim. の düşerse soru bozulur.',
+      ],
     },
   ],
 

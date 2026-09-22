@@ -6,6 +6,7 @@ import { ExerciseRunner } from '@/components/ExerciseRunner'
 import { UNIT_BY_ID, type Unit, type UnitVocab } from '@/content/ja/units'
 import { StrokeOrder } from '@/components/StrokeOrder'
 import { KANJI_BY_CHAR } from '@/content/ja/kanji-n5'
+import { romajiWords } from '@/lib/ja-phonetic'
 import { LESSONS_BY_ID } from '@/content'
 import { db } from '@/db/db'
 import { useUnit } from '@/db/hooks'
@@ -84,6 +85,12 @@ export default function UnitPage() {
 function Hedefler({ unit, testBest }: { unit: Unit; testBest: number }) {
   const dersler = (unit.lessonIds ?? []).map((lid) => LESSONS_BY_ID.get(lid)).filter(Boolean)
 
+  const onemli = [
+    ...unit.grammar.filter((g) => g.star).map((g) => ({ baslik: g.title, nerede: 'Dilbilgisi' })),
+    ...(unit.rules ?? []).filter((r) => r.star).map((r) => ({ baslik: r.title, nerede: 'Kurallar' })),
+    ...unit.homework.filter((h) => h.star).map((h) => ({ baslik: h.title, nerede: 'Ödev' })),
+  ]
+
   return (
     <div className="stack">
       <div className="card stack-sm">
@@ -99,12 +106,39 @@ function Hedefler({ unit, testBest }: { unit: Unit; testBest: number }) {
         </div>
       </div>
 
+      {/*
+        Yıldızlı bilgiler tek yerde toplanıyor. Ünite sayfası altı sekme;
+        kritik bilgi dilbilgisi, kural ve ödev sekmelerine dağılmış hâlde
+        kalıyordu ve "neyi kaçırmamalıyım" sorusunun cevabı hiçbir ekranda
+        yoktu. Burada özet var, yıldızın kendisi ilgili sekmede duruyor.
+      */}
+      {onemli.length > 0 && (
+        <div className="card card--pad-lg stack-sm is-star">
+          <div className="row" style={{ gap: 8 }}>
+            <span className="card-title">★ Bunları atlama</span>
+          </div>
+          <ul className="tight small">
+            {onemli.map((o) => (
+              <li key={o.baslik}>
+                <b>{o.baslik}</b> <span className="faint">· {o.nerede}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="tiny faint">
+            Bu ünitenin en çok hata yaptırdığı noktalar. İlgili sekmede yanlarında ★ var.
+          </div>
+        </div>
+      )}
+
       {unit.rules?.length ? (
         <div className="stack-sm">
           <h2>Bilmen gereken kurallar</h2>
           {unit.rules.map((r) => (
-            <div key={r.title} className="card stack-sm">
-              <div className="card-title">{r.title}</div>
+            <div key={r.title} className={`card stack-sm${r.star ? ' is-star' : ''}`}>
+              <div className="row" style={{ gap: 8 }}>
+                <span className="card-title">{r.title}</span>
+                {r.star && <Yildiz />}
+              </div>
               <div className="small">{r.body}</div>
             </div>
           ))}
@@ -143,10 +177,10 @@ function Gramer({ unit }: { unit: Unit }) {
   return (
     <div className="stack">
       {unit.grammar.map((g) => (
-        <div key={g.title} className="card stack-sm">
+        <div key={g.title} className={`card stack-sm${g.star ? ' is-star' : ''}`}>
           <div className="row">
             <div className="card-title" style={{ flex: 1 }}>
-              {g.title}
+              {g.title} {g.star && <Yildiz />}
             </div>
             <Badge tone="accent">
               <span className="ja">{g.pattern}</span>
@@ -199,7 +233,7 @@ function Kelime({ unit }: { unit: Unit }) {
         {unit.vocab.map((v) => (
           <div
             key={v.ja}
-            className="card unit-vocab"
+            className={`card unit-vocab${v.star ? ' is-star' : ''}`}
             role="button"
             tabIndex={0}
             onClick={() => setAcik(v)}
@@ -215,6 +249,7 @@ function Kelime({ unit }: { unit: Unit }) {
                 <div className="ja unit-vocab-ja">{v.ja}</div>
                 {v.kana !== v.ja && <div className="ja unit-vocab-kana">{v.kana}</div>}
                 <div className="unit-vocab-tr">{v.tr}</div>
+                {v.star && <Yildiz label="Çok kullanılır" />}
                 {v.note && <div className="tiny dim">{v.note}</div>}
               </div>
               {/* Ses düğmesi kartın kendi tıklamasını tetiklemesin */}
@@ -305,6 +340,9 @@ function KelimeSheet({ v, onClose }: { v: UnitVocab; onClose: () => void }) {
 
 function Metin({ unit }: { unit: Unit }) {
   const [kana, setKana] = useState(true)
+  // Latin okunuş: kana henüz akıcı okunmadığında metnin sesini verir.
+  // Varsayılan KAPALI — açık kalsa göz kanayı atlayıp Latin satırı okur.
+  const [latin, setLatin] = useState(false)
   const [tr, setTr] = useState(false)
   const [soru, setSoru] = useState(false)
   const [sonuc, setSonuc] = useState<{ c: number; t: number } | null>(null)
@@ -346,6 +384,9 @@ function Metin({ unit }: { unit: Unit }) {
         <button className={`btn btn--sm btn--ghost${kana ? ' is-on' : ''}`} onClick={() => setKana((k) => !k)}>
           Kana {kana ? 'açık' : 'kapalı'}
         </button>
+        <button className={`btn btn--sm btn--ghost${latin ? ' is-on' : ''}`} onClick={() => setLatin((x) => !x)}>
+          Latin {latin ? 'açık' : 'kapalı'}
+        </button>
         <button className={`btn btn--sm btn--ghost${tr ? ' is-on' : ''}`} onClick={() => setTr((x) => !x)}>
           Türkçe {tr ? 'açık' : 'kapalı'}
         </button>
@@ -363,6 +404,9 @@ function Metin({ unit }: { unit: Unit }) {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="ja unit-line-ja">{l.ja}</div>
               {kana && <div className="ja tiny faint">{l.kana}</div>}
+              {/* romajiWords ekleri okunduğu gibi yazar (は → wa, へ → e, を → o)
+                  ve kelimeleri ayırır; bitişik bir romaji satırı okunmuyor. */}
+              {latin && <div className="tiny unit-line-latin">{romajiWords(l.ja, l.kana)}</div>}
               {tr && <div className="small dim">{l.tr}</div>}
             </div>
           </div>
@@ -371,6 +415,8 @@ function Metin({ unit }: { unit: Unit }) {
 
       <div className="tiny faint">
         Önce Türkçeyi kapatıp oku; takıldığında aç. Her kelimeyi anlamak zorunda değilsin, genel anlamı yakala.
+        Latin satırında <b>wa</b>, <b>e</b>, <b>o</b> görürsen bunlar は, へ, を ekleridir — yazılışları başka,
+        okunuşları böyle.
       </div>
 
       <button className="btn btn--primary btn--block" onClick={() => setSoru(true)}>
@@ -395,26 +441,90 @@ function Odev({ unit, yapilan }: { unit: Unit; yapilan: string[] }) {
   const toplamDk = unit.homework.reduce((n, h) => n + h.minutes, 0)
 
   return (
-    <div className="stack-sm">
+    <div className="stack">
       <div className="card-sub">
         Ödevler kâğıt üstünde yapılır; uygulama yalnızca işaretini tutar. Toplam ~{toplamDk} dakika.
       </div>
+
       {unit.homework.map((h) => {
         const ok = set.has(h.id)
         return (
-          <button key={h.id} className={`card unit-hw${ok ? ' is-done' : ''}`} onClick={() => void cevir(h.id)}>
+          <div key={h.id} className={`card unit-hw${ok ? ' is-done' : ''}`}>
             <div className="row" style={{ alignItems: 'flex-start' }}>
-              <span className={`unit-check${ok ? ' is-on' : ''}`}>{ok ? <Icon name="check" size={14} /> : ''}</span>
-              <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
-                <div className="card-title">{h.title}</div>
-                <div className="card-sub">{h.detail}</div>
-                <div className="tiny faint">{h.minutes} dk</div>
+              {/* İşaret kutusu AYRI bir düğme: kartın tamamı tıklanabilir
+                  olsaydı ödevi okumak için açılan her tıklama onu "yapıldı"
+                  işaretlerdi. */}
+              <button
+                className={`unit-check${ok ? ' is-on' : ''}`}
+                onClick={() => void cevir(h.id)}
+                aria-pressed={ok}
+                aria-label={ok ? 'Yapıldı işaretini kaldır' : 'Yapıldı olarak işaretle'}
+              >
+                {ok ? <Icon name="check" size={14} /> : ''}
+              </button>
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="row" style={{ gap: 8 }}>
+                  <span className="card-title">{h.title}</span>
+                  {h.star && <Yildiz />}
+                  <div className="spacer" />
+                  <span className="tiny faint">{h.minutes} dk</span>
+                </div>
+                <div className="card-sub" style={{ marginTop: 3 }}>
+                  {h.detail}
+                </div>
               </div>
             </div>
-          </button>
+
+            {h.steps?.length ? (
+              <div className="unit-hw-block">
+                <div className="unit-hw-label">Nasıl yapılır</div>
+                <ol className="unit-steps">
+                  {h.steps.map((s, i) => (
+                    <li key={i}>{s}</li>
+                  ))}
+                </ol>
+              </div>
+            ) : null}
+
+            {h.example?.length ? (
+              <div className="unit-hw-block">
+                <div className="unit-hw-label">Örnek</div>
+                <div className="unit-hw-ex">
+                  {h.example.map((e, i) => (
+                    <div key={i} className="unit-hw-exline">
+                      <div className="ja unit-hw-exja">{e.ja}</div>
+                      {e.kana !== e.ja && <div className="ja tiny faint">{e.kana}</div>}
+                      <div className="small dim">{e.tr}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {h.tips?.length ? (
+              <div className="unit-hw-block">
+                <div className="unit-hw-label">İşine yarar</div>
+                <ul className="unit-tips">
+                  {h.tips.map((t, i) => (
+                    <li key={i}>{t}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
         )
       })}
     </div>
+  )
+}
+
+/** Atlanmaması gereken bilgiyi işaretler. */
+function Yildiz({ label = 'Önemli' }: { label?: string }) {
+  return (
+    <span className="unit-star" title="Bu bilgi atlanmamalı">
+      ★ {label}
+    </span>
   )
 }
 

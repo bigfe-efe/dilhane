@@ -20,6 +20,8 @@ import type { Exercise, Skill } from '@/types'
  */
 
 export interface UnitVocab {
+  /** Yıldızlı: bu ünitenin en çok kullanılan kelimelerinden */
+  star?: boolean
   /** Yazılışı (kanjili olabilir) */
   ja: string
   /** Kana okunuşu */
@@ -37,6 +39,8 @@ export interface UnitLine {
 
 export interface UnitGrammar {
   title: string
+  /** Yıldızlı: bu ünitenin atlanamaz konusu */
+  star?: boolean
   /** Kalıbın kendisi: AはBです */
   pattern: string
   explain: string
@@ -50,6 +54,8 @@ export interface UnitGrammar {
 export interface UnitRule {
   title: string
   body: string
+  /** Yıldızlı: sınavda ya da konuşmada doğrudan hata kaynağı */
+  star?: boolean
 }
 
 export interface UnitText {
@@ -65,6 +71,20 @@ export interface UnitHomework {
   title: string
   detail: string
   minutes: number
+  /**
+   * Adım adım nasıl yapılacağı.
+   *
+   * Önce yalnızca tek cümlelik bir yönerge vardı ve öğrenci "peki nasıl
+   * başlayayım" diye kalıyordu. Ödev kâğıt üstünde yapılıyor; uygulamanın
+   * verebileceği yardım tam olarak budur: sırayı söylemek.
+   */
+  steps?: string[]
+  /** Örnek cevap — neye benzemesi gerektiğini görmeden başlamak zor */
+  example?: UnitLine[]
+  /** Kullanılacak kalıplar ve sık yapılan hatalar */
+  tips?: string[]
+  /** Yıldızlı: bu üniteyi bitirmeden atlanmamalı */
+  star?: boolean
 }
 
 export interface Unit {

@@ -17,6 +17,7 @@ export const u10: Unit = {
   grammar: [
     {
       title: '〜たいです — “…-mek istiyorum”',
+      star: true,
       pattern: 'V-ます kökü + たいです',
       explain:
         'ます düşer, yerine たい gelir. Sonuç bir SIFAT gibi çekilir: たくないです (istemiyorum), たかったです (istemiştim).',
@@ -30,6 +31,7 @@ export const u10: Unit = {
     },
     {
       title: '〜ませんか — teklif',
+      star: true,
       pattern: 'V-ませんか',
       explain:
         'Olumsuz soru biçimindedir ama anlamı tekliftir: “…-mez misin?”. Türkçedeki “Bir kahve içmez misin?” ile birebir aynı mantık.',
@@ -76,6 +78,7 @@ export const u10: Unit = {
   rules: [
     {
       title: 'ませんか ile ましょう arasındaki fark',
+      star: true,
       body:
         'ませんか karşıdakinin kararına bırakır, kibar tekliftir. ましょう ise “hadi” der, ortak kararı varsayar. Tanımadığın biriyle ませんか, arkadaşınla ましょう daha doğaldır.',
     },
@@ -88,9 +91,9 @@ export const u10: Unit = {
 
   vocab: [
     { ja: '〜たい', kana: 'たい', tr: '…-mek istemek' },
-    { ja: 'いっしょに', kana: 'いっしょに', tr: 'birlikte' },
-    { ja: '上手', kana: 'じょうず', tr: 'usta, iyi', note: 'Kendin için kullanılmaz.' },
-    { ja: '下手', kana: 'へた', tr: 'beceriksiz' },
+    { star: true, ja: 'いっしょに', kana: 'いっしょに', tr: 'birlikte' },
+    { star: true, ja: '上手', kana: 'じょうず', tr: 'usta, iyi', note: 'Kendin için kullanılmaz.' },
+    { star: true, ja: '下手', kana: 'へた', tr: 'beceriksiz' },
     { ja: '料理', kana: 'りょうり', tr: 'yemek (pişirme)' },
     { ja: '音楽', kana: 'おんがく', tr: 'müzik' },
     { ja: 'スポーツ', kana: 'スポーツ', tr: 'spor' },
@@ -101,7 +104,7 @@ export const u10: Unit = {
     { ja: '何も', kana: 'なにも', tr: 'hiçbir şey', note: 'Olumsuzla kullanılır.' },
     { ja: 'そうですね', kana: 'そうですね', tr: 'Öyle ya, haklısın' },
     { ja: 'いいですね', kana: 'いいですね', tr: 'İyi fikir' },
-    { ja: 'ざんねんですが', kana: 'ざんねんですが', tr: 'Maalesef ama…' },
+    { star: true, ja: 'ざんねんですが', kana: 'ざんねんですが', tr: 'Maalesef ama…' },
     { ja: 'また今度', kana: 'またこんど', tr: 'Bir dahaki sefere' },
   ],
 
@@ -137,6 +140,20 @@ export const u10: Unit = {
       detail:
         'Yapmak istediğin beş şeyi 〜たいです ile yaz. İkisini de 〜たくないです ile olumsuz yap.',
       minutes: 10,
+      steps: [
+        'Yapmak istediğin beş şeyi önce Türkçe yaz.',
+        'Fiilin ます’ini at, yerine たいです koy: 行きます → 行きたいです.',
+        'İkisini olumsuz yap: 〜たくないです.',
+        'Cümleleri oku ve hepsinin KENDİ isteğin olduğundan emin ol.',
+      ],
+      example: [
+        { ja: '日本へ行きたいです。', kana: 'にほんへいきたいです。', tr: 'Japonya’ya gitmek istiyorum.' },
+        { ja: '今日は何も食べたくないです。', kana: 'きょうはなにもたべたくないです。', tr: 'Bugün hiçbir şey yemek istemiyorum.' },
+      ],
+      tips: [
+        'たい yalnızca kendi isteğin için kullanılır; başkası için 〜たがっています gerekir (N4 konusu).',
+        'たい bir い-sıfat gibi çekilir: たいです → たくないです → たかったです.',
+      ],
     },
     {
       id: 'u10-h2',
@@ -144,6 +161,23 @@ export const u10: Unit = {
       detail:
         'Altı satırlık bir davet diyaloğu kur: ませんか ile teklif, ましょう ile karar, bir de から ile sebep içersin.',
       minutes: 12,
+      star: true,
+      steps: [
+        'Kimi neye davet edeceğini seç: film, kahve, yemek.',
+        'Teklifi ませんか ile yap: いっしょに映画を見ませんか。',
+        'Karşı taraf kabul etsin: いいですね。',
+        'Saati ましょう ile kararlaştır: 三時に会いましょう。',
+        'Bir satırda から ile sebep ver: 忙しいから、四時はどうですか。',
+      ],
+      example: [
+        { ja: 'いっしょにコーヒーを飲みませんか。', kana: 'いっしょにコーヒーをのみませんか。', tr: 'Birlikte kahve içmez misin?' },
+        { ja: 'いいですね。行きましょう。', kana: 'いいですね。いきましょう。', tr: 'Olur, hadi gidelim.' },
+        { ja: '忙しいから、行きません。', kana: 'いそがしいから、いきません。', tr: 'Yoğun olduğum için gitmiyorum.' },
+      ],
+      tips: [
+        'ませんか teklif eder (karşıdakine sorar), ましょう kararı bildirir (ikimiz de dâhil).',
+        'から sebebin ARKASINA gelir: sebep + から + sonuç. Türkçedeki “-dığı için” gibi.',
+      ],
     },
     {
       id: 'u10-h3',
@@ -151,6 +185,21 @@ export const u10: Unit = {
       detail:
         '「ざんねんですが…」 ve 「ちょっと…」 kullanarak iki farklı ret cümlesi yaz. Japoncada doğrudan いいえ demek sert durur.',
       minutes: 8,
+      steps: [
+        'İki davet hayal et; ikisini de reddedeceksin.',
+        'Birincisine ざんねんですが ile başla, sonra sebebini yaz.',
+        'İkincisinde cümleyi yarım bırak: 三時はちょっと…',
+        'Sonuna また今度 ekle — “bir dahaki sefere” demek.',
+      ],
+      example: [
+        { ja: 'ざんねんですが、土曜日は忙しいです。', kana: 'ざんねんですが、どようびはいそがしいです。', tr: 'Maalesef cumartesi yoğunum.' },
+        { ja: 'すみません、三時はちょっと…', kana: 'すみません、さんじはちょっと…', tr: 'Kusura bakmayın, üç biraz…' },
+        { ja: 'また今度おねがいします。', kana: 'またこんどおねがいします。', tr: 'Bir dahaki sefere lütfen.' },
+      ],
+      tips: [
+        'Yarım bırakılan cümle Japoncada kibar bir “hayır”dır; tamamlaman gerekmez.',
+        'Doğrudan いいえ、行きません sert durur; sebep + ですが kalıbı yumuşatır.',
+      ],
     },
   ],
 

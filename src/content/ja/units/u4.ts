@@ -26,6 +26,7 @@ export const u4: Unit = {
     },
     {
       title: '〜をください — “… verir misiniz”',
+      star: true,
       pattern: 'A を ください',
       explain:
         'Bir şey istemenin kibar ve en kullanışlı yolu. Sayaçla birlikte de kullanılır: コーヒーを二つください.',
@@ -37,6 +38,7 @@ export const u4: Unit = {
     },
     {
       title: 'Sayaçlar — sayı + sayaç',
+      star: true,
       pattern: '〜つ / 〜枚 / 〜本 / 〜人',
       explain:
         'Japoncada sayı, sayılan şeye göre biçim değiştirir. つ genel nesne (1–10), 枚 ince şeyler, 本 uzun şeyler, 人 kişi içindir.',
@@ -63,6 +65,7 @@ export const u4: Unit = {
   rules: [
     {
       title: 'Fiyatı duymak, söylemekten zor',
+      star: true,
       body:
         'N5 dinlemesinde fiyat soruları sık çıkar ve zorluk ses değişimlerindedir: さんびゃく, ろっぴゃく, はっぴゃく, さんぜん, はっせん. Bunları listeden okumak yetmez; sesli tekrar etmen gerekir.',
     },
@@ -74,9 +77,9 @@ export const u4: Unit = {
   ],
 
   vocab: [
-    { ja: 'いくら', kana: 'いくら', tr: 'kaç para' },
-    { ja: '円', kana: 'えん', tr: 'yen' },
-    { ja: 'ください', kana: 'ください', tr: 'lütfen verin' },
+    { star: true, ja: 'いくら', kana: 'いくら', tr: 'kaç para' },
+    { star: true, ja: '円', kana: 'えん', tr: 'yen' },
+    { star: true, ja: 'ください', kana: 'ください', tr: 'lütfen verin' },
     { ja: '高い', kana: 'たかい', tr: 'pahalı, yüksek' },
     { ja: '安い', kana: 'やすい', tr: 'ucuz' },
     { ja: 'お店', kana: 'おみせ', tr: 'dükkân' },
@@ -85,8 +88,8 @@ export const u4: Unit = {
     { ja: 'りんご', kana: 'りんご', tr: 'elma' },
     { ja: '切手', kana: 'きって', tr: 'pul' },
     { ja: 'ぜんぶで', kana: 'ぜんぶで', tr: 'hepsi birden' },
-    { ja: '一つ', kana: 'ひとつ', tr: 'bir tane' },
-    { ja: '二つ', kana: 'ふたつ', tr: 'iki tane' },
+    { star: true, ja: '一つ', kana: 'ひとつ', tr: 'bir tane' },
+    { star: true, ja: '二つ', kana: 'ふたつ', tr: 'iki tane' },
     { ja: '三つ', kana: 'みっつ', tr: 'üç tane' },
     { ja: '百', kana: 'ひゃく', tr: 'yüz' },
     { ja: '千', kana: 'せん', tr: 'bin' },
@@ -120,6 +123,23 @@ export const u4: Unit = {
       detail:
         'Şu fiyatları sesli söyle: 100, 300, 600, 800, 1.000, 3.000, 8.000, 10.000 yen. Ses değişenlerde (300, 600, 800, 3.000, 8.000) yavaşla.',
       minutes: 8,
+      star: true,
+      steps: [
+        'Önce yüzleri söyle: 百, 二百, 三百 (さんびゃく), 六百 (ろっぴゃく), 八百 (はっぴゃく).',
+        'Sonra binleri: 千, 二千, 三千 (さんぜん), 八千 (はっせん).',
+        '一万’ı ayrıca çalış: 10.000 için 十千 diye bir şey YOKTUR.',
+        'Her sayının sonuna 円です ekleyip cümle hâlinde söyle.',
+      ],
+      example: [
+        { ja: '三百円です。', kana: 'さんびゃくえんです。', tr: '300 yen.' },
+        { ja: '八百円です。', kana: 'はっぴゃくえんです。', tr: '800 yen.' },
+        { ja: '一万円です。', kana: 'いちまんえんです。', tr: '10.000 yen.' },
+      ],
+      tips: [
+        'Ses değişenler: 300 さんびゃく, 600 ろっぴゃく, 800 はっぴゃく, 3.000 さんぜん, 8.000 はっせん.',
+        'Japonca büyük sayıları dörtlü basar: 万 = 10 bin. 10.000 = 一万.',
+        'Dinleme sorularında fiyatlar hızlı okunur; bu beş istisnayı duyar duymaz tanımalısın.',
+      ],
     },
     {
       id: 'u4-h2',
@@ -127,6 +147,22 @@ export const u4: Unit = {
       detail:
         'Altı satırlık bir dükkân diyaloğu yaz. İçinde いくらですか, 〜をください ve bir sayaç (つ ya da 枚) geçsin.',
       minutes: 12,
+      steps: [
+        'Dükkâna gir: すみません ile başla.',
+        'Fiyat sor: これはいくらですか。',
+        'Satıcının cevabını da sen yaz: 〜円です。',
+        'Sipariş ver: 〜をください。 ve içine bir sayaç koy (二つ ya da 三枚).',
+        'Toplamı söyle: ぜんぶで〜円です。 ve ありがとうございます ile kapat.',
+      ],
+      example: [
+        { ja: 'すみません、これはいくらですか。', kana: 'すみません、これはいくらですか。', tr: 'Affedersiniz, bu kaç para?' },
+        { ja: 'パンを二つください。', kana: 'パンをふたつください。', tr: 'İki tane ekmek verir misiniz.' },
+        { ja: 'ぜんぶで六百円です。', kana: 'ぜんぶでろっぴゃくえんです。', tr: 'Toplam 600 yen.' },
+      ],
+      tips: [
+        'ください istenen şeyin ARKASINA gelir: eşya + を + ください.',
+        'Sayaç eşyadan sonra, fiilden önce durur: パンを二つください。',
+      ],
     },
     {
       id: 'u4-h3',
@@ -134,6 +170,21 @@ export const u4: Unit = {
       detail:
         'Odandaki eşyaları Japonca sayarak söyle: 「ペンが三本あります」 gibi. En az üç farklı sayaç kullan.',
       minutes: 8,
+      steps: [
+        'Üç farklı türde eşya seç: ince uzun (kalem), yaprak gibi ince (pul), genel (bardak).',
+        'Sayaçları eşleştir: 本 ince uzun, 枚 yaprak, つ genel.',
+        'Her biri için 〜が〜あります cümlesi kur.',
+        'Sesli söyle; 一本 いっぽん, 三本 さんぼん gibi ses değişimlerine dikkat et.',
+      ],
+      example: [
+        { ja: 'ペンが三本あります。', kana: 'ペンがさんぼんあります。', tr: 'Üç kalem var.' },
+        { ja: '切手を五枚ください。', kana: 'きってをごまいください。', tr: 'Beş pul verir misiniz.' },
+        { ja: 'りんごを三つください。', kana: 'りんごをみっつください。', tr: 'Üç elma verir misiniz.' },
+      ],
+      tips: [
+        'つ sayacı 1–9 arasında kullanılır: 一つ, 二つ, 三つ… sonrasında 十 ile düşer.',
+        'Türkçede “tane” hep aynıdır; Japoncada sayaç nesnenin şekline göre değişir.',
+      ],
     },
   ],
 
