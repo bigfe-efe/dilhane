@@ -2438,7 +2438,7 @@ ul.tight li {
 }
 
 .mock-prompt {
-  font-size: 1.25rem;
+  font-size: clamp(1.35rem, 3.2vw, 1.6rem);
   line-height: 1.9;
   letter-spacing: 0.02em;
 }
@@ -3670,6 +3670,17 @@ ul.tight li {
   font-size: 0.95rem; line-height: 1.5; padding: 10px 12px; border-radius: 10px;
   background: var(--bg-elev-2); border-left: 3px solid var(--accent); text-align: left; width: 100%;
 }
+/* Şıklar: sınavın asıl işi yakın kanjileri ayırt etmek — punto büyük */
+.n5-opt { font-size: 1.3rem; line-height: 1.45; }
+.n5-opt--buyuk { font-size: clamp(1.9rem, 5vw, 2.4rem); font-weight: 500; line-height: 1.25; }
+.n5-opt-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.n5-opt-grid .option { padding: 16px 14px; }
+.n5-dogru { font-size: 1.6rem; font-weight: 600; margin-left: 4px; vertical-align: -0.1em; }
+.n5-aciklama { font-size: 1rem; line-height: 1.6; }
+.n5-cevap { font-size: 1.3rem; }
+/* Cevaptan sonra diğer şıklar soluklaşıyordu (%45); yazım sorusunda
+   karşılaştırma tam o anda yapılıyor — okunur kalsınlar */
+.option.is-muted:has(.n5-opt) { opacity: 0.8; }
 /* Sesli şıklar: cevap verilene kadar yalnızca numara (sınavdaki gibi) */
 .n5-num-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; }
 .option.n5-num { justify-content: center; padding: 18px 0; }

@@ -125,18 +125,18 @@ export function SecenekListesi({
   acik: boolean
 }) {
   const gizli = q.spokenOptions && !acik
+  // Kısa şıklar (tek kelime, kanji yazımı) büyük ve iki sütun: 日・目・木 gibi
+  // yakın kanjileri ayırt etmek sorunun kendisi; küçük puntoda fark görünmüyordu.
+  const kisa = q.options.every((o) => [...o].length <= 6)
+  const duzen = gizli ? 'n5-num-options' : kisa ? 'n5-opt-grid' : 'stack-sm'
   return (
-    <div className={gizli ? 'n5-num-options' : 'stack-sm'} style={{ width: '100%' }}>
+    <div className={duzen} style={{ width: '100%' }}>
       {q.options.map((o, i) => {
         const durum = !acik ? (secili === i ? ' is-picked' : '') : i === q.answer ? ' is-correct' : i === secili ? ' is-wrong' : ' is-muted'
         return (
           <button key={i} className={`option${durum}${gizli ? ' n5-num' : ''}`} onClick={() => onSec(i)} disabled={acik}>
             <span className="key">{i + 1}</span>
-            {!gizli && (
-              <span className="ja" style={{ fontSize: '1.08rem' }}>
-                {o}
-              </span>
-            )}
+            {!gizli && <span className={`ja n5-opt${kisa ? ' n5-opt--buyuk' : ''}`}>{o}</span>}
           </button>
         )
       })}

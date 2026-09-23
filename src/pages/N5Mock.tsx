@@ -423,11 +423,11 @@ export default function N5MockPage() {
                     <MockPrompt text={q.prompt} />
                     <div className="tiny">
                       <span className="faint">senin cevabın: </span>
-                      <b className="ja" style={{ color: 'var(--bad)' }}>
+                      <b className="ja n5-cevap" style={{ color: 'var(--bad)' }}>
                         {secilen === undefined ? '(boş)' : q.options[secilen]}
                       </b>
                       <span className="faint"> · doğrusu: </span>
-                      <b className="ja" style={{ color: 'var(--ok)' }}>
+                      <b className="ja n5-cevap" style={{ color: 'var(--ok)' }}>
                         {q.options[q.answer]}
                       </b>
                     </div>
@@ -451,11 +451,11 @@ export default function N5MockPage() {
                     <ChoukaiMetin q={q} />
                     <div className="tiny">
                       <span className="faint">senin cevabın: </span>
-                      <b className="ja" style={{ color: 'var(--bad)' }}>
+                      <b className="ja n5-cevap" style={{ color: 'var(--bad)' }}>
                         {secilen === undefined ? '(boş)' : q.options[secilen]}
                       </b>
                       <span className="faint"> · doğrusu: </span>
-                      <b className="ja" style={{ color: 'var(--ok)' }}>
+                      <b className="ja n5-cevap" style={{ color: 'var(--ok)' }}>
                         {q.options[q.answer]}
                       </b>
                     </div>

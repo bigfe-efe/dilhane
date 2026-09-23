@@ -812,11 +812,11 @@ function N5Pratik({ unit }: { unit: Unit }) {
       {cevaplandi && (
         <div className={`feedback ${secilen === m.q.answer ? 'feedback--ok' : 'feedback--bad'} stack-sm`}>
           <div>
-            <b>{secilen === m.q.answer ? 'Doğru.' : 'Doğrusu:'}</b> <span className="ja">{m.q.options[m.q.answer]}</span>
+            <b>{secilen === m.q.answer ? 'Doğru.' : 'Doğrusu:'}</b> <span className="ja n5-dogru">{m.q.options[m.q.answer]}</span>
           </div>
           {m.tur === 'okuma' && m.q.fullSentence && <div className="ja small">Tam cümle: {m.q.fullSentence}</div>}
           {m.tur === 'dinleme' && <ChoukaiMetin q={m.q} />}
-          <div className="small">{m.q.explain}</div>
+          <div className="n5-aciklama">{m.q.explain}</div>
         </div>
       )}
 
