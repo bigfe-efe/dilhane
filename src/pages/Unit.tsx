@@ -4,7 +4,9 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { Badge, Chips, Sheet, SpeakBtn, TopBar } from '@/components/ui'
 import { Icon } from '@/components/icons'
 import { ExerciseRunner } from '@/components/ExerciseRunner'
-import { UNIT_BY_ID, type Unit, type UnitVocab } from '@/content/ja/units'
+import { UNIT_BY_ID, unitKanji, type Unit, type UnitVocab } from '@/content/ja/units'
+import { CHOUKAI, MONDAI, karisikKopya, type ChoukaiQ, type MockQ } from '@/content/ja/n5-mock'
+import { ChoukaiMetin, ChoukaiPlayer, MockPrompt, SecenekListesi } from '@/components/N5Soru'
 import { StrokeOrder } from '@/components/StrokeOrder'
 import { KANJI_BY_CHAR } from '@/content/ja/kanji-n5'
 import { romajiWords } from '@/lib/ja-phonetic'
@@ -19,7 +21,7 @@ import { useUnit } from '@/db/hooks'
 // kaldığı yeri bulamazdı. Sekme, "bugün hangi parçayı çalışıyorum"u da
 // netleştiriyor.
 
-type Bolum = 'hedef' | 'gramer' | 'kelime' | 'metin' | 'odev' | 'test'
+type Bolum = 'hedef' | 'gramer' | 'kelime' | 'metin' | 'odev' | 'test' | 'n5'
 
 const BOLUMLER: { id: Bolum; label: string }[] = [
   { id: 'hedef', label: 'Hedefler' },
@@ -28,6 +30,7 @@ const BOLUMLER: { id: Bolum; label: string }[] = [
   { id: 'metin', label: 'Metin' },
   { id: 'odev', label: 'Ödev' },
   { id: 'test', label: 'Test' },
+  { id: 'n5', label: 'N5 soruları' },
 ]
 
 /** Ünite kaydını oluşturur ya da günceller — her yerde aynı varsayılanlarla. */
@@ -45,14 +48,16 @@ async function kaydet(unitId: string, patch: Partial<{ homework: string[]; testB
 }
 
 /**
- * Ünite kelimelerini tekrar sistemine ekler — derslerdeki gibi iki yönlü
- * (kelime → anlam ve anlam → kelime). Var olan karta dokunmaz.
+ * Ünitenin kelimelerini ve N5 kanjilerini tekrar sistemine ekler. Kelimeler
+ * derslerdeki gibi iki yönlü (kelime → anlam ve anlam → kelime). Var olan
+ * karta dokunmaz. Eklenen kelime + kanji sayısını döndürür.
  */
 async function kelimeleriEkle(unitId: string): Promise<number> {
   const ids = unitVocabIds(unitId)
-  const eklenen = await ensureCards(ids.map((refId) => ({ kind: 'vocab' as const, refId, lang: 'ja' as const })))
+  const kelime = await ensureCards(ids.map((refId) => ({ kind: 'vocab' as const, refId, lang: 'ja' as const })))
   await ensureCards(ids.map((refId) => ({ kind: 'vocab' as const, refId, lang: 'ja' as const, reverse: true })))
-  return eklenen
+  const kanji = await ensureCards(unitKanji(unitId).map((refId) => ({ kind: 'kanji' as const, refId, lang: 'ja' as const })))
+  return kelime + kanji
 }
 
 export default function UnitPage() {
@@ -92,6 +97,7 @@ export default function UnitPage() {
         {bolum === 'metin' && <Metin unit={unit} />}
         {bolum === 'odev' && <Odev unit={unit} yapilan={prog?.homework ?? []} />}
         {bolum === 'test' && <Test unit={unit} best={prog?.testBest ?? 0} />}
+        {bolum === 'n5' && <N5Pratik key={unit.id} unit={unit} />}
       </div>
     </>
   )
@@ -241,9 +247,14 @@ function Gramer({ unit }: { unit: Unit }) {
 function Kelime({ unit }: { unit: Unit }) {
   const [acik, setAcik] = useState<UnitVocab | null>(null)
   const ids = unitVocabIds(unit.id)
-  // Kaç kelimenin kartı zaten var — düğme yalnızca eksik varsa görünür
+  const kanjiler = unitKanji(unit.id)
+  const toplamKart = ids.length + kanjiler.length
+  // Kaç kelime ve kanjinin kartı zaten var — düğme yalnızca eksik varsa görünür
   const kartli = useLiveQuery(
-    async () => (await db.cards.bulkGet(ids.map((v) => cardId('vocab', v)))).filter(Boolean).length,
+    async () =>
+      (await db.cards.bulkGet([...ids.map((v) => cardId('vocab', v)), ...kanjiler.map((k) => cardId('kanji', k))])).filter(
+        Boolean,
+      ).length,
     [unit.id],
   )
 
@@ -261,21 +272,51 @@ function Kelime({ unit }: { unit: Unit }) {
           <Icon name="repeat" size={18} style={{ color: 'var(--accent)' }} />
           <div style={{ flex: 1, minWidth: 180 }}>
             <div className="small">
-              {kartli >= ids.length ? (
-                <>Bu ünitenin {ids.length} kelimesinin hepsi tekrar listende.</>
+              {kartli >= toplamKart ? (
+                <>
+                  Bu ünitenin {ids.length} kelimesi ve {kanjiler.length} kanjisi tekrar listende.
+                </>
               ) : (
                 <>
-                  {ids.length} kelimeden {kartli} tanesi tekrar listende.
+                  {toplamKart} kelime ve kanjiden {kartli} tanesi tekrar listende.
                 </>
               )}
             </div>
-            <div className="tiny faint">Ünite testini geçince kelimeler kendiliğinden eklenir.</div>
+            <div className="tiny faint">Ünite testini geçince kelimeler ve kanjiler kendiliğinden eklenir.</div>
           </div>
-          {kartli < ids.length && (
+          {kartli < toplamKart && (
             <button className="btn btn--sm" onClick={() => void kelimeleriEkle(unit.id)}>
-              Tekrara ekle ({ids.length - kartli})
+              Tekrara ekle ({toplamKart - kartli})
             </button>
           )}
+        </div>
+      )}
+
+      {/* Ünitenin N5 kanjileri: 106 kanji 14 üniteye elle dağıtıldı; burada
+          yalnızca bu ünitenin payı. Dokununca çizim sırası açılır. */}
+      {kanjiler.length > 0 && (
+        <div className="card stack-sm">
+          <div className="row">
+            <span className="card-title">Bu ünitenin N5 kanjileri</span>
+            <div className="spacer" />
+            <span className="tiny faint tabular">{kanjiler.length}</span>
+          </div>
+          <div className="unit-kanji-row">
+            {kanjiler.map((ch) => {
+              const k = KANJI_BY_CHAR.get(ch)
+              return (
+                <button
+                  key={ch}
+                  className="unit-kanji"
+                  onClick={() => setAcik({ ja: ch, kana: ch, tr: k?.meaningsTr.join(', ') ?? '' })}
+                >
+                  <span className="ja unit-kanji-ch">{ch}</span>
+                  <span className="unit-kanji-tr">{k?.meaningsTr[0] ?? ''}</span>
+                </button>
+              )
+            })}
+          </div>
+          <div className="tiny faint">Dokun: çizim sırası, anlam ve okunuşlar.</div>
         </div>
       )}
       <div className="cols-2">
@@ -617,7 +658,7 @@ function Test({ unit, best }: { unit: Unit; best: number }) {
           {yuzde !== null && yuzde >= 70 ? (
             <div className="feedback feedback--ok small">
               Ünite tamamlandı sayılır. Sıradaki üniteye geçebilirsin.
-              {eklenen > 0 && ` Bu ünitenin ${eklenen} kelimesi tekrar listene eklendi.`}
+              {eklenen > 0 && ` Bu ünitenin ${eklenen} kelime ve kanjisi tekrar listene eklendi.`}
             </div>
           ) : (
             <div className="feedback feedback--bad small">
@@ -639,6 +680,158 @@ function Test({ unit, best }: { unit: Unit; best: number }) {
       <button className="btn btn--primary btn--block btn--lg" onClick={() => { setSonuc(null); setCalisiyor(true) }}>
         {sonuc ? 'Tekrar çöz' : 'Teste başla'}
       </button>
+    </div>
+  )
+}
+
+// ————————————————————————— N5 soruları —————————————————————————
+
+type Madde = { tur: 'okuma'; q: MockQ } | { tur: 'dinleme'; q: ChoukaiQ }
+
+/**
+ * Ünitenin konusunun gerçek N5 sınavında nasıl sorulduğu.
+ *
+ * NEDEN AYRI SEKME: ünite testi öğrenmeyi ölçer (Türkçe sorular, yazarak
+ * cevap). Sınav ise bambaşka bir biçimde sorar: tamamen Japonca, dört şıklı,
+ * altı çizili kelime, ★ sıralama, bir kez çalan ses. Biçime alışmak ayrı bir
+ * beceri; sınav gününe bırakılınca puan kaybettiriyor. Buradaki sorular
+ * deneme sınavının havuzunda da var.
+ */
+function N5Pratik({ unit }: { unit: Unit }) {
+  const [liste, setListe] = useState<Madde[] | null>(null)
+  const [i, setI] = useState(0)
+  const [secilen, setSecilen] = useState<number | undefined>()
+  const [dogru, setDogru] = useState(0)
+  const [yanlislar, setYanlislar] = useState<Madde[]>([])
+
+  const okuma = unit.n5 ?? []
+  const dinleme = unit.choukai ?? []
+
+  const basla = () => {
+    setListe([
+      ...okuma.map((q) => ({ tur: 'okuma' as const, q: karisikKopya(q) })),
+      ...dinleme.map((q) => ({ tur: 'dinleme' as const, q: karisikKopya(q) })),
+    ])
+    setI(0)
+    setSecilen(undefined)
+    setDogru(0)
+    setYanlislar([])
+  }
+
+  if (!liste) {
+    const tipler = [
+      ...new Set([...okuma.map((q) => `${MONDAI[q.mondai].jp} · ${MONDAI[q.mondai].title}`), ...dinleme.map((q) => `${CHOUKAI[q.mondai].jp} · ${CHOUKAI[q.mondai].title} (dinleme)`)]),
+    ]
+    return (
+      <div className="stack">
+        <div className="card stack-sm">
+          <div className="card-title">Sınavda böyle sorulur</div>
+          <div className="small">
+            Bu ünitenin konusu, gerçek N5 sınavının soru biçiminde: tamamen Japonca, dört şıklı, altı çizili kelimeler,
+            ★ ile cümle kurma ve dinleme. Ünite testi konuyu <b>öğrendin mi</b> diye bakar; burası <b>sınavda
+            tanıyabilecek misin</b> diye.
+          </div>
+          <ul className="tight small">
+            {tipler.map((t) => (
+              <li key={t}>
+                <span className="ja">{t}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="tiny faint">
+            {okuma.length} okuma + {dinleme.length} dinleme sorusu. Aynı sorular deneme sınavının havuzunda da var.
+          </div>
+        </div>
+        <button className="btn btn--primary btn--block btn--lg" onClick={basla} disabled={okuma.length + dinleme.length === 0}>
+          Başla
+        </button>
+      </div>
+    )
+  }
+
+  if (i >= liste.length) {
+    return (
+      <div className="stack">
+        <div className="card card--pad-lg center stack">
+          <div style={{ fontSize: '2.4rem', fontWeight: 700 }}>
+            {dogru} / {liste.length}
+          </div>
+          <div className="dim">N5 biçimindeki sorular</div>
+        </div>
+        {yanlislar.length > 0 && (
+          <div className="stack-sm">
+            <h2>Kaçırdıkların</h2>
+            {yanlislar.map((m) => (
+              <div key={m.q.id} className="card stack-sm">
+                {m.tur === 'okuma' ? <MockPrompt text={m.q.prompt} /> : <ChoukaiMetin q={m.q} />}
+                <div className="tiny">
+                  <span className="faint">doğrusu: </span>
+                  <b className="ja" style={{ color: 'var(--ok)' }}>
+                    {m.q.options[m.q.answer]}
+                  </b>
+                </div>
+                <div className="exam-explain">{m.q.explain}</div>
+              </div>
+            ))}
+          </div>
+        )}
+        <button className="btn btn--primary btn--block" onClick={basla}>
+          Tekrar çöz
+        </button>
+      </div>
+    )
+  }
+
+  const m = liste[i]
+  const bilgi = m.tur === 'okuma' ? MONDAI[m.q.mondai] : CHOUKAI[m.q.mondai]
+  const cevaplandi = secilen !== undefined
+
+  const sec = (k: number) => {
+    if (cevaplandi) return
+    setSecilen(k)
+    if (k === m.q.answer) setDogru((d) => d + 1)
+    else setYanlislar((y) => [...y, m])
+  }
+
+  return (
+    <div className="stack">
+      <div className="row tiny faint">
+        <span>
+          {m.tur === 'dinleme' ? 'Dinleme · ' : ''}
+          {bilgi.title} <span className="ja">{bilgi.jp}</span>
+        </span>
+        <div className="spacer" />
+        <span className="tabular">
+          {i + 1} / {liste.length}
+        </span>
+      </div>
+      <div className="tiny dim">{bilgi.howto}</div>
+
+      {m.tur === 'okuma' ? <MockPrompt text={m.q.prompt} /> : <ChoukaiPlayer key={m.q.id} q={m.q} />}
+      <SecenekListesi q={m.q} secili={secilen} onSec={sec} acik={cevaplandi} />
+
+      {cevaplandi && (
+        <div className={`feedback ${secilen === m.q.answer ? 'feedback--ok' : 'feedback--bad'} stack-sm`}>
+          <div>
+            <b>{secilen === m.q.answer ? 'Doğru.' : 'Doğrusu:'}</b> <span className="ja">{m.q.options[m.q.answer]}</span>
+          </div>
+          {m.tur === 'okuma' && m.q.fullSentence && <div className="ja small">Tam cümle: {m.q.fullSentence}</div>}
+          {m.tur === 'dinleme' && <ChoukaiMetin q={m.q} />}
+          <div className="small">{m.q.explain}</div>
+        </div>
+      )}
+
+      {cevaplandi && (
+        <button
+          className="btn btn--primary btn--block"
+          onClick={() => {
+            setI(i + 1)
+            setSecilen(undefined)
+          }}
+        >
+          {i + 1 >= liste.length ? 'Sonucu gör' : 'Sonraki'}
+        </button>
+      )}
     </div>
   )
 }

@@ -82,6 +82,8 @@ export const u7: Unit = {
     { ja: '小さい', kana: 'ちいさい', tr: 'küçük' },
     { ja: '新しい', kana: 'あたらしい', tr: 'yeni' },
     { ja: '古い', kana: 'ふるい', tr: 'eski' },
+    { ja: '白い', kana: 'しろい', tr: 'beyaz' },
+    { ja: '長い', kana: 'ながい', tr: 'uzun' },
     { ja: '高い', kana: 'たかい', tr: 'pahalı, yüksek' },
     { ja: '安い', kana: 'やすい', tr: 'ucuz' },
     { ja: 'おいしい', kana: 'おいしい', tr: 'lezzetli' },

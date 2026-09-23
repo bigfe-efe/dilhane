@@ -7,7 +7,7 @@ import { KANJI_SENTENCES, type KanjiSentence, type Tok } from '@/content/ja/kanj
 import { KANJI_BY_CHAR } from '@/content/ja/kanji-n5'
 import { acceptsJa } from '@/lib/answer'
 import { shuffle } from '@/lib/shuffle'
-import { bumpStat } from '@/db/db'
+import { bumpStat, ensureCards } from '@/db/db'
 
 // Kanji testi — cümlede boşluk doldurma.
 //
@@ -115,6 +115,9 @@ export default function KanjiTestPage() {
     setSkor((s) => s + (ok ? 1 : 0))
     if (!ok) setYanlislar((y) => [...y, q])
     bumpStat({ reviews: 1, correct: ok ? 1 : 0, ja: 1 })
+    // Kaçırılan kanji tekrar listesine girer; testte yanlış yapılan kanji
+    // önceden hiçbir yere kaydedilmiyordu.
+    if (!ok) void ensureCards([{ kind: 'kanji', refId: q.kanji, lang: 'ja' }])
   }
 
   const ileri = () => {
@@ -213,6 +216,9 @@ export default function KanjiTestPage() {
           {yanlislar.length > 0 && (
             <div className="stack-sm">
               <h2>Yanlışların</h2>
+              <div className="tiny faint" style={{ marginTop: -4 }}>
+                Bu kanjiler tekrar listene eklendi; birkaç gün içinde Tekrar sekmesinde yeniden karşına çıkacaklar.
+              </div>
               {yanlislar.map((y) => (
                 <div key={y.kanji} className="card stack-sm">
                   <div className="row">

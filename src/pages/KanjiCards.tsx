@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Chips, SpeakBtn, TopBar } from '@/components/ui'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { cardId, db, ensureCards } from '@/db/db'
+import { UNIT_BY_ID, kanjiUnit } from '@/content/ja/units'
 import { StrokeOrder } from '@/components/StrokeOrder'
 import { KANJI_CARDS, KANJI_CARD_SETS, type KanjiCard } from '@/content/ja/kanji-cards'
 import { SENTENCE_BY_KANJI } from '@/content/ja/kanji-sentences'
@@ -43,6 +46,12 @@ export default function KanjiCardsPage() {
     [set],
   )
 
+  // Tekrar listesindeki kanjiler. Kartlar önceden tekrar sistemine hiç
+  // bağlı değildi: burada öğrenilen kanji bir daha karşına çıkmıyordu.
+  const tekrarda = new Set(useLiveQuery(() => db.cards.where('kind').equals('kanji').primaryKeys(), [], []) as string[])
+  const eksik = liste.filter((c) => !tekrarda.has(cardId('kanji', c.k.char)))
+  const ekle = (chars: string[]) => void ensureCards(chars.map((refId) => ({ kind: 'kanji' as const, refId, lang: 'ja' as const })))
+
   return (
     <>
       <TopBar title="N5 kanji kartları" sub={`${KANJI_CARDS.length} kanji · yalnızca N5`} back="/calis" />
@@ -77,9 +86,30 @@ export default function KanjiCardsPage() {
           </div>
         </div>
 
+        <div className="card row" style={{ gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <div className="small">
+              {eksik.length === 0
+                ? `Bu setin ${liste.length} kanjisinin hepsi tekrar listende.`
+                : `${liste.length} kanjiden ${liste.length - eksik.length} tanesi tekrar listende.`}
+            </div>
+            <div className="tiny faint">Ünite testini geçince o ünitenin kanjileri de kendiliğinden eklenir.</div>
+          </div>
+          {eksik.length > 0 && (
+            <button className="btn btn--sm" onClick={() => ekle(eksik.map((c) => c.k.char))}>
+              Hepsini tekrara ekle ({eksik.length})
+            </button>
+          )}
+        </div>
+
         <div className="kc-list">
           {liste.map((c) => (
-            <KanjiCardView key={c.k.char} c={c} />
+            <KanjiCardView
+              key={c.k.char}
+              c={c}
+              tekrarda={tekrarda.has(cardId('kanji', c.k.char))}
+              onEkle={() => ekle([c.k.char])}
+            />
           ))}
         </div>
       </div>
@@ -104,8 +134,9 @@ function Marked({ term, char }: { term: string; char: string }) {
   )
 }
 
-function KanjiCardView({ c }: { c: KanjiCard }) {
+function KanjiCardView({ c, tekrarda, onEkle }: { c: KanjiCard; tekrarda: boolean; onEkle: () => void }) {
   const { k } = c
+  const unite = UNIT_BY_ID.get(kanjiUnit(k.char) ?? '')
   const okunus = (k.kun[0] ?? k.on[0] ?? '').replace(/-/g, '')
   const cumle = SENTENCE_BY_KANJI.get(k.char)
 
@@ -118,6 +149,18 @@ function KanjiCardView({ c }: { c: KanjiCard }) {
         </h2>
         <div className="spacer" />
         <span className="tiny faint">{c.setTitle}</span>
+        {unite && (
+          <Link to={`/unite/${unite.id}?b=kelime`} className="badge tiny" title={unite.title}>
+            Ünite {unite.no}
+          </Link>
+        )}
+        {tekrarda ? (
+          <span className="badge badge--ok tiny">tekrarda</span>
+        ) : (
+          <button className="btn btn--sm btn--ghost" onClick={onEkle}>
+            Tekrara ekle
+          </button>
+        )}
         <SpeakBtn text={k.char} lang="ja" reading={okunus} />
       </header>
 

@@ -14,12 +14,14 @@ import { shuffle } from '@/lib/shuffle'
 //   Toplam 0-180. GEÇMEK İÇİN ÜÇ ŞART BİRDEN: toplam ≥ 80, birinci bölüm ≥ 38,
 //   dinleme ≥ 19. Birinden kalırsan toplam yetse bile geçemezsin.
 //
-// DİNLEME NEDEN YOK:
-// Bu cihazda Japonca konuşma sesi kurulu değil; uygulama Türkçe yaklaşık
-// okumaya düşüyor. Yanlış telaffuzla dinleme sınavı yapmak ölçmez, yanlış
-// öğretir. O yüzden dinleme bölümü UYDURULMADI — sonuçta 120 üzerinden
-// değerlendirme yapılıyor ve dinlemenin ayrıca çalışılması gerektiği açıkça
-// söyleniyor.
+// DİNLEME: önceden yoktu, çünkü cihazda Japonca ses kurulu değildi ve
+// Türkçe yaklaşık okumayla dinleme sınavı yapmak yanlış öğretirdi. Japonca
+// ses kurulunca üçüncü bölüm eklendi; ses yoksa bölüm yine kapalı kalır
+// ve puan 120 üzerinden verilir.
+//
+// HAVUZ: her deneme, gerçek sınavdaki soru sayılarıyla (MOCK_SAYILARI)
+// havuzdan rastgele kurulur — ünitelerin N5 soruları da havuza girer. Önceden
+// tek bir 45 soruluk set vardı; ikinci denemede sorular ezberlenmiş oluyordu.
 //
 // SORULAR: gerçek sınav sorularının kopyası değildir (telif). Sınavın soru
 // TİPLERİ taklit edilmiştir; cümleler bu uygulamaya özgü yazılmıştır.
@@ -34,7 +36,7 @@ export type MondaiId =
   | 'bunshou'
   | 'dokkai'
 
-export type SectionId = 'moji-goi' | 'bunpou-dokkai'
+export type SectionId = 'moji-goi' | 'bunpou-dokkai' | 'choukai'
 
 export const SECTIONS: Record<SectionId, { title: string; jp: string; minutes: number; desc: string }> = {
   'moji-goi': {
@@ -48,6 +50,12 @@ export const SECTIONS: Record<SectionId, { title: string; jp: string; minutes: n
     jp: '言語知識（文法）・読解',
     minutes: 40,
     desc: 'Dilbilgisi biçimleri, cümle kurma, metin içi boşluk ve okuduğunu anlama',
+  },
+  choukai: {
+    title: 'Dinleme',
+    jp: '聴解',
+    minutes: 30,
+    desc: 'Görevi anlama, ana nokta, ne denir, hızlı cevap',
   },
 }
 
@@ -132,6 +140,71 @@ export interface Passage {
   body: string
   /** Kısa bilgi metni mi (ilan/tablo) yoksa düz metin mi */
   kind: 'metin' | 'ilan'
+}
+
+// ————————————————————————— Dinleme (聴解) —————————————————————————
+//
+// Gerçek sınavın dört dinleme tipi. Ses cihazın Japonca konuşma motorundan
+// geliyor; iki kişilik diyaloglarda kadın ve erkek ayrı seslendiriliyor.
+// Sınavdaki resimlerin yerine sahne Türkçe yazılıyor (`scene`).
+
+export type ChoukaiId = 'kadai' | 'point' | 'hatsuwa' | 'sokuji'
+
+export const CHOUKAI: Record<ChoukaiId, { no: number; title: string; jp: string; count: number; howto: string }> = {
+  kadai: {
+    no: 1,
+    title: 'Görevi anlama',
+    jp: '課題理解',
+    count: 7,
+    howto: 'Önce soruyu duy, sonra konuşmayı dinle: kişi bundan sonra NE YAPACAK?',
+  },
+  point: {
+    no: 2,
+    title: 'Ana noktayı anlama',
+    jp: 'ポイント理解',
+    count: 6,
+    howto: 'Soruyu duy, konuşmada istenen bilgiyi (ne zaman, nerede, neden) yakala.',
+  },
+  hatsuwa: {
+    no: 3,
+    title: 'Ne denir?',
+    jp: '発話表現',
+    count: 5,
+    howto: 'Durumu oku, üç söyleyişi dinle: bu durumda hangisi söylenir?',
+  },
+  sokuji: {
+    no: 4,
+    title: 'Hızlı cevap',
+    jp: '即時応答',
+    count: 6,
+    howto: 'Kısa bir cümle duyacaksın; ona verilecek en uygun cevabı seç.',
+  },
+}
+
+export interface ChoukaiLine {
+  /** Konuşan: M erkek, F kadın, N anlatıcı */
+  s?: 'M' | 'F' | 'N'
+  ja: string
+  kana?: string
+}
+
+export interface ChoukaiQ {
+  id: string
+  mondai: ChoukaiId
+  /** Sınavdaki resmin yerine ekranda yazan durum (Türkçe) */
+  scene?: string
+  /** Dinlenecek metin; soru metnin başında ve sonunda anlatıcıyla okunur */
+  script: ChoukaiLine[]
+  /** Anlatıcının sorusu — kadai/point'te baştan duyulur */
+  question?: ChoukaiLine
+  options: string[]
+  answer: number
+  /**
+   * Seçenekler de sesli okunur ve ekranda yalnız numaraları görünür —
+   * 発話表現 ve 即時応答'da gerçek sınavda da seçenekler yazılı değildir.
+   */
+  spokenOptions?: boolean
+  explain: string
 }
 
 // ————————————————————————— Okuma metinleri —————————————————————————
@@ -583,54 +656,98 @@ export const BANK: MockQ[] = [
 
 // ————————————————————————— Sınav kurma —————————————————————————
 
+/**
+ * Gerçek N5 sınavındaki soru sayıları (2020 sonrası biçim).
+ * Okuma metinleri (文章の文法, 読解) metne bağlı olduğu için havuzdaki
+ * hepsi alınır; diğer tipler bu sayılara göre rastgele seçilir.
+ */
+export const MOCK_SAYILARI: Partial<Record<MondaiId, number>> = {
+  'kanji-yomi': 7,
+  hyouki: 5,
+  bunmyaku: 6,
+  iikae: 3,
+  bunpou1: 9,
+  bunpou2: 4,
+}
+
 export interface MockSectionPlan {
   section: SectionId
+  /** Okuma bölümlerinin soruları */
   questions: MockQ[]
+  /** Dinleme bölümünün soruları */
+  listening: ChoukaiQ[]
   minutes: number
+}
+
+export interface MockHavuz {
+  okuma: MockQ[]
+  dinleme: ChoukaiQ[]
+}
+
+const karistir = <T extends { options: string[]; answer: number }>(q: T): T => {
+  const dogru = q.options[q.answer]
+  const yeni = shuffle(q.options)
+  return { ...q, options: yeni, answer: yeni.indexOf(dogru) }
 }
 
 /**
  * Deneme sınavını kurar.
  *
- * Sorular MONDAI sırasına göre dizilir (gerçek sınavda da öyledir); yalnızca
- * ŞIKLAR karıştırılır. Soru sırasını karıştırmak sınav hissini bozardı çünkü
- * gerçek sınavda kolaydan zora bir düzen vardır.
+ * Sorular MONDAI sırasına göre dizilir (gerçek sınavda da öyledir); tip
+ * içinde hangi soruların geleceği ve ŞIKLAR karıştırılır. Soru SIRASINI
+ * tamamen karıştırmak sınav hissini bozardı: gerçek sınav tip tip ilerler.
  */
-export function buildMock(): MockSectionPlan[] {
-  const karistir = (q: MockQ): MockQ => {
-    const dogru = q.options[q.answer]
-    const yeni = shuffle(q.options)
-    return { ...q, options: yeni, answer: yeni.indexOf(dogru) }
+export function buildMock(havuz: MockHavuz, dinlemeli = true): MockSectionPlan[] {
+  const hepsi = [...BANK, ...havuz.okuma]
+  const secilen: MockQ[] = []
+  for (const m of Object.keys(MONDAI) as MondaiId[]) {
+    const tip = hepsi.filter((q) => q.mondai === m)
+    const n = MOCK_SAYILARI[m]
+    secilen.push(...(n === undefined ? tip : shuffle(tip).slice(0, n)))
   }
-
   const sirala = (a: MockQ, b: MockQ) => MONDAI[a.mondai].no - MONDAI[b.mondai].no
 
-  return (Object.keys(SECTIONS) as SectionId[]).map((s) => ({
+  const plan: MockSectionPlan[] = (['moji-goi', 'bunpou-dokkai'] as SectionId[]).map((s) => ({
     section: s,
     minutes: SECTIONS[s].minutes,
-    questions: BANK.filter((q) => MONDAI[q.mondai].section === s)
-      .sort(sirala)
-      .map(karistir),
+    questions: secilen.filter((q) => MONDAI[q.mondai].section === s).sort(sirala).map(karistir),
+    listening: [],
   }))
+
+  if (dinlemeli && havuz.dinleme.length) {
+    const dinleme: ChoukaiQ[] = []
+    for (const m of Object.keys(CHOUKAI) as ChoukaiId[]) {
+      dinleme.push(...shuffle(havuz.dinleme.filter((q) => q.mondai === m)).slice(0, CHOUKAI[m].count))
+    }
+    plan.push({ section: 'choukai', minutes: SECTIONS.choukai.minutes, questions: [], listening: dinleme.map(karistir) })
+  }
+  return plan
+}
+
+/** Tek bir alıştırma için şıkları karıştırılmış kopya — ünite sayfası da kullanıyor */
+export function karisikKopya<T extends { options: string[]; answer: number }>(q: T): T {
+  return karistir(q)
 }
 
 // ————————————————————————— Puanlama —————————————————————————
 
 export interface MockResult {
-  /** Ham doğru sayısı */
+  /** Dil bilgisi + okuma: ham doğru ve 0-120 ölçek */
   correct: number
   total: number
-  /** 0-120 ölçeğine çevrilmiş puan */
   scaled: number
   /** Bölüm barajı (38) geçildi mi */
   sectionPass: boolean
-  /** Toplam baraj tahmini — dinleme olmadan kesin söylenemez */
+  /** Dinleme: ham doğru ve 0-60 ölçek; dinleme yoksa null */
+  listening: { correct: number; total: number; scaled: number; pass: boolean } | null
+  /** 180 üzerinden toplam (dinleme yoksa null) */
+  totalScaled: number | null
   verdict: { title: string; text: string; tone: 'ok' | 'warn' | 'bad' }
-  byMondai: { mondai: MondaiId; correct: number; total: number }[]
+  byMondai: { mondai: MondaiId | ChoukaiId; correct: number; total: number }[]
 }
 
 /**
- * Puanı 120'lik ölçeğe çevirir.
+ * Puanı ölçekler ve üç barajı birlikte değerlendirir.
  *
  * Gerçek JLPT "ölçekli puan" kullanır: ham doğru sayısı doğrudan puana
  * çevrilmez, soru zorluğuna göre istatistiksel bir dönüşüm uygulanır. Onu
@@ -638,44 +755,53 @@ export interface MockResult {
  * kullanıcıya söyleniyor. Amaç kesin puan kestirmek değil, hazır olup
  * olmadığını görmek.
  */
-export function scoreMock(answers: Map<string, number>, questions: MockQ[]): MockResult {
+export function scoreMock(answers: Map<string, number>, questions: MockQ[], listening: ChoukaiQ[] = []): MockResult {
   const correct = questions.filter((q) => answers.get(q.id) === q.answer).length
   const total = questions.length
   const scaled = Math.round((correct / Math.max(1, total)) * 120)
   const sectionPass = scaled >= 38
 
-  const mondailer = [...new Set(questions.map((q) => q.mondai))]
-  const byMondai = mondailer.map((m) => {
-    const qs = questions.filter((q) => q.mondai === m)
-    return { mondai: m, correct: qs.filter((q) => answers.get(q.id) === q.answer).length, total: qs.length }
-  })
+  let dinleme: MockResult['listening'] = null
+  if (listening.length) {
+    const d = listening.filter((q) => answers.get(q.id) === q.answer).length
+    const ds = Math.round((d / listening.length) * 60)
+    dinleme = { correct: d, total: listening.length, scaled: ds, pass: ds >= 19 }
+  }
+  const totalScaled = dinleme ? scaled + dinleme.scaled : null
 
-  let verdict: MockResult['verdict']
-  if (scaled >= 90) {
-    verdict = {
-      title: 'Bu bölüm hazır',
-      text: 'Okuma ve dilbilgisi tarafında sınavı rahat geçecek düzeydesin. Kalan riski dinleme oluşturuyor — onu ayrıca çalışman gerekiyor.',
-      tone: 'ok',
-    }
-  } else if (scaled >= 60) {
-    verdict = {
-      title: 'Baraj güvende, ama pay az',
-      text: 'Bölüm barajını (38) rahat geçiyorsun. Toplam 80 puanı tutturmak için dinlemeden de puan gerekiyor; eksik konuları kapat.',
-      tone: 'ok',
-    }
-  } else if (scaled >= 38) {
-    verdict = {
-      title: 'Barajın hemen üstü',
-      text: 'Bölüm barajını geçiyorsun ama ancak. Bu seviyeyle toplam 80’i tutturmak zor — aşağıdaki zayıf bölümlere çalış.',
-      tone: 'warn',
-    }
-  } else {
-    verdict = {
-      title: 'Bölüm barajının altında',
-      text: 'Bu haliyle toplam puan yetse bile sınavdan kalınır: bu bölümün kendi barajı 38’dir. Önce dilbilgisi ve kelime temelini tamamla.',
-      tone: 'bad',
-    }
+  const byMondai: MockResult['byMondai'] = []
+  for (const m of [...new Set(questions.map((q) => q.mondai))]) {
+    const qs = questions.filter((q) => q.mondai === m)
+    byMondai.push({ mondai: m, correct: qs.filter((q) => answers.get(q.id) === q.answer).length, total: qs.length })
+  }
+  for (const m of [...new Set(listening.map((q) => q.mondai))]) {
+    const qs = listening.filter((q) => q.mondai === m)
+    byMondai.push({ mondai: m, correct: qs.filter((q) => answers.get(q.id) === q.answer).length, total: qs.length })
   }
 
-  return { correct, total, scaled, sectionPass, verdict, byMondai }
+  let verdict: MockResult['verdict']
+  if (dinleme && totalScaled !== null) {
+    const gecti = totalScaled >= 80 && sectionPass && dinleme.pass
+    if (gecti && totalScaled >= 110) {
+      verdict = { title: 'Geçer — rahat bir payla', text: 'Üç barajın üçünü de geçtin ve toplamın 80’in epey üstünde. Bu tempoyu sınava kadar koru.', tone: 'ok' }
+    } else if (gecti) {
+      verdict = { title: 'Geçer, ama pay az', text: 'Üç baraj da tutuyor ama toplam 80’e yakın. Sınav günü küçük bir düşüş seni barajın altına çekebilir; zayıf tiplere çalış.', tone: 'warn' }
+    } else if (!sectionPass) {
+      verdict = { title: 'Dil bilgisi barajının altında', text: 'Bu bölümün kendi barajı 38. Toplam ne olursa olsun bu haliyle kalınır — önce kelime ve dilbilgisi temelini tamamla.', tone: 'bad' }
+    } else if (!dinleme.pass) {
+      verdict = { title: 'Dinleme barajının altında', text: 'Dinlemenin kendi barajı 19. Diğer bölüm ne kadar iyi olursa olsun bu haliyle kalınır. Her gün 10 dakika dinleme alıştırması yap.', tone: 'bad' }
+    } else {
+      verdict = { title: 'Toplam 80’in altında', text: 'Bölüm barajlarını geçiyorsun ama toplam yetmiyor. Aşağıdaki en zayıf tiplere odaklan.', tone: 'bad' }
+    }
+  } else if (scaled >= 90) {
+    verdict = { title: 'Bu bölüm hazır', text: 'Okuma ve dilbilgisi tarafında rahatsın. Dinleme bölümü bu denemede yoktu — onu ayrıca ölç.', tone: 'ok' }
+  } else if (scaled >= 60) {
+    verdict = { title: 'Baraj güvende, ama pay az', text: 'Bölüm barajını (38) rahat geçiyorsun. Toplam 80 için dinlemeden de puan gerekiyor; eksik konuları kapat.', tone: 'ok' }
+  } else if (scaled >= 38) {
+    verdict = { title: 'Barajın hemen üstü', text: 'Bölüm barajını geçiyorsun ama ancak. Bu seviyeyle toplam 80’i tutturmak zor — aşağıdaki zayıf tiplere çalış.', tone: 'warn' }
+  } else {
+    verdict = { title: 'Bölüm barajının altında', text: 'Bu bölümün kendi barajı 38. Önce dilbilgisi ve kelime temelini tamamla.', tone: 'bad' }
+  }
+
+  return { correct, total, scaled, sectionPass, listening: dinleme, totalScaled, verdict, byMondai }
 }

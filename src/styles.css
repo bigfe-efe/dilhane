@@ -3613,6 +3613,49 @@ ul.tight li {
 .ct-note { font-size: 0.8rem; color: var(--text-dim); flex: 1; min-width: 160px; }
 .ct-q { font-size: clamp(2.4rem, 8vw, 3.4rem); font-weight: 650; line-height: 1.2; }
 
+/* ————— N5 biçimindeki sorular ————— */
+.n5-under { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 5px; text-decoration-color: var(--accent); }
+.n5-blank {
+  display: inline-block; width: 2.2em; height: 1.2em; margin: 0 3px; vertical-align: -0.2em;
+  border-bottom: 2px solid var(--line-strong);
+}
+.n5-star { color: var(--warn); font-weight: 700; margin: 0 4px; }
+.n5-scene {
+  font-size: 0.95rem; line-height: 1.5; padding: 10px 12px; border-radius: 10px;
+  background: var(--bg-elev-2); border-left: 3px solid var(--accent); text-align: left; width: 100%;
+}
+/* Sesli şıklar: cevap verilene kadar yalnızca numara (sınavdaki gibi) */
+.n5-num-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; }
+.option.n5-num { justify-content: center; padding: 18px 0; }
+.option.n5-num .key { width: 40px; height: 40px; font-size: 1.1rem; }
+.n5-transcript { padding: 8px 10px; border-radius: 10px; background: var(--bg-elev-2); }
+
+/* Üniteler: N5 kapsamı ve haritası */
+.unit-n5-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.unit-n5-stats > div { display: grid; padding: 8px 10px; border-radius: 10px; background: var(--bg-elev-2); }
+.unit-n5-stats b { font-size: 1.35rem; }
+.unit-n5-stats span { font-size: 0.75rem; color: var(--text-dim); }
+.unit-map { display: grid; gap: 4px; }
+.unit-map-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: center;
+  padding: 7px 10px; border-radius: 10px; background: var(--bg-elev-2); color: inherit; text-decoration: none;
+}
+.unit-map-row .badge { grid-row: 1 / span 2; grid-column: 2; }
+.unit-map-row.is-done { opacity: 0.6; }
+.unit-map-row:hover { outline: 1px solid var(--accent); }
+.unit-map-yapi { font-size: 0.95rem; font-weight: 600; }
+
+/* Ünitenin N5 kanjileri */
+.unit-kanji-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.unit-kanji {
+  display: grid; justify-items: center; gap: 1px; min-width: 64px; padding: 8px 6px;
+  border-radius: 10px; border: 1px solid var(--line); background: var(--bg-elev-2);
+  color: inherit; font: inherit; cursor: pointer;
+}
+.unit-kanji:hover { border-color: var(--accent); }
+.unit-kanji-ch { font-size: 1.9rem; font-weight: 600; line-height: 1.15; }
+.unit-kanji-tr { font-size: 0.7rem; color: var(--text-dim); max-width: 72px; text-align: center; line-height: 1.2; }
+
 /* ————— Temel bilgiler ————— */
 .tb-star { color: var(--warn); font-weight: 700; font-size: 0.95rem; line-height: 1; flex: none; }
 .tb-table { display: grid; gap: 4px; }

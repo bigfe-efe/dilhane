@@ -1,4 +1,5 @@
 import type { Exercise, Skill } from '@/types'
+import type { ChoukaiQ, MockQ } from '../n5-mock'
 
 /**
  * Üniteler — uygulamanın ana öğrenme yolu.
@@ -103,6 +104,14 @@ export interface Unit {
   test: Exercise[]
   /** İlgili Genki dersleri — ders oynatıcısında açılır */
   lessonIds?: string[]
+  /**
+   * Gerçek N5 soru biçimindeki sorular (okuma bölümü). Ünite dosyasında
+   * değil `n5-sorulari.ts` içinde yazılıyor ve index'te birleşiyor: hepsi
+   * deneme sınavının havuzuna da giriyor, tek yerde durmaları gerekiyor.
+   */
+  n5?: MockQ[]
+  /** Gerçek N5 biçimindeki dinleme soruları */
+  choukai?: ChoukaiQ[]
 }
 
 // ————————————————————————— Alıştırma yardımcıları —————————————————————————

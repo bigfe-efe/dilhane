@@ -127,6 +127,7 @@ export function speechMode(lang: Lang, text = ''): SpeechMode {
 let currentAudio: HTMLAudioElement | null = null
 
 export function stopSpeaking(): void {
+  diziNo++
   if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel()
   if (currentAudio) {
     currentAudio.pause()
@@ -143,13 +144,27 @@ export interface SpeakOptions {
    * verilmezse kanji sessiz kalır.
    */
   reading?: string
+  /**
+   * Konuşan: M erkek, F kadın, N anlatıcı. Dinleme sorularında iki kişilik
+   * diyaloğun tek sesle okunması kimin ne dediğini ayırt etmeyi imkânsız
+   * kılıyordu. Cihazda iki Japonca ses varsa ikisi kullanılır, tek ses varsa
+   * ses perdesiyle ayrılır.
+   */
+  speaker?: 'M' | 'F' | 'N'
 }
 
-function utter(text: string, locale: string, voice: SpeechSynthesisVoice | undefined, rate: number): Promise<void> {
+function utter(
+  text: string,
+  locale: string,
+  voice: SpeechSynthesisVoice | undefined,
+  rate: number,
+  pitch = 1,
+): Promise<void> {
   return new Promise<void>((resolve) => {
     const u = new SpeechSynthesisUtterance(text)
     u.lang = locale
     u.rate = rate
+    u.pitch = pitch
     if (voice) u.voice = voice
     u.addEventListener('end', () => resolve(), { once: true })
     u.addEventListener('error', () => resolve(), { once: true })
@@ -194,7 +209,8 @@ export async function speak(text: string, lang: Lang, opts: SpeakOptions = {}): 
 
   const native = pickVoice(lang)
   if (native) {
-    await utter(text, LOCALE[lang], native, rate)
+    const { voice, pitch } = speakerVoice(lang, opts.speaker, native)
+    await utter(text, LOCALE[lang], voice, rate, pitch)
     return 'native'
   }
 
@@ -213,6 +229,53 @@ export async function speak(text: string, lang: Lang, opts: SpeakOptions = {}): 
   }
 
   return 'none'
+}
+
+/** Windows, macOS ve Android'deki erkek Japonca seslerin adları */
+const ERKEK_SES = /ichiro|keita|otoya|daichi|naoki|hattori|male|男性/i
+
+/**
+ * Konuşana göre ses. Kadın ve erkek için FARKLI ses varsa onlar, yoksa aynı
+ * ses farklı perdeyle — ayırt edilebilir olması yeter.
+ */
+function speakerVoice(
+  lang: Lang,
+  speaker: SpeakOptions['speaker'],
+  base: SpeechSynthesisVoice,
+): { voice: SpeechSynthesisVoice; pitch: number } {
+  if (!speaker || speaker === 'N') return { voice: base, pitch: 1 }
+  const list = voicesFor(lang)
+  const erkek = list.filter((v) => ERKEK_SES.test(v.name))
+  const kadin = list.filter((v) => !ERKEK_SES.test(v.name))
+  if (speaker === 'M') {
+    const v = erkek.find((x) => x.localService) ?? erkek[0]
+    return v ? { voice: v, pitch: 1 } : { voice: base, pitch: 0.75 }
+  }
+  const v = kadin.find((x) => x.localService && x !== base) ?? kadin.find((x) => x !== base) ?? kadin[0]
+  return v ? { voice: v, pitch: erkek.length ? 1 : 1.2 } : { voice: base, pitch: 1.2 }
+}
+
+/** stopSpeaking her çağrıldığında artar; süren bir diyaloğu yarıda keser */
+let diziNo = 0
+
+/**
+ * Çok satırlı metni sırayla okur (dinleme sorusu: diyalog + soru).
+ * Satırlar arasında kısa bir es verilir — gerçek sınavda da öyle.
+ */
+export async function speakScript(
+  lines: { ja: string; kana?: string; s?: 'M' | 'F' | 'N' }[],
+  lang: Lang,
+  opts: { rate?: number; pauseMs?: number } = {},
+): Promise<void> {
+  stopSpeaking()
+  const benim = ++diziNo
+  await new Promise((r) => setTimeout(r, 60))
+  for (const l of lines) {
+    if (benim !== diziNo) return
+    await speak(l.ja, lang, { rate: opts.rate, reading: l.kana, speaker: l.s, interrupt: false })
+    if (benim !== diziNo) return
+    await new Promise((r) => setTimeout(r, opts.pauseMs ?? 450))
+  }
 }
 
 export function setRate(lang: Lang, rate: number): void {
