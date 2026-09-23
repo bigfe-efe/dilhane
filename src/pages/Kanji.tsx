@@ -121,8 +121,8 @@ function KanjiSheet({ k, onClose }: { k: KanjiChar; onClose: () => void }) {
                     <div className="ja" style={{ fontSize: '1.2rem', fontWeight: 600 }}>
                       {w.term}
                     </div>
-                    <div className="reading">{w.reading}</div>
                     <div className="romaji"><RomajiText reading={w.reading} /></div>
+                    <div className="reading">{w.reading}</div>
                     <div className="small dim" style={{ marginTop: 3 }}>
                       {w.tr}
                     </div>

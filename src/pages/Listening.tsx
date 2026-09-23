@@ -166,8 +166,8 @@ export default function ListeningPage() {
                     <div className="small">
                       <b>{y.dogru}</b>
                     </div>
-                    <div className="ja tiny faint">{y.kana}</div>
                     <div className="tiny tb-latin-line">{y.latin}</div>
+                    <div className="ja tiny faint">{y.kana}</div>
                   </div>
                 </div>
               ))}
@@ -246,8 +246,8 @@ export default function ListeningPage() {
             <div>
               <b>{dogruMu ? 'Doğru.' : 'Doğrusu:'}</b> {q!.dogru}
             </div>
-            <div className="ja small">{q!.kana}</div>
             <div className="small tb-latin-line">{q!.latin}</div>
+            <div className="ja small">{q!.kana}</div>
             {q!.not && <div className="tiny">{q!.not}</div>}
           </div>
         )}

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { JaOkunus } from '@/components/JaOkunus'
 import { Link } from 'react-router-dom'
 import { Badge, Bar, RomajiText, Sheet, SpeakBtn, TopBar } from '@/components/ui'
 import { Icon } from '@/components/icons'
@@ -407,8 +408,8 @@ function renderCard(card: Card, revealed: boolean): { front: JSX.Element; back: 
           <div className={v.lang === 'ja' ? 'ja-big' : ''} style={{ fontSize: v.lang === 'ja' ? undefined : '1.7rem', fontWeight: 650 }}>
             {v.term}
           </div>
-          {v.reading && v.reading !== v.term && <div className="reading">{v.reading}</div>}
           {v.lang === 'ja' && v.reading && <div className="romaji"><RomajiText reading={v.reading} /></div>}
+          {v.reading && v.reading !== v.term && <div className="reading">{v.reading}</div>}
           <div className="row" style={{ justifyContent: 'center' }}>
             <SpeakBtn text={v.term} lang={v.lang} reading={v.reading} />
           </div>
@@ -428,14 +429,13 @@ function renderCard(card: Card, revealed: boolean): { front: JSX.Element; back: 
     ),
     back: (
       <div className="stack-sm">
-        {v.reading && v.reading !== v.term && <div className="reading" style={{ fontSize: '1.05rem' }}>{v.reading}</div>}
         {v.reading && <div className="romaji"><RomajiText reading={v.reading} /></div>}
+        {v.reading && v.reading !== v.term && <div className="reading" style={{ fontSize: '1.05rem' }}>{v.reading}</div>}
         <div style={{ fontSize: '1.15rem', fontWeight: 620 }}>{v.tr}</div>
         <div className="tiny faint">{v.pos}</div>
         {v.examples?.[0] && (
           <div style={{ marginTop: 6 }}>
-            <div className="ja">{v.examples[0].text}</div>
-            <div className="tiny dim">{v.examples[0].tr}</div>
+            <JaOkunus ja={v.examples[0].text} kana={v.examples[0].reading} tr={v.examples[0].tr} />
           </div>
         )}
         <div className="row" style={{ justifyContent: 'center' }}>

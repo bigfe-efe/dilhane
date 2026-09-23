@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { JaOkunus } from '@/components/JaOkunus'
 import { Link, useParams } from 'react-router-dom'
 import { Badge, SpeakBtn, TopBar } from '@/components/ui'
 import { Markdown } from '@/lib/md'
@@ -64,13 +65,7 @@ export default function GrammarDetail() {
             <div key={i} className="card">
               <div className="row">
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div className={p.lang === 'ja' ? 'ja' : ''} style={{ fontSize: '1.08rem' }}>
-                    {ex.text}
-                  </div>
-                  {ex.reading && <div className="reading tiny">{ex.reading}</div>}
-                  <div className="small dim" style={{ marginTop: 3 }}>
-                    {ex.tr}
-                  </div>
+                  <JaOkunus ja={ex.text} kana={ex.reading} tr={ex.tr} jaClass="jo-ja jo-ja--orta" />
                 </div>
                 <SpeakBtn text={ex.text} lang={p.lang} size="sm" reading={ex.reading} />
               </div>

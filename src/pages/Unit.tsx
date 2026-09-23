@@ -9,7 +9,7 @@ import { CHOUKAI, MONDAI, karisikKopya, type ChoukaiQ, type MockQ } from '@/cont
 import { ChoukaiMetin, ChoukaiPlayer, MockPrompt, SecenekListesi } from '@/components/N5Soru'
 import { StrokeOrder } from '@/components/StrokeOrder'
 import { KANJI_BY_CHAR } from '@/content/ja/kanji-n5'
-import { romajiWords } from '@/lib/ja-phonetic'
+import { JaOkunus } from '@/components/JaOkunus'
 import { LESSONS_BY_ID, unitVocabIds } from '@/content'
 import { cardId, db, ensureCards } from '@/db/db'
 import { useUnit } from '@/db/hooks'
@@ -215,9 +215,7 @@ function Gramer({ unit }: { unit: Unit }) {
             {g.examples.map((e) => (
               <div key={e.ja} className="unit-ex">
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div className="ja unit-ex-ja">{e.ja}</div>
-                  <div className="ja tiny faint">{e.kana}</div>
-                  <div className="small dim">{e.tr}</div>
+                  <JaOkunus ja={e.ja} kana={e.kana} tr={e.tr} jaClass="unit-ex-ja" />
                 </div>
                 <SpeakBtn text={e.ja} lang="ja" size="sm" reading={e.kana} />
               </div>
@@ -335,12 +333,11 @@ function Kelime({ unit }: { unit: Unit }) {
             }}
           >
             <div className="row">
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="ja unit-vocab-ja">{v.ja}</div>
-                {v.kana !== v.ja && <div className="ja unit-vocab-kana">{v.kana}</div>}
-                <div className="unit-vocab-tr">{v.tr}</div>
-                {v.star && <Yildiz label="Çok kullanılır" />}
-                {v.note && <div className="tiny dim">{v.note}</div>}
+              <div className="jo-kart" style={{ flex: 1, minWidth: 0 }}>
+                <JaOkunus ja={v.ja} kana={v.kana} tr={v.tr} jaClass="unit-vocab-ja">
+                  {v.star && <Yildiz label="Çok kullanılır" />}
+                  {v.note && <div className="tiny dim">{v.note}</div>}
+                </JaOkunus>
               </div>
               {/* Ses düğmesi kartın kendi tıklamasını tetiklemesin */}
               <span onClick={(e) => e.stopPropagation()}>
@@ -373,11 +370,10 @@ function KelimeSheet({ v, onClose }: { v: UnitVocab; onClose: () => void }) {
   return (
     <Sheet onClose={onClose}>
       <div className="stack lang-ja">
-        <div className="center stack-sm">
-          <div className="ja unit-sheet-word">{v.ja}</div>
-          {v.kana !== v.ja && <div className="ja unit-sheet-kana">{v.kana}</div>}
-          <div style={{ fontSize: '1.15rem' }}>{v.tr}</div>
-          {v.note && <div className="tiny dim">{v.note}</div>}
+        <div className="center stack-sm jo-sheet">
+          <JaOkunus ja={v.ja} kana={v.kana} tr={v.tr} jaClass="unit-sheet-word">
+            {v.note && <div className="tiny dim">{v.note}</div>}
+          </JaOkunus>
           <SpeakBtn text={v.ja} lang="ja" reading={v.kana} />
         </div>
 
@@ -431,8 +427,9 @@ function KelimeSheet({ v, onClose }: { v: UnitVocab; onClose: () => void }) {
 function Metin({ unit }: { unit: Unit }) {
   const [kana, setKana] = useState(true)
   // Latin okunuş: kana henüz akıcı okunmadığında metnin sesini verir.
-  // Varsayılan KAPALI — açık kalsa göz kanayı atlayıp Latin satırı okur.
-  const [latin, setLatin] = useState(false)
+  // Varsayılan AÇIK — öğrenci her örnekte romaji istedi; kanayı çalışmak
+  // isteyen kapatıp önce kanadan okumayı deneyebilir.
+  const [latin, setLatin] = useState(true)
   const [tr, setTr] = useState(false)
   const [soru, setSoru] = useState(false)
   const [sonuc, setSonuc] = useState<{ c: number; t: number } | null>(null)
@@ -492,12 +489,16 @@ function Metin({ unit }: { unit: Unit }) {
           <div key={i} className="unit-line">
             <SpeakBtn text={l.ja} lang="ja" size="sm" reading={l.kana} />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="ja unit-line-ja">{l.ja}</div>
-              {kana && <div className="ja tiny faint">{l.kana}</div>}
-              {/* romajiWords ekleri okunduğu gibi yazar (は → wa, へ → e, を → o)
-                  ve kelimeleri ayırır; bitişik bir romaji satırı okunmuyor. */}
-              {latin && <div className="tiny unit-line-latin">{romajiWords(l.ja, l.kana)}</div>}
-              {tr && <div className="small dim">{l.tr}</div>}
+              {/* Sıra her yerdeki gibi: yazılış → romaji → kana → Türkçe.
+                  Anahtarlar yalnızca bu metinde var: okuma alıştırmasında
+                  satırları tek tek gizleyebilmek için. */}
+              <JaOkunus
+                ja={l.ja}
+                kana={l.kana}
+                tr={tr ? l.tr : undefined}
+                gizle={{ kana: !kana, romaji: !latin }}
+                jaClass="unit-line-ja"
+              />
             </div>
           </div>
         ))}
@@ -583,9 +584,7 @@ function Odev({ unit, yapilan }: { unit: Unit; yapilan: string[] }) {
                 <div className="unit-hw-ex">
                   {h.example.map((e, i) => (
                     <div key={i} className="unit-hw-exline">
-                      <div className="ja unit-hw-exja">{e.ja}</div>
-                      {e.kana !== e.ja && <div className="ja tiny faint">{e.kana}</div>}
-                      <div className="small dim">{e.tr}</div>
+                      <JaOkunus ja={e.ja} kana={e.kana} tr={e.tr} jaClass="unit-hw-exja" />
                     </div>
                   ))}
                 </div>

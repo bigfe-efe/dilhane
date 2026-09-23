@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { JaOkunus } from '@/components/JaOkunus'
 import { toRomaji } from 'wanakana'
 import type { Vocab } from '@/types'
 import { Badge, Chips, Empty, RomajiText, Sheet, SpeakBtn, TopBar } from '@/components/ui'
@@ -60,11 +61,7 @@ export default function DictionaryPage() {
               <button key={v.id} className="card card--link" style={{ textAlign: 'left' }} onClick={() => setOpen(v)}>
                 <div className="row">
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="ja" style={{ fontSize: '1.14rem', fontWeight: 620 }}>
-                      {v.term}
-                    </div>
-                    {v.reading && v.reading !== v.term && <div className="reading tiny">{v.reading}</div>}
-                    <div className="small dim">{v.tr}</div>
+                    <JaOkunus ja={v.term} kana={v.reading} tr={v.tr} jaClass="jo-ja jo-ja--orta" />
                   </div>
                   {st?.phase === 'review' && <Badge tone="ok">bilindi</Badge>}
                   {st && st.phase !== 'review' && st.phase !== 'new' && <Badge tone="warn">öğreniliyor</Badge>}
@@ -94,8 +91,8 @@ function VocabSheet({ v, onClose }: { v: Vocab; onClose: () => void }) {
       <div className="stack lang-ja">
         <div className="center stack-sm">
           <div className="ja-big">{v.term}</div>
-          {v.reading && v.reading !== v.term && <div className="reading" style={{ fontSize: '1.05rem' }}>{v.reading}</div>}
           <div className="romaji"><RomajiText reading={v.reading} /></div>
+          {v.reading && v.reading !== v.term && <div className="reading" style={{ fontSize: '1.05rem' }}>{v.reading}</div>}
           <div style={{ fontSize: '1.15rem', fontWeight: 600, marginTop: 6 }}>{v.tr}</div>
           <div className="row" style={{ justifyContent: 'center' }}>
             <SpeakBtn text={v.term} lang={v.lang} reading={v.reading} />
@@ -111,9 +108,7 @@ function VocabSheet({ v, onClose }: { v: Vocab; onClose: () => void }) {
               <div key={i} className="card">
                 <div className="row">
                   <div style={{ flex: 1 }}>
-                    <div className="ja">{ex.text}</div>
-                    {ex.reading && <div className="reading tiny">{ex.reading}</div>}
-                    <div className="small dim">{ex.tr}</div>
+                    <JaOkunus ja={ex.text} kana={ex.reading} tr={ex.tr} />
                   </div>
                   <SpeakBtn text={ex.text} lang={v.lang} size="sm" reading={ex.reading} />
                 </div>

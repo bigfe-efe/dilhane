@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { JaOkunus } from '@/components/JaOkunus'
 import { Link, useParams } from 'react-router-dom'
 import type { Exercise, KanjiChar, Lesson, LessonSection } from '@/types'
 import { Badge, Bar, JaText, RomajiText, SpeakBtn, TopBar, furiganaReading, stripFurigana } from '@/components/ui'
@@ -533,8 +534,8 @@ function SectionView({ section }: { section: LessonSection }) {
                     <div className="ja" style={{ fontSize: '1.3rem', fontWeight: 600 }}>
                       {v.term}
                     </div>
-                    {v.reading && v.reading !== v.term && <div className="reading">{v.reading}</div>}
                     {v.reading && <div className="romaji"><RomajiText reading={v.reading} /></div>}
+                    {v.reading && v.reading !== v.term && <div className="reading">{v.reading}</div>}
                     <div className="small" style={{ marginTop: 4 }}>
                       {v.tr}
                     </div>
@@ -544,11 +545,7 @@ function SectionView({ section }: { section: LessonSection }) {
                 </div>
                 {v.examples?.[0] && (
                   <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--line-soft)' }}>
-                    <div className="ja" style={{ fontSize: '0.98rem' }}>
-                      {v.examples[0].text}
-                    </div>
-                    {v.examples[0].reading && <div className="reading tiny">{v.examples[0].reading}</div>}
-                    <div className="tiny dim">{v.examples[0].tr}</div>
+                    <JaOkunus ja={v.examples[0].text} kana={v.examples[0].reading} tr={v.examples[0].tr} />
                   </div>
                 )}
               </div>
@@ -592,11 +589,7 @@ function SectionView({ section }: { section: LessonSection }) {
                   <div key={ei} className="card">
                     <div className="row">
                       <div style={{ flex: 1 }}>
-                        <div className={p.lang === 'ja' ? 'ja' : ''} style={{ fontSize: '1.05rem' }}>
-                          {ex.text}
-                        </div>
-                        {ex.reading && <div className="reading tiny">{ex.reading}</div>}
-                        <div className="small dim">{ex.tr}</div>
+                        <JaOkunus ja={ex.text} kana={ex.reading} tr={ex.tr} jaClass="jo-ja jo-ja--orta" />
                       </div>
                       <SpeakBtn text={ex.text} lang={p.lang} size="sm" reading={ex.reading} />
                     </div>

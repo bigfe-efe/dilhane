@@ -43,8 +43,8 @@ export default function VerbsPage() {
           <>
             <div className="card card--pad-lg center stack-sm">
               <div className="ja-big">{item.term}</div>
-              <div className="reading">{item.reading}</div>
               <div className="romaji"><RomajiText reading={item.reading} /></div>
+              <div className="reading">{item.reading}</div>
               <div style={{ fontWeight: 620 }}>{item.tr}</div>
               <div className="row" style={{ justifyContent: 'center' }}>
                 <SpeakBtn text={item.term} lang="ja" reading={item.reading} />

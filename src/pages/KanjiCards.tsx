@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Chips, SpeakBtn, TopBar } from '@/components/ui'
+import { romajiWords } from '@/lib/ja-phonetic'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { cardId, db, ensureCards } from '@/db/db'
 import { UNIT_BY_ID, kanjiUnit } from '@/content/ja/units'
@@ -210,7 +211,7 @@ function KanjiCardView({ c, tekrarda, onEkle }: { c: KanjiCard; tekrarda: boolea
                 <Marked term={e.term} char={k.char} />
               </span>
               <span className="kc-read">
-                （<span className="ja">{e.reading}</span> / {e.romaji}）
+                （{e.romaji} / <span className="ja">{e.reading}</span>）
               </span>
               <span className="kc-tr">— {e.tr}</span>
               {e.others.length > 0 && <span className="kc-others ja">+ {e.others.join(' ')}</span>}
@@ -229,6 +230,7 @@ function KanjiCardView({ c, tekrarda, onEkle }: { c: KanjiCard; tekrarda: boolea
             </div>
             <SpeakBtn text={cumle.ja} lang="ja" size="sm" reading={cumle.kana} />
           </div>
+          <div className="jo-romaji">{romajiWords(cumle.ja, cumle.kana)}</div>
           <div className="ja kc-sent-kana">{cumle.kana}</div>
           <div className="kc-sent-tr">{cumle.tr}</div>
           <div className="kc-pattern">Kalıp: {cumle.pattern}</div>

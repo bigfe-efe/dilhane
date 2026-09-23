@@ -3613,6 +3613,23 @@ ul.tight li {
 .ct-note { font-size: 0.8rem; color: var(--text-dim); flex: 1; min-width: 160px; }
 .ct-q { font-size: clamp(2.4rem, 8vw, 3.4rem); font-weight: 650; line-height: 1.2; }
 
+/* ————— Japonca örnek: yazılış → romaji → kana → Türkçe ————— */
+/* Sıra bütün uygulamada aynı (JaOkunus). Romaji vurgu renginde: kanadan
+   ayırt edilsin, göz hangi satırın okunuş olduğunu hemen bulsun. */
+.jo-ja { font-size: 1.1rem; font-weight: 560; line-height: 1.5; }
+.jo-ja--orta { font-size: 1.08rem; }
+.jo-romaji { color: var(--accent); font-size: 0.86rem; letter-spacing: 0.01em; line-height: 1.5; }
+.jo-kana { font-size: 0.8rem; color: var(--text-faint); line-height: 1.5; }
+.jo-tr { font-size: 0.9rem; color: var(--text-dim); line-height: 1.45; }
+/* Kelime kartı: her satır bir boy büyük */
+.jo-kart .jo-romaji { font-size: 1rem; }
+.jo-kart .jo-kana { font-size: 1.1rem; color: var(--text-dim); }
+.jo-kart .jo-tr { font-size: 1.02rem; color: var(--text); margin-top: 2px; }
+/* Çizim sayfası: ortalanmış ve büyük */
+.jo-sheet .jo-romaji { font-size: 1.1rem; }
+.jo-sheet .jo-kana { font-size: 1.25rem; color: var(--text-dim); }
+.jo-sheet .jo-tr { font-size: 1.15rem; color: var(--text); }
+
 /* ————— Resmî örnek sınav ————— */
 .ofx-kod { background: var(--bg-elev-2); padding: 10px 12px; border-radius: 10px; font-family: var(--ff-mono); }
 .ofx-sets { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }

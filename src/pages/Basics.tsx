@@ -1,7 +1,8 @@
 import { useState, type ReactNode } from 'react'
+import { JaOkunus } from '@/components/JaOkunus'
 import { useSearchParams } from 'react-router-dom'
 import { Chips, SpeakBtn, TopBar } from '@/components/ui'
-import { kanaToRomaji, romajiWords } from '@/lib/ja-phonetic'
+import { kanaToRomaji } from '@/lib/ja-phonetic'
 import {
   AYIN_GUNLERI,
   AYLAR,
@@ -128,13 +129,13 @@ function Satir({
       {sol !== undefined && <span className="tb-n">{sol}</span>}
       <span className="ja tb-ja">{ja}</span>
       <span className="tb-read">
-        <span className="ja tb-kana">
-          {kana}
-          {alt && <span className="faint"> · {alt}</span>}
-        </span>
         <span className="tb-latin">
           {kanaToRomaji(kana)}
           {alt && <span className="faint"> · {kanaToRomaji(alt)}</span>}
+        </span>
+        <span className="ja tb-kana">
+          {kana}
+          {alt && <span className="faint"> · {alt}</span>}
         </span>
       </span>
       {tr && <span className="tb-tr">{tr}</span>}
@@ -152,11 +153,9 @@ function Cumle({ o }: { o: Ornek }) {
   return (
     <div className="unit-ex">
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div className="ja unit-ex-ja">{o.ja}</div>
-        {o.kana !== o.ja && <div className="ja tiny faint">{o.kana}</div>}
-        <div className="tiny tb-latin-line">{o.latin ?? romajiWords(o.ja, o.kana)}</div>
-        <div className="small dim">{o.tr}</div>
-        {o.not && <div className="tiny tb-cnot">{o.not}</div>}
+        <JaOkunus ja={o.ja} kana={o.kana} latin={o.latin} tr={o.tr} jaClass="unit-ex-ja">
+          {o.not && <div className="tiny tb-cnot">{o.not}</div>}
+        </JaOkunus>
       </div>
       <SpeakBtn text={o.ja} lang="ja" size="sm" reading={o.kana} />
     </div>
@@ -255,13 +254,13 @@ function SayiHucre({ n, kanji, kana, star }: { n: number; kanji: string; kana: s
         <span className="spacer" />
         {star && <Yildiz />}
       </div>
-      <div className="ja tb-cell-kana">{kana}</div>
       <div className="row" style={{ gap: 4 }}>
         <span className="tb-latin" style={{ flex: 1 }}>
           {kanaToRomaji(kana)}
         </span>
         <SpeakBtn text={kana} lang="ja" size="sm" />
       </div>
+      <div className="ja tb-cell-kana">{kana}</div>
     </div>
   )
 }
@@ -369,13 +368,13 @@ function Tarih() {
                 <span className="spacer" />
                 {g.star && <Yildiz />}
               </div>
-              <div className="ja tb-cell-kana">{g.kana}</div>
               <div className="row" style={{ gap: 4 }}>
                 <span className="tb-latin" style={{ flex: 1 }}>
                   {kanaToRomaji(g.kana)}
                 </span>
                 <SpeakBtn text={g.kana} lang="ja" size="sm" />
               </div>
+              <div className="ja tb-cell-kana">{g.kana}</div>
               {g.not && <div className="tiny faint">{g.not}</div>}
             </div>
           ))}
@@ -481,8 +480,8 @@ function SaatKart({ h, m, tr }: { h: number; m: number; tr?: string }) {
         <div>
           <div className="tb-sub">24 saat</div>
           <div className="ja tb-clock-ja">{s24.ja}</div>
-          <div className="ja tiny faint">{s24.kana}</div>
           <div className="tb-latin">{kanaToRomaji(s24.kana)}</div>
+          <div className="ja tiny faint">{s24.kana}</div>
         </div>
         <SpeakBtn text={s24.kana} lang="ja" size="sm" />
       </div>
@@ -490,8 +489,8 @@ function SaatKart({ h, m, tr }: { h: number; m: number; tr?: string }) {
         <div>
           <div className="tb-sub">午前 / 午後</div>
           <div className="ja tb-clock-ja">{s12.ja}</div>
-          <div className="ja tiny faint">{s12.kana}</div>
           <div className="tb-latin">{kanaToRomaji(s12.kana)}</div>
+          <div className="ja tiny faint">{s12.kana}</div>
         </div>
         <SpeakBtn text={s12.kana} lang="ja" size="sm" />
       </div>

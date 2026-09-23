@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { JaOkunus } from '@/components/JaOkunus'
 import { Link } from 'react-router-dom'
 import { Chips, TopBar } from '@/components/ui'
 import { Icon } from '@/components/icons'
@@ -227,9 +228,7 @@ export default function KanjiTestPage() {
                     </span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div className="card-title">{KANJI_BY_CHAR.get(y.kanji)?.meaningsTr.join(', ')}</div>
-                      <div className="ja" style={{ fontSize: '1.15rem' }}>{y.s.ja}</div>
-                      <div className="tiny dim ja">{y.s.kana}</div>
-                      <div className="tiny dim">{y.s.tr}</div>
+                      <JaOkunus ja={y.s.ja} kana={y.s.kana} tr={y.s.tr} jaClass="jo-ja jo-ja--orta" />
                     </div>
                   </div>
                 </div>
@@ -326,9 +325,7 @@ export default function KanjiTestPage() {
                 <span className="ja" style={{ fontSize: '2.2rem', lineHeight: 1 }}>{q.kanji}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div className="bold">{kanji?.meaningsTr.join(', ')}</div>
-                  <div className="ja" style={{ fontSize: '1.2rem', marginTop: 4 }}>{q.s.ja}</div>
-                  <div className="tiny dim ja">{q.s.kana}</div>
-                  <div className="small" style={{ marginTop: 2 }}>{q.s.tr}</div>
+                  <JaOkunus ja={q.s.ja} kana={q.s.kana} tr={q.s.tr} jaClass="jo-ja jo-ja--orta" />
                 </div>
               </div>
               <div className="tiny" style={{ marginTop: 8, opacity: 0.9 }}>
