@@ -85,6 +85,7 @@ const GROUPS: Group[] = [
     note: 'Nerede olduğunu ölçer. Ayda bir deneme yeterli.',
     items: [
       { to: '/n5-deneme', glyph: '模', title: 'N5 deneme sınavı', sub: 'Gerçek biçim, süreli, bölüm bölüm sonuç' },
+      { to: '/resmi-sinav', glyph: '本', title: 'Resmî örnek sınav', sub: 'jlpt.jp’nin iki seti — gerçek sınavlardan sorular' },
       { to: '/n5', glyph: '五', title: 'N5 hazırlığı', sub: 'Geri sayım, dönem planı ve tempo' },
     ],
   },

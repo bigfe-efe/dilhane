@@ -29,6 +29,9 @@ export default defineConfig({
         // Ses dosyaları büyük olabilir; hepsini önbelleğe al ki offline çalışsın
         globPatterns: ['**/*.{js,css,html,svg,png,woff2,mp3,json}'],
         maximumFileSizeToCacheInBytes: 30 * 1024 * 1024,
+        // JLPT resmi ornek sinavlari (~48 MB) onbellege girmesin: yalnizca bu
+        // bilgisayarda duruyor ve sinav provasinda agdan (yerel sunucudan) aciliyor.
+        globIgnores: ['**/resmi/**'],
       },
     }),
   ],

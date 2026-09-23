@@ -21,6 +21,10 @@ Genki*/
 *.epub
 *.mobi
 
+# JLPT resmi ornek sinavlari (jlpt.jp) — telifli, yalnizca bu bilgisayarda.
+# Yeniden indirmek icin: npm run resmi:indir
+public/resmi/
+
 # iPhone duvar kagidi gorselleri — 104 PNG, ~58 MB. Depoya girmesi anlamsiz:
 # tek komutla yeniden uretiliyor (npm run gen:iphone-wallpaper) ve OneDrive
 # zaten telefona senkronluyor.

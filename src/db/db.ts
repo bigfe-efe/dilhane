@@ -116,7 +116,9 @@ export interface Note {
 export interface ExamRecord {
   /** Sınavın bittiği an — kimlik olarak da bunu kullanıyoruz */
   at: number
-  kind: 'hiragana' | 'katakana' | 'n5-deneme'
+  kind: 'hiragana' | 'katakana' | 'n5-deneme' | 'n5-resmi'
+  /** Resmî örnek sınavda hangi set ('2012', '2018') — indekslenmediği için şema değişmez */
+  set?: string
   percent: number
   correct: number
   total: number

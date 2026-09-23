@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Bar, TopBar } from '@/components/ui'
 import { Icon, type IconName } from '@/components/icons'
-import { useDailyDone, useDailyHistory, useDueCounts, useExamDate, useLeeches, usePendingSession, useToday, useUnitProgress } from '@/db/hooks'
+import { useDailyDone, useDailyHistory, useDueCounts, useExamDate, useExams, useLeeches, usePendingSession, useToday, useUnitProgress } from '@/db/hooks'
 import { db, setSetting, todayKey } from '@/db/db'
 import { UNITS } from '@/content/ja/units'
 import { EXAM_DATE_KEY, buildDailyPlan, type DailyTask, type TaskKind, type UnitState } from '@/content/ja/study-plan'
@@ -46,6 +46,9 @@ export default function Home() {
   const due = useDueCounts()
   const today = useToday()
   const uniteKayit = useUnitProgress()
+  const resmiSetler = useExams()
+    .filter((e) => e.kind === 'n5-resmi' && e.set)
+    .map((e) => e.set!)
   const leeches = useLeeches()
   const yapilan = useDailyDone(gun)
   const gecmis = useDailyHistory(14)
@@ -73,6 +76,7 @@ export default function Home() {
     examDate,
     pendingSession: bekleyen ? { day: bekleyen.day, chars: bekleyen.chars.length } : null,
     leeches: leeches.leeches.length,
+    resmiSetler,
   })
 
   const cekirdek = plan.tasks.filter((t) => !t.optional)

@@ -27,6 +27,7 @@ import KanjiTestPage from '@/pages/KanjiTest'
 import CountersPage from '@/pages/Counters'
 import BasicsPage from '@/pages/Basics'
 import ListeningPage from '@/pages/Listening'
+import OfficialExamPage from '@/pages/OfficialExam'
 import UnitsPage from '@/pages/Units'
 import UnitPage from '@/pages/Unit'
 import LessonsPage from '@/pages/Lessons'
@@ -129,6 +130,7 @@ export default function App() {
         <Route path="/kural-testi" element={<KanaRuleTestPage />} />
         <Route path="/kaynaklar" element={<ResourcesPage />} />
         <Route path="/n5-deneme" element={<N5MockPage />} />
+        <Route path="/resmi-sinav" element={<OfficialExamPage />} />
         <Route path="/kana-hiz" element={<KanaSpeedPage />} />
         <Route path="/kana-test" element={<KanaQuizPage />} />
         <Route path="/hiragana-sinav" element={<KanaExamPage kana="hiragana" />} />

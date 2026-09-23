@@ -89,6 +89,8 @@ export interface PlanContext {
    */
   pendingSession?: { day: string; chars: number } | null
   leeches: number
+  /** Çözülmüş resmî örnek sınav setleri ('2018', '2012') */
+  resmiSetler?: string[]
 }
 
 export interface DailyPlan {
@@ -215,14 +217,39 @@ export function buildDailyPlan(ctx: PlanContext, now = new Date()): DailyPlan {
       to: `/unite/${aktif.id}?b=${adim.tab}`,
     })
   } else {
-    tasks.push({
-      id: 'deneme',
-      kind: 'exam',
-      title: 'N5 deneme sınavı',
-      detail: 'Bütün üniteler bitti. Şimdi ölçme zamanı: süreli çöz, zayıf bölümüne dön.',
-      minutes: 60,
-      to: '/n5-deneme',
-    })
+    // Üniteler bitti: resmî setler sırayla — 2018 hemen, 2012 son haftada.
+    // İkisi de tek seferlik (gerçek sınavdan seçilmiş sorular); aradaki
+    // günlerde ölçüm uygulamanın her seferinde yeniden kurulan denemesiyle.
+    const resmi = new Set(ctx.resmiSetler ?? [])
+    const sonHafta = daysLeft !== null && daysLeft <= 8
+    if (!resmi.has('2018')) {
+      tasks.push({
+        id: 'resmi:2018',
+        kind: 'exam',
+        title: 'Resmî örnek sınav · 2018',
+        detail: 'Bütün üniteler bitti. Gerçek sınavlardan seçilmiş sorularla, gerçek koşulda: tek oturum, süreli, kulaklıkla.',
+        minutes: 110,
+        to: '/resmi-sinav',
+      })
+    } else if (sonHafta && !resmi.has('2012')) {
+      tasks.push({
+        id: 'resmi:2012',
+        kind: 'exam',
+        title: 'Resmî örnek sınav · 2012',
+        detail: 'Sınavdan önceki son prova. Sonucu 2018 ile karşılaştır; kalan günleri en zayıf tipe ayır.',
+        minutes: 110,
+        to: '/resmi-sinav',
+      })
+    } else {
+      tasks.push({
+        id: 'deneme',
+        kind: 'exam',
+        title: 'N5 deneme sınavı',
+        detail: 'Her seferinde yeni sorularla kurulur. Süreli çöz, en zayıf tipine dön.',
+        minutes: 60,
+        to: '/n5-deneme',
+      })
+    }
   }
 
   // ————— 3. Kanji —————

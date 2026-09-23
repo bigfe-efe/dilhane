@@ -115,6 +115,7 @@ export default function N5Page() {
   )
 
   const denemeler = exams.filter((e) => e.kind === 'n5-deneme')
+  const resmi = exams.filter((e) => e.kind === 'n5-resmi')
   const sonDeneme = denemeler[0]
 
   return (
@@ -175,6 +176,24 @@ export default function N5Page() {
         ) : (
           <ExamDateCard examDate={examDate} />
         )}
+
+        {/* ————— Resmî örnek sınav ————— */}
+        <Link to="/resmi-sinav" className="card card--link">
+          <div className="row">
+            <span className="entry-icon">
+              <Icon name="book" size={18} />
+            </span>
+            <div className="stack-sm" style={{ gap: 1, flex: 1 }}>
+              <div className="card-title">Resmî örnek sınav</div>
+              <div className="card-sub">
+                {resmi.length
+                  ? `${resmi.map((e) => `${e.set}: ${Math.round((e.percent / 100) * 180)}/180`).join(' · ')}`
+                  : 'jlpt.jp’nin iki seti, gerçek sınavlardan sorular. 2018’i üniteler bitince, 2012’yi sınavdan bir hafta önce.'}
+              </div>
+            </div>
+            <span className="dim">›</span>
+          </div>
+        </Link>
 
         {/* ————— Deneme sınavı ————— */}
         <Link to="/n5-deneme" className="card card--link">
