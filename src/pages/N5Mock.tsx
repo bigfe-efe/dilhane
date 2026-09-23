@@ -405,8 +405,8 @@ export default function N5MockPage() {
             <button className="btn btn--primary btn--block" onClick={() => setFaz('kurulum')}>
               Yeni deneme
             </button>
-            <Link to="/rota" className="btn btn--ghost btn--block">
-              Rotaya dön
+            <Link to="/n5" className="btn btn--ghost btn--block">
+              N5 sayfasına dön
             </Link>
           </div>
         </div>

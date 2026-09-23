@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { useLiveQuery } from 'dexie-react-hooks'
 import { Badge, Chips, Sheet, SpeakBtn, TopBar } from '@/components/ui'
 import { Icon } from '@/components/icons'
 import { ExerciseRunner } from '@/components/ExerciseRunner'
@@ -7,8 +8,8 @@ import { UNIT_BY_ID, type Unit, type UnitVocab } from '@/content/ja/units'
 import { StrokeOrder } from '@/components/StrokeOrder'
 import { KANJI_BY_CHAR } from '@/content/ja/kanji-n5'
 import { romajiWords } from '@/lib/ja-phonetic'
-import { LESSONS_BY_ID } from '@/content'
-import { db } from '@/db/db'
+import { LESSONS_BY_ID, unitVocabIds } from '@/content'
+import { cardId, db, ensureCards } from '@/db/db'
 import { useUnit } from '@/db/hooks'
 
 // Ünite sayfası.
@@ -43,10 +44,26 @@ async function kaydet(unitId: string, patch: Partial<{ homework: string[]; testB
   })
 }
 
+/**
+ * Ünite kelimelerini tekrar sistemine ekler — derslerdeki gibi iki yönlü
+ * (kelime → anlam ve anlam → kelime). Var olan karta dokunmaz.
+ */
+async function kelimeleriEkle(unitId: string): Promise<number> {
+  const ids = unitVocabIds(unitId)
+  const eklenen = await ensureCards(ids.map((refId) => ({ kind: 'vocab' as const, refId, lang: 'ja' as const })))
+  await ensureCards(ids.map((refId) => ({ kind: 'vocab' as const, refId, lang: 'ja' as const, reverse: true })))
+  return eklenen
+}
+
 export default function UnitPage() {
   const { id } = useParams<{ id: string }>()
   const unit = id ? UNIT_BY_ID.get(id) : undefined
-  const [bolum, setBolum] = useState<Bolum>('hedef')
+  // Bölüm adreste: Bugün listesi "ödevlere devam et" derken doğrudan Ödev
+  // sekmesini açabilsin.
+  const [params, setParams] = useSearchParams()
+  const istenen = params.get('b') as Bolum | null
+  const bolum: Bolum = BOLUMLER.some((b) => b.id === istenen) ? istenen! : 'hedef'
+  const setBolum = (b: Bolum) => setParams({ b }, { replace: true })
   const prog = useUnit(id)
 
   if (!unit) {
@@ -223,12 +240,44 @@ function Gramer({ unit }: { unit: Unit }) {
 
 function Kelime({ unit }: { unit: Unit }) {
   const [acik, setAcik] = useState<UnitVocab | null>(null)
+  const ids = unitVocabIds(unit.id)
+  // Kaç kelimenin kartı zaten var — düğme yalnızca eksik varsa görünür
+  const kartli = useLiveQuery(
+    async () => (await db.cards.bulkGet(ids.map((v) => cardId('vocab', v)))).filter(Boolean).length,
+    [unit.id],
+  )
 
   return (
     <div className="stack-sm">
       <div className="card-sub">
         Ünite boyunca geçen kelimeler. <b>Karta dokunursan çizgi sırasını</b> görürsün.
       </div>
+
+      {/* Ünitede öğrenilen kelime tekrar edilmezse bir hafta içinde gider.
+          Test geçilince kendiliğinden ekleniyor; beklemek istemeyen buradan
+          ekler. */}
+      {kartli !== undefined && (
+        <div className="card row" style={{ gap: 10, flexWrap: 'wrap' }}>
+          <Icon name="repeat" size={18} style={{ color: 'var(--accent)' }} />
+          <div style={{ flex: 1, minWidth: 180 }}>
+            <div className="small">
+              {kartli >= ids.length ? (
+                <>Bu ünitenin {ids.length} kelimesinin hepsi tekrar listende.</>
+              ) : (
+                <>
+                  {ids.length} kelimeden {kartli} tanesi tekrar listende.
+                </>
+              )}
+            </div>
+            <div className="tiny faint">Ünite testini geçince kelimeler kendiliğinden eklenir.</div>
+          </div>
+          {kartli < ids.length && (
+            <button className="btn btn--sm" onClick={() => void kelimeleriEkle(unit.id)}>
+              Tekrara ekle ({ids.length - kartli})
+            </button>
+          )}
+        </div>
+      )}
       <div className="cols-2">
         {unit.vocab.map((v) => (
           <div
@@ -533,16 +582,22 @@ function Yildiz({ label = 'Önemli' }: { label?: string }) {
 function Test({ unit, best }: { unit: Unit; best: number }) {
   const [calisiyor, setCalisiyor] = useState(false)
   const [sonuc, setSonuc] = useState<{ c: number; t: number } | null>(null)
+  const [eklenen, setEklenen] = useState(0)
 
   const bitir = async (c: number, t: number) => {
     const yuzde = t ? Math.round((c / t) * 100) : 0
+    const enIyi = Math.max(best, yuzde)
     setSonuc({ c, t })
     setCalisiyor(false)
+    // Tamamlanma EN İYİ sonuca bakar. Önceden son denemeye bakıyordu:
+    // geçilmiş bir üniteyi pekiştirmek için testi yeniden çözen biri %70'in
+    // altında kalınca ünite "devam ediyor"a geri düşüyordu.
     await kaydet(unit.id, {
-      testBest: Math.max(best, yuzde),
+      testBest: enIyi,
       testAt: Date.now(),
-      status: yuzde >= 70 ? 'completed' : 'in-progress',
+      status: enIyi >= 70 ? 'completed' : 'in-progress',
     })
+    if (yuzde >= 70) setEklenen(await kelimeleriEkle(unit.id))
   }
 
   if (calisiyor) {
@@ -560,7 +615,10 @@ function Test({ unit, best }: { unit: Unit; best: number }) {
           </div>
           <div className="dim">%{yuzde}</div>
           {yuzde !== null && yuzde >= 70 ? (
-            <div className="feedback feedback--ok small">Ünite tamamlandı sayılır. Sıradaki üniteye geçebilirsin.</div>
+            <div className="feedback feedback--ok small">
+              Ünite tamamlandı sayılır. Sıradaki üniteye geçebilirsin.
+              {eklenen > 0 && ` Bu ünitenin ${eklenen} kelimesi tekrar listene eklendi.`}
+            </div>
           ) : (
             <div className="feedback feedback--bad small">
               %70’in altında. Dilbilgisi bölümüne dönüp yanlış yaptığın konuları bir kez daha oku, sonra tekrar dene.

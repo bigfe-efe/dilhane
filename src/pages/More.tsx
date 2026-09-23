@@ -22,7 +22,6 @@ const GROUPS: { title: string; note?: string; items: Entry[] }[] = [
   {
     title: 'Yön',
     items: [
-      { to: '/rota', icon: 'target', title: 'Rota ve çalışma planı', sub: 'Nerede olduğun, sırada ne var, haftalık plan' },
       { to: '/n5', glyph: '五', title: 'JLPT N5', sub: 'Sınav nasıl işliyor, nerede duruyorsun' },
     ],
   },

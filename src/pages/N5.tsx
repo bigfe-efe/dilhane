@@ -2,13 +2,13 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge, Bar, TopBar } from '@/components/ui'
 import { Icon } from '@/components/icons'
-import { useCardStates, useExamDate, useExams, useLessonProgress } from '@/db/hooks'
+import { useCardStates, useExamDate, useExams, useUnitProgress } from '@/db/hooks'
 import { setSetting } from '@/db/db'
 import { GRAMMAR_JA } from '@/content/ja/grammar'
-import { VOCAB_JA } from '@/content/ja/vocab'
+import { VOCAB } from '@/content'
 import { KANJI_N5 } from '@/content/ja/kanji-n5'
 import { HIRAGANA, KATAKANA } from '@/content/ja/kana'
-import { LESSONS_JA } from '@/content/ja/lessons'
+import { UNITS } from '@/content/ja/units'
 import { EXAM_DATE_KEY, daysUntilExam } from '@/content/ja/study-plan'
 import {
   N5_SCOPE,
@@ -68,7 +68,7 @@ function ExamDateCard({ examDate }: { examDate: Date | null }) {
 }
 
 export default function N5Page() {
-  const prog = useLessonProgress()
+  const uniteKayit = useUnitProgress()
   const kana = useCardStates('kana')
   const kanji = useCardStates('kanji')
   const vocab = useCardStates('vocab')
@@ -81,16 +81,17 @@ export default function N5Page() {
   const knownKana = [...HIRAGANA, ...KATAKANA].filter((k) => kana.get(k.char)?.phase === 'review').length
   const totalKana = HIRAGANA.length + KATAKANA.length
   const knownKanji = KANJI_N5.filter((k) => kanji.get(k.char)?.phase === 'review').length
-  const knownVocab = VOCAB_JA.filter((v) => vocab.get(v.id)?.phase === 'review').length
+  const knownVocab = VOCAB.filter((v) => vocab.get(v.id)?.phase === 'review').length
   const grammarCount = GRAMMAR_JA.filter((g) => g.level === 'N5').length
-  const jaLessons = LESSONS_JA.length
+  const bitenUnite = UNITS.filter((u) => uniteKayit.get(u.id)?.status === 'completed').length
 
-  // Kalan ders / kalan hafta. Son üç hafta ÇIKARILIYOR: o dönem pekiştirme ve
-  // deneme için ayrılmış, oraya ders sıkıştırmak planı baştan yanlış kurar.
-  const kalanDers = Math.max(0, prog.total - prog.completed)
+  // Kalan ünite / kalan hafta. Son üç hafta ÇIKARILIYOR: o dönem pekiştirme ve
+  // deneme için ayrılmış, oraya ünite sıkıştırmak planı baştan yanlış kurar.
+  // (Önceden Genki derslerine göre hesaplanıyordu; ana yol üniteler.)
+  const kalanUnite = Math.max(0, UNITS.length - bitenUnite)
   const calismaGunu = kalan === null ? null : Math.max(1, kalan - 21)
-  const dersPerHafta =
-    calismaGunu === null ? null : Math.max(1, Math.ceil(kalanDers / Math.max(1, calismaGunu / 7)))
+  const unitePerHafta =
+    calismaGunu === null ? null : Math.max(1, Math.ceil(kalanUnite / Math.max(1, calismaGunu / 7)))
 
   const bars = [
     { label: 'Kana', value: knownKana, max: totalKana, note: 'Hiragana + katakana, dakuten ve yōon dahil' },
@@ -103,10 +104,10 @@ export default function N5Page() {
     {
       label: 'Kelime',
       value: knownVocab,
-      max: VOCAB_JA.length,
+      max: VOCAB.length,
       note: `N5'te ~${N5_SCOPE.vocab} kelime beklenir; buradaki çekirdek kadro`,
     },
-    { label: 'Ders', value: prog.completed, max: prog.total, note: 'Tamamlanan ders sayısı' },
+    { label: 'Ünite', value: bitenUnite, max: UNITS.length, note: 'Testi %70 ile geçilen ünite sayısı' },
   ]
 
   const overall = Math.round(
@@ -163,11 +164,11 @@ export default function N5Page() {
               </div>
             )}
 
-            {dersPerHafta !== null && kalanDers > 0 && (
+            {unitePerHafta !== null && kalanUnite > 0 && (
               <div className="feedback feedback--info small">
                 <b>Tempo: </b>
-                {kalanDers} ders kaldı. Son üç haftayı pekiştirmeye ayırmak için{' '}
-                <b>haftada {dersPerHafta} ders</b> bitirmen gerekiyor.
+                {kalanUnite} ünite kaldı. Son üç haftayı pekiştirmeye ayırmak için{' '}
+                <b>haftada {unitePerHafta} ünite</b> bitirmen gerekiyor.
               </div>
             )}
           </div>
@@ -289,16 +290,29 @@ export default function N5Page() {
         <div className="stack">
           <h2>Neyle çalışacaksın</h2>
 
-          <Link to="/lessons" className="card card--link">
+          <Link to="/uniteler" className="card card--link">
             <div className="row">
               <span className="entry-icon">
                 <Icon name="book" size={18} />
               </span>
               <div className="stack-sm" style={{ gap: 1, flex: 1 }}>
-                <div className="card-title">Dersler · Genki sırası</div>
+                <div className="card-title">Üniteler</div>
                 <div className="card-sub">
-                  {jaLessons} ders · {prog.completed} tamamlandı. Sınav müfredatının omurgası.
+                  {UNITS.length} ünite · {bitenUnite} tamamlandı. Dilbilgisi, kelime, metin, ödev ve test.
                 </div>
+              </div>
+              <span className="dim">›</span>
+            </div>
+          </Link>
+
+          <Link to="/dinleme" className="card card--link">
+            <div className="row">
+              <span className="entry-icon">
+                <Icon name="headphones" size={18} />
+              </span>
+              <div className="stack-sm" style={{ gap: 1, flex: 1 }}>
+                <div className="card-title">Dinleme alıştırması</div>
+                <div className="card-sub">Fiyat, saat, tarih ve cümle. Dinleme barajı için her gün 10 dakika.</div>
               </div>
               <span className="dim">›</span>
             </div>

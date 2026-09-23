@@ -7,7 +7,6 @@ import KanaSpeedPage from '@/pages/KanaSpeed'
 import KanaQuizPage from '@/pages/KanaQuiz'
 import KanaExamPage from '@/pages/KanaExam'
 import KatakanaWordsPage from '@/pages/KatakanaWords'
-import RoadmapPage from '@/pages/Roadmap'
 import KanaRulesPage from '@/pages/KanaRules'
 import KanaRuleTestPage from '@/pages/KanaRuleTest'
 import ResourcesPage from '@/pages/Resources'
@@ -27,6 +26,7 @@ import KanjiCardsPage from '@/pages/KanjiCards'
 import KanjiTestPage from '@/pages/KanjiTest'
 import CountersPage from '@/pages/Counters'
 import BasicsPage from '@/pages/Basics'
+import ListeningPage from '@/pages/Listening'
 import UnitsPage from '@/pages/Units'
 import UnitPage from '@/pages/Unit'
 import LessonsPage from '@/pages/Lessons'
@@ -43,8 +43,8 @@ import StatsPage from '@/pages/Stats'
 import SettingsPage from '@/pages/Settings'
 import MorePage from '@/pages/More'
 import { daysUntilExam } from '@/content/ja/study-plan'
-import { ROADMAP, buildPlan, stageProgress } from '@/content/ja/roadmap'
-import { useExamDate, useExams, useLessonProgress } from '@/db/hooks'
+import { UNITS } from '@/content/ja/units'
+import { useExamDate, useUnitProgress } from '@/db/hooks'
 
 // Uygulama tek dillidir (Japonca), bu yüzden rotalarda dil parametresi yoktur.
 // Eskiden /lessons/:lang gibi yollar vardı; ikinci dil kaldırılınca sadeleşti.
@@ -76,8 +76,7 @@ const NAV: { to: string; icon: IconName; label: string; end?: boolean }[] = [
  */
 function ExamStatus() {
   const examDate = useExamDate()
-  const exams = useExams()
-  const prog = useLessonProgress()
+  const uniteKayit = useUnitProgress()
 
   const kalan = daysUntilExam(examDate)
   if (kalan !== null && kalan >= 0) {
@@ -91,28 +90,23 @@ function ExamStatus() {
     )
   }
 
-  const tamamlanan = new Set(
-    [...prog.map.entries()].filter(([, v]) => v.status === 'completed').map(([k]) => k),
-  )
-  const plan = buildPlan(exams, tamamlanan)
-  const stage = ROADMAP.find((s) => s.id === plan.stageId)
-  if (!stage) return null
-
-  const yuzde = Math.round(stageProgress(stage, tamamlanan))
-  const biten = stage.lessonIds.filter((id) => tamamlanan.has(id)).length
+  // Tarih yoksa ünite ilerlemesi. Önceden Genki derslerine göre bir "aşama"
+  // gösteriyordu; ana yol üniteler olunca o sayı hiç kıpırdamıyordu.
+  const biten = UNITS.filter((u) => uniteKayit.get(u.id)?.status === 'completed').length
+  const aktif = UNITS.find((u) => uniteKayit.get(u.id)?.status !== 'completed')
+  const yuzde = Math.round((biten / UNITS.length) * 100)
 
   return (
-    <NavLink to="/rota" className="nav-foot nav-foot--link">
+    <NavLink to="/uniteler" className="nav-foot nav-foot--link">
       <div className="nav-foot-stage">
-        <span className="ja nav-foot-glyph">{stage.glyph}</span>
+        <span className="ja nav-foot-glyph">課</span>
         <span className="nav-foot-num tabular">%{yuzde}</span>
       </div>
       <div className="nav-foot-bar">
         <i style={{ width: `${Math.max(3, yuzde)}%` }} />
       </div>
       <div className="nav-foot-label">
-        {stage.title}
-        {stage.lessonIds.length > 0 && ` · ${biten}/${stage.lessonIds.length} ders`}
+        {aktif ? `Ünite ${aktif.no} · ${aktif.title}` : 'Üniteler bitti'} · {biten}/{UNITS.length}
       </div>
     </NavLink>
   )
@@ -140,7 +134,9 @@ export default function App() {
         <Route path="/hiragana-sinav" element={<KanaExamPage kana="hiragana" />} />
         <Route path="/katakana-sinav" element={<KanaExamPage kana="katakana" />} />
         <Route path="/katakana-kelime" element={<KatakanaWordsPage />} />
-        <Route path="/rota" element={<RoadmapPage />} />
+        {/* Rota sayfası kaldırıldı: Genki derslerine göre plan yapıyordu. Faz ve
+            tempo artık N5 sayfasında, eski bağlantılar oraya gider. */}
+        <Route path="/rota" element={<Navigate to="/n5" replace />} />
         <Route path="/calis" element={<PracticePage />} />
         <Route path="/kana-kelime" element={<KanaWordsPage />} />
         <Route path="/kelimeler" element={<VocabPage />} />
@@ -154,6 +150,7 @@ export default function App() {
         <Route path="/kanji-testi" element={<KanjiTestPage />} />
         <Route path="/sayaclar" element={<CountersPage />} />
         <Route path="/temel" element={<BasicsPage />} />
+        <Route path="/dinleme" element={<ListeningPage />} />
         <Route path="/uniteler" element={<UnitsPage />} />
         <Route path="/unite/:id" element={<UnitPage />} />
 

@@ -665,8 +665,8 @@ function Result({
         )}
 
         <div className="stack-sm">
-          <Link to="/rota" className="btn btn--primary btn--block">
-            Bu sonuca göre çalışma planımı gör
+          <Link to="/" className="btn btn--primary btn--block">
+            Bugünün listesine dön
           </Link>
           <button className="btn btn--block" onClick={onRetry}>
             Sınavı tekrar al

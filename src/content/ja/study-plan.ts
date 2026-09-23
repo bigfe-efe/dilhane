@@ -1,6 +1,3 @@
-import type { Lesson } from '@/types'
-import type { ExamRecord } from '@/db/db'
-import { ROADMAP, buildPlan } from './roadmap'
 
 // Günlük çalışma planı — uygulamanın "öğretmen" tarafı.
 //
@@ -64,15 +61,23 @@ export interface DailyTask {
   optional?: boolean
 }
 
+/** Bir ünitenin plan için gereken durumu — sayfa katmanından bağımsız */
+export interface UnitState {
+  id: string
+  no: number
+  title: string
+  status?: 'in-progress' | 'completed'
+  homeworkDone: number
+  homeworkTotal: number
+  testBest: number
+}
+
 export interface PlanContext {
   /** Bugünün anahtarı, YYYY-MM-DD */
   day: string
   dueCards: number
-  /** Tamamlanmış ders kimlikleri */
-  completed: Set<string>
-  nextLesson: Lesson | undefined
-  /** Bitirme sınavı geçmişi, yeniden eskiye — hiragana ve katakana karışık */
-  exams: ExamRecord[]
+  /** Üniteler, sırasıyla */
+  units: UnitState[]
   /** Hedeflenen sınav günü; belirlenmemişse null */
   examDate: Date | null
   /**
@@ -84,8 +89,6 @@ export interface PlanContext {
    */
   pendingSession?: { day: string; chars: number } | null
   leeches: number
-  /** Toplam ders sayısı */
-  totalLessons: number
 }
 
 export interface DailyPlan {
@@ -94,53 +97,87 @@ export interface DailyPlan {
   minutes: number
   /** Sınava kalan gün; tarih belirlenmemişse null */
   daysLeft: number | null
-  /** Tempo: haftada kaç ders bitmeli. Sınav tarihi yoksa null. */
-  lessonsPerWeek: number | null
+  /** Tempo: haftada kaç ünite bitmeli. Sınav tarihi yoksa null. */
+  unitsPerWeek: number | null
   /** Programa göre durumun */
   pace: { state: 'ahead' | 'ontrack' | 'behind'; text: string }
   /** Bugünün tek cümlelik odağı */
   focus: string
 }
 
+// ————————————————————————— Ünitede sıradaki adım —————————————————————————
+
+export interface UnitStep {
+  /** Ünite sayfasında açılacak sekme */
+  tab: 'hedef' | 'odev' | 'test'
+  title: string
+  detail: string
+}
+
+/**
+ * Ünitenin içinde bir sonraki iş.
+ *
+ * Ünite sayfası hangi sekmenin okunduğunu kaydetmiyor; kaydettiği iki şey
+ * ödev işaretleri ve test sonucu. Adım bu ikisinden çıkarılıyor: hiç kayıt
+ * yoksa başlanmamıştır, ödev eksikse ödev, ödev bittiyse test.
+ */
+export function unitStep(u: UnitState): UnitStep {
+  if (!u.status) {
+    return {
+      tab: 'hedef',
+      title: 'Başla',
+      detail: 'Hedefleri oku, sonra sırayla dilbilgisi, kelime ve metin. Bugün metni sesli okuyabilecek kadar ilerle.',
+    }
+  }
+  if (u.homeworkDone < u.homeworkTotal) {
+    return {
+      tab: 'odev',
+      title: `Ödevler (${u.homeworkDone}/${u.homeworkTotal})`,
+      detail: 'Kâğıt üstünde yap; her ödevin içinde adım adım yol ve örnek var. Takılırsan dilbilgisi sekmesine dön.',
+    }
+  }
+  return {
+    tab: 'test',
+    title: u.testBest > 0 ? `Testi tekrar çöz (en iyi %${u.testBest})` : 'Ünite testi',
+    detail: '%70 ile ünite tamamlanır ve kelimeleri tekrar listene girer.',
+  }
+}
+
 // ————————————————————————— Tempo hesabı —————————————————————————
 
 /**
- * Sınava yetişmek için haftada kaç ders bitmeli?
+ * Sınava yetişmek için haftada kaç ünite bitmeli?
  *
- * Son üç haftayı tekrar ve deneme sınavına ayırıyoruz — yeni konu öğrenerek
- * sınava girmek işe yaramaz, son dönem pekiştirme dönemidir.
- */
-/**
- * Tempo hesabı.
- *
- * Tarih yoksa "haftada kaç ders" diye bir cevap YOKTUR — uydurmak yerine null
- * dönülüyor. Son üç hafta tekrar ve deneme için ayrılıyor, o yüzden çalışma
- * günü sayısından 21 düşülüyor.
+ * Son üç hafta tekrar ve deneme sınavına ayrılıyor — yeni konu öğrenerek
+ * sınava girmek işe yaramaz. Tarih yoksa "haftada kaç" diye bir cevap YOKTUR,
+ * uydurmak yerine null dönülüyor.
  */
 function pacing(completed: number, total: number, daysLeft: number | null) {
-  const kalanDers = Math.max(0, total - completed)
-  if (daysLeft === null) return { kalanDers, lessonsPerWeek: null }
+  const kalan = Math.max(0, total - completed)
+  if (daysLeft === null) return { kalan, unitsPerWeek: null }
   const calismaGunu = Math.max(1, daysLeft - 21)
   const hafta = calismaGunu / 7
-  const gereken = kalanDers / Math.max(1, hafta)
-  return { kalanDers, lessonsPerWeek: Math.max(1, Math.ceil(gereken)) }
+  return { kalan, unitsPerWeek: Math.max(1, Math.ceil(kalan / Math.max(1, hafta))) }
 }
 
 // ————————————————————————— Plan üretimi —————————————————————————
+//
+// NEDEN ÜNİTELER: plan önceden Genki derslerine ve kana sınavlarına bakıyordu.
+// Ana yol Üniteler olunca "Bugün" listesi öğrencinin hiç açmadığı derslere
+// gönderiyor, tempo da bitirilmeyen derslere göre "geride kaldın" diyordu.
+// Öğretmen tarafı öğrencinin fiilen izlediği yolu izlemeli.
 
 export function buildDailyPlan(ctx: PlanContext, now = new Date()): DailyPlan {
   const daysLeft = daysUntilExam(ctx.examDate, now)
-  const { kalanDers, lessonsPerWeek } = pacing(ctx.completed.size, ctx.totalLessons, daysLeft)
-
-  const rota = buildPlan(ctx.exams, ctx.completed)
-  const stage = ROADMAP.find((s) => s.id === rota.stageId)
+  const biten = ctx.units.filter((u) => u.status === 'completed').length
+  const { kalan, unitsPerWeek } = pacing(biten, ctx.units.length, daysLeft)
+  const aktif = ctx.units.find((u) => u.status !== 'completed')
   const tasks: DailyTask[] = []
 
   // ————— 1. Tekrar: her şeyin önünde —————
   //
   // Aralıklı tekrar biriktiğinde geri dönülmez hâle gelir. Bekleyen kart varsa
-  // günün ilk işi budur; yoksa görev listesine hiç konmaz ki yapılmış işi
-  // yapılacak gibi göstermeyelim.
+  // günün ilk işi budur; yoksa görev listesine hiç konmaz.
   if (ctx.dueCards > 0) {
     tasks.push({
       id: 'review',
@@ -153,10 +190,6 @@ export function buildDailyPlan(ctx: PlanContext, now = new Date()): DailyPlan {
   }
 
   // ————— 1.5. Dünkü çalışmanın testi —————
-  //
-  // Bekleyen tekrarlardan sonra, yeni dersten ÖNCE. Sebebi şu: dün öğrendiğin
-  // şey bugün en kırılgan hâlinde. Üstüne yeni konu koymadan önce onu sabitle,
-  // yoksa iki gün sonra ikisi de yarım kalır.
   if (ctx.pendingSession) {
     tasks.push({
       id: `gunsonu:${ctx.pendingSession.day}`,
@@ -168,93 +201,53 @@ export function buildDailyPlan(ctx: PlanContext, now = new Date()): DailyPlan {
     })
   }
 
-  // ————— 2. Yeni ders —————
-  if (ctx.nextLesson) {
+  // ————— 2. Ünite: günün asıl işi —————
+  if (aktif) {
+    const adim = unitStep(aktif)
     tasks.push({
-      id: `lesson:${ctx.nextLesson.id}`,
+      // Kimlik adımı da içeriyor: ödevi bitirip teste geçince yeni görev
+      // "yapılmamış" olarak görünsün.
+      id: `unite:${aktif.id}:${adim.tab}`,
       kind: 'lesson',
-      title: 'Sıradaki ders',
-      detail: `${ctx.nextLesson.title}${ctx.nextLesson.subtitle ? ` · ${ctx.nextLesson.subtitle}` : ''}`,
-      minutes: ctx.nextLesson.estMinutes ?? 25,
-      to: `/lesson/${ctx.nextLesson.id}`,
-    })
-  }
-
-  // ————— 3. Aşamaya göre alıştırma —————
-  //
-  // Alıştırma dersin tekrarı değil: ders TANITIR, alıştırma OTURTUR. Hangi
-  // alıştırmanın işe yaradığı aşamaya göre değişiyor.
-  if (rota.stageId === 'hiragana') {
-    tasks.push({
-      id: 'drill:kural',
-      kind: 'drill',
-      title: 'Kural okuma testi',
-      detail: 'Küçük っ, uzun ünlü, ん ve は→wa — okunuşu şıksız yaz.',
-      minutes: 10,
-      to: '/kural-testi',
-    })
-    tasks.push({
-      id: 'read:kelime',
-      kind: 'read',
-      title: 'Kelime okuma',
-      detail: 'Günde 10 kelime sök. Harf tanımak ile okumak ayrı becerilerdir.',
-      minutes: 10,
-      to: '/kana-kelime',
-    })
-  } else if (rota.stageId === 'katakana') {
-    tasks.push({
-      id: 'drill:kana-test',
-      kind: 'drill',
-      title: 'Katakana testi',
-      detail: 'O gün öğrendiğin satırları seç. シ/ツ ve ソ/ン ayrımına ayrıca çalış.',
-      minutes: 10,
-      to: '/kana-test',
-    })
-    tasks.push({
-      id: 'read:kelime',
-      kind: 'read',
-      title: 'Hiragana kelime okuma',
-      detail: 'Yeni alfabe öğrenirken eskisi paslanır — günde birkaç dakika yeter.',
-      minutes: 8,
-      to: '/kana-kelime',
+      title: `Ünite ${aktif.no} · ${adim.title}`,
+      detail: `${aktif.title}. ${adim.detail}`,
+      minutes: 25,
+      to: `/unite/${aktif.id}?b=${adim.tab}`,
     })
   } else {
-    // Genki aşaması: dilbilgisi ve kelime öne çıkar
     tasks.push({
-      id: 'grammar:oku',
-      kind: 'grammar',
-      title: 'Bir dilbilgisi konusu oku',
-      detail: 'Dersteki yapıyı bir de başlı başına oku; örnek cümleleri sesli söyle.',
-      minutes: 12,
-      to: '/grammar',
-    })
-    tasks.push({
-      id: 'drill:sozluk',
-      kind: 'read',
-      title: 'Kelime tekrarı',
-      detail: 'Sözlükten o dersin kelimelerine bak, bilmediklerini tekrar listesine ekle.',
-      minutes: 8,
-      to: '/dictionary',
+      id: 'deneme',
+      kind: 'exam',
+      title: 'N5 deneme sınavı',
+      detail: 'Bütün üniteler bitti. Şimdi ölçme zamanı: süreli çöz, zayıf bölümüne dön.',
+      minutes: 60,
+      to: '/n5-deneme',
     })
   }
 
-  // ————— 4. Kanji —————
+  // ————— 3. Kanji —————
+  tasks.push({
+    id: 'kanji:kart',
+    kind: 'drill',
+    title: 'Kanji kartları',
+    detail: 'Günde 3–4 kanji: çizimi izle, kâğıda yaz, örnek kelimeleri sesli oku.',
+    minutes: 10,
+    to: '/kanji-kartlar',
+  })
+
+  // ————— 4. Dinleme —————
   //
-  // Burada her gün 10 dakikalık "Yazı çalışması" (/write) görevi vardı ve
-  // atlanamaz çekirdek görevdi. Kullanıcı o sayfayı kullanmıyor; görev
-  // 60 dakikalık bütçenin 10'unu boşa ayırıyordu. Genki aşamasında onun
-  // yerine kanjiyi fiilen çalıştığı yer geliyor: kanji kartları. Alfabe
-  // aşamasında bu adım yok — orada kanji henüz başlamadı.
-  if (rota.stageId !== 'hiragana' && rota.stageId !== 'katakana') {
-    tasks.push({
-      id: 'kanji:kart',
-      kind: 'drill',
-      title: 'Kanji kartları',
-      detail: 'O dersteki kanjilerin kartına bak: çizimi izle, örnek kelimeleri sesli oku.',
-      minutes: 10,
-      to: '/kanji-kartlar',
-    })
-  }
+  // Dinleme sınavda AYRI barajlı bölüm (60 üzerinden en az 19). Okuyarak
+  // öğrenilen kelime kulakla tanınmıyor; bu beceri ayrıca çalışılmazsa
+  // diğer bölümler ne kadar iyi olursa olsun sınav kaybedilebilir.
+  tasks.push({
+    id: 'dinleme',
+    kind: 'video',
+    title: 'Dinleme',
+    detail: 'Fiyat, saat, tarih ve cümle dinle; duyduğunu yaz. Sınavın en çok sorduğu şeyler bunlar.',
+    minutes: 10,
+    to: '/dinleme',
+  })
 
   // ————— 5. Takılan kartlar —————
   if (ctx.leeches > 0) {
@@ -269,52 +262,57 @@ export function buildDailyPlan(ctx: PlanContext, now = new Date()): DailyPlan {
     })
   }
 
-  // ————— 6. Haftalık ölçüm —————
-  //
-  // Pazar günleri ölçüm günü: ilerlemeyi hissetmek motivasyonun yarısı.
-  if (now.getDay() === 0 && (rota.stageId === 'hiragana' || rota.stageId === 'katakana')) {
-    tasks.push({
-      id: 'exam:hafta',
-      kind: 'exam',
-      title: 'Haftalık ölçüm',
-      detail: 'Bitirme sınavına gir; geçen haftaya göre nerede olduğunu gör.',
-      minutes: 20,
-      to: '/hiragana-sinav',
-      optional: true,
-    })
+  // ————— 6. Pazar: haftalık ölçüm —————
+  if (now.getDay() === 0) {
+    const sonDonem = daysLeft !== null && daysLeft <= 21
+    tasks.push(
+      sonDonem
+        ? {
+            id: 'exam:deneme',
+            kind: 'exam',
+            title: 'Haftalık deneme',
+            detail: 'Son üç hafta: her pazar bir deneme. Süre tut, sonra yanlışlarını tek tek oku.',
+            minutes: 60,
+            to: '/n5-deneme',
+            optional: true,
+          }
+        : {
+            id: 'exam:kanji',
+            kind: 'exam',
+            title: 'Haftalık kanji testi',
+            detail: 'Bu hafta gördüğün kanjiler cümle içinde oturmuş mu? Şıksız dene.',
+            minutes: 10,
+            to: '/kanji-testi',
+            optional: true,
+          },
+    )
   }
-
-  // (Burada her gün "Dinleme (video)" ek görevi vardı; kullanıcı o sayfayı
-  // kullanmadığı için kaldırıldı. Dinleme sınavda ayrı barajlı bölüm —
-  // yerine uygulama içi bir dinleme alıştırması gelmeli, harici video değil.)
 
   const minutes = tasks.reduce((a, t) => a + t.minutes, 0)
 
   // ————— Tempo değerlendirmesi —————
   let pace: DailyPlan['pace']
-  if (lessonsPerWeek === null) {
-    // Sınav tarihi yok: tempo yerine İLERLEME söyleniyor. "Geride kaldın"
-    // demek için bir son tarih gerekir; olmayınca tek dürüst cevap nerede
-    // olduğundur.
-    // Sayıyı tekrar etme: ders sayısı zaten kartın başında büyük yazıyor.
-    // Buradaki cümle o sayının ne anlama geldiğini söylemeli.
+  if (unitsPerWeek === null) {
     pace = {
       state: 'ontrack',
       text:
-        kalanDers === 0
-          ? 'Bütün dersler bitti. Sınav tarihi girersen tempo hesabı da geri gelir.'
-          : 'Tempo yerine ilerleme gösteriliyor. Ayarlar’dan bir sınav tarihi girersen haftada kaç ders bitirmen gerektiği hesaplanır.',
+        kalan === 0
+          ? 'Bütün üniteler bitti. Sınav tarihi girersen tempo hesabı da geri gelir.'
+          : 'Tempo yerine ilerleme gösteriliyor. Sınav tarihi girersen haftada kaç ünite bitirmen gerektiği hesaplanır.',
     }
-  } else if (kalanDers === 0) {
-    pace = { state: 'ahead', text: 'Bütün dersler bitti. Kalan süre tekrar ve deneme için.' }
-  } else if (lessonsPerWeek <= 2) {
-    pace = { state: 'ahead', text: `Haftada ${lessonsPerWeek} ders yeterli — rahat bir tempo.` }
-  } else if (lessonsPerWeek <= 4) {
-    pace = { state: 'ontrack', text: `Haftada ${lessonsPerWeek} ders bitirmen gerekiyor. Günde bir bölüm ile tutar.` }
+  } else if (kalan === 0) {
+    pace = { state: 'ahead', text: 'Bütün üniteler bitti. Kalan süre tekrar ve deneme için.' }
+  } else if (unitsPerWeek <= 1) {
+    pace = { state: 'ahead', text: `Haftada ${unitsPerWeek} ünite yeterli — rahat bir tempo.` }
+  } else if (unitsPerWeek <= 2) {
+    pace = {
+      state: 'ontrack',
+      text: `${kalan} ünite kaldı. Son üç haftayı pekiştirmeye ayırmak için haftada ${unitsPerWeek} ünite bitirmelisin.`,
+    }
   } else {
     pace = {
       state: 'behind',
-      text: `Haftada ${lessonsPerWeek} ders gerekiyor — bu sıkışık. Günlük süreyi 1,5 saate çıkarman ya da hedefi sınav sonrasına yayman gerekebilir.`,
+      text: `${kalan} ünite için haftada ${unitsPerWeek} ünite gerekiyor — sıkışık. Hafta sonları ikinci bir oturum eklemeyi düşün.`,
     }
   }
 
@@ -322,8 +320,8 @@ export function buildDailyPlan(ctx: PlanContext, now = new Date()): DailyPlan {
     tasks,
     minutes,
     daysLeft,
-    lessonsPerWeek,
+    unitsPerWeek,
     pace,
-    focus: stage ? `${stage.title} · ${rota.headline}` : rota.headline,
+    focus: aktif ? `Ünite ${aktif.no} · ${aktif.title}` : 'Üniteler bitti · deneme ve tekrar',
   }
 }

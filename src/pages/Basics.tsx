@@ -308,7 +308,7 @@ function SayiAraci() {
       <div className="card-title">Sayı yaz, okunuşunu gör</div>
       <div className="card-sub">Fiyat, yıl, telefon kodu — aklına gelen herhangi bir sayı (en çok 12 basamak).</div>
       <input
-        className="input tb-input"
+        className="field tb-input"
         inputMode="numeric"
         value={yazi}
         onChange={(e) => setYazi(e.target.value)}
@@ -518,7 +518,7 @@ function SaatAraci() {
       <div className="card-title">Saat seç, okunuşunu gör</div>
       <input
         type="time"
-        className="input tb-input"
+        className="field tb-input"
         value={deger}
         onChange={(e) => setDeger(e.target.value)}
         aria-label="Saat"

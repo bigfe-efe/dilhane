@@ -2,8 +2,6 @@ import { useState } from 'react'
 import { TopBar } from '@/components/ui'
 import { Icon } from '@/components/icons'
 import { RESOURCE_GROUPS, embedUrl, type Resource } from '@/content/ja/resources'
-import { ROADMAP, buildPlan } from '@/content/ja/roadmap'
-import { useExams, useLessonProgress } from '@/db/hooks'
 
 // Video kaynakları.
 //
@@ -17,14 +15,6 @@ import { useExams, useLessonProgress } from '@/db/hooks'
 
 export default function ResourcesPage() {
   const [acik, setAcik] = useState<Resource | null>(null)
-  const exams = useExams()
-  const prog = useLessonProgress()
-
-  const tamamlanan = new Set(
-    [...prog.map.entries()].filter(([, v]) => v.status === 'completed').map(([k]) => k),
-  )
-  const plan = buildPlan(exams, tamamlanan)
-  const stage = ROADMAP.find((s) => s.id === plan.stageId)
 
   return (
     <>
@@ -41,27 +31,15 @@ export default function ResourcesPage() {
             </div>
           </div>
           <div className="card-sub" style={{ lineHeight: 1.65 }}>
-            Uygulama okumayı, yazmayı ve dilbilgisini öğretiyor. Ama bu cihazda Japonca konuşma sesi kurulu
-            olmadığı için sesler <b>Türkçe yaklaşık okumayla</b> veriliyor — o okuma harfleri sökmene yarar,
-            telaffuzunu kurmaz. Gerçek Japonca duymadan tonlama ve ritim oturmaz.
+            Uygulamadaki sesler cihazın Japonca konuşma motorundan geliyor; tek tek kelime ve cümle için
+            yeterli. Ama gerçek konuşmanın hızı, tonlaması ve iki kişi arasındaki akış ancak gerçek
+            kayıtlardan duyulur. Uygulama içi <b>Dinleme</b> alıştırmasının yanında bunları da dinle.
           </div>
           <div className="feedback feedback--info tiny">
             <b>İnternet gerekir: </b>Uygulamanın geri kalanı tamamen çevrimdışı çalışır; yalnızca bu sayfadaki
             videolar dışarıya bağlanır. Oynatıcı sen bir kaynağa dokunana kadar yüklenmez.
           </div>
         </div>
-
-        {stage && (
-          <div className="card card--accent stack-sm">
-            <div className="row">
-              <span className="stage-glyph ja">{stage.glyph}</span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="card-title">Şu an: {stage.title}</div>
-                <div className="card-sub">Aşamana uyan kaynaklar aşağıda işaretli.</div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {acik && (
           <div className="card stack-sm">
@@ -107,11 +85,10 @@ export default function ResourcesPage() {
               {g.note}
             </div>
             {g.items.map((r) => {
-              const uygun = stage ? r.stages.includes(stage.id) : false
               return (
                 <button
                   key={r.id}
-                  className={`card card--link res-card${uygun ? ' is-fit' : ''}`}
+                  className="card card--link res-card"
                   onClick={() => setAcik(r)}
                   style={{ textAlign: 'left' }}
                 >
@@ -122,7 +99,6 @@ export default function ResourcesPage() {
                     <div className="stack-sm" style={{ gap: 2, flex: 1, minWidth: 0 }}>
                       <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
                         <div className="card-title">{r.title}</div>
-                        {uygun && <span className="badge badge--accent tiny">seviyene uygun</span>}
                       </div>
                       <div className="card-sub">{r.desc}</div>
                       <div className="tiny faint">{r.channel}</div>

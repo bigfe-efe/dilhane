@@ -1,10 +1,17 @@
 import { Link } from 'react-router-dom'
 import { Bar, TopBar } from '@/components/ui'
 import { Icon, type IconName } from '@/components/icons'
-import { useDailyDone, useDailyHistory, useDueCounts, useExamDate, useExams, useLeeches, useLessonProgress, usePendingSession, useToday } from '@/db/hooks'
-import { db, todayKey } from '@/db/db'
-import { LESSONS_ORDERED } from '@/content'
-import { buildDailyPlan, type DailyTask, type TaskKind } from '@/content/ja/study-plan'
+import { useDailyDone, useDailyHistory, useDueCounts, useExamDate, useLeeches, usePendingSession, useToday, useUnitProgress } from '@/db/hooks'
+import { db, setSetting, todayKey } from '@/db/db'
+import { UNITS } from '@/content/ja/units'
+import { EXAM_DATE_KEY, buildDailyPlan, type DailyTask, type TaskKind, type UnitState } from '@/content/ja/study-plan'
+
+/**
+ * Başvurusu yapılmış sınavın tarihi. Tarih ayarı tarayıcıda saklandığı için
+ * koddan yazılamıyor; tarih boşsa ana sayfa bunu tek dokunuşla kaydetmeyi
+ * öneriyor. Sınav değişirse Ayarlar ya da N5 sayfasından düzeltilir.
+ */
+const BASVURULAN_SINAV = '2026-12-06'
 
 // "Bugün" — günün çalışma listesi.
 //
@@ -38,28 +45,34 @@ export default function Home() {
   const gun = todayKey()
   const due = useDueCounts()
   const today = useToday()
-  const prog = useLessonProgress()
+  const uniteKayit = useUnitProgress()
   const leeches = useLeeches()
-  const exams = useExams()
   const yapilan = useDailyDone(gun)
   const gecmis = useDailyHistory(14)
   const examDate = useExamDate()
   const bekleyen = usePendingSession()
 
-  const tamamlanan = new Set(
-    [...prog.map.entries()].filter(([, v]) => v.status === 'completed').map(([k]) => k),
-  )
+  const uniteler: UnitState[] = UNITS.map((u) => {
+    const k = uniteKayit.get(u.id)
+    return {
+      id: u.id,
+      no: u.no,
+      title: u.title,
+      status: k?.status,
+      homeworkDone: k?.homework.length ?? 0,
+      homeworkTotal: u.homework.length,
+      testBest: k?.testBest ?? 0,
+    }
+  })
+  const bitenUnite = uniteler.filter((u) => u.status === 'completed').length
 
   const plan = buildDailyPlan({
     day: gun,
     dueCards: due.total,
-    completed: tamamlanan,
-    nextLesson: prog.next,
-    exams,
+    units: uniteler,
     examDate,
     pendingSession: bekleyen ? { day: bekleyen.day, chars: bekleyen.chars.length } : null,
     leeches: leeches.leeches.length,
-    totalLessons: LESSONS_ORDERED.length,
   })
 
   const cekirdek = plan.tasks.filter((t) => !t.optional)
@@ -95,7 +108,7 @@ export default function Home() {
       <div className="page dash lang-ja">
         <div className="dash-main stack-lg">
         {/* ————— Sınav geri sayımı ve tempo ————— */}
-        <Link to="/rota" className="railcard railcard--link">
+        <Link to="/n5" className="railcard railcard--link">
           <div className="row">
             <span className="ja home-mark">日本語</span>
             <div className="spacer" />
@@ -125,9 +138,9 @@ export default function Home() {
             ) : (
               <>
                 <span className="countdown tabular">
-                  {prog.completed}/{prog.total}
+                  {bitenUnite}/{uniteler.length}
                 </span>
-                <span className="card-sub">ders bitti</span>
+                <span className="card-sub">ünite bitti</span>
               </>
             )}
           </div>
@@ -142,6 +155,20 @@ export default function Home() {
             <Icon name="right" size={14} />
           </div>
         </Link>
+
+        {examDate === null && (
+          <div className="card row" style={{ gap: 10, flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <div className="small">
+                Sınav tarihi kayıtlı değil. N5 başvurunu <b>6 Aralık 2026</b> için yaptın.
+              </div>
+              <div className="tiny faint">Kaydedince geri sayım ve haftalık tempo hesabı açılır.</div>
+            </div>
+            <button className="btn btn--sm btn--primary" onClick={() => void setSetting(EXAM_DATE_KEY, BASVURULAN_SINAV)}>
+              Tarihi kaydet
+            </button>
+          </div>
+        )}
 
         {/* ————— Günün listesi ————— */}
         <div className="stack-sm">
@@ -240,16 +267,16 @@ export default function Home() {
         {/* ————— Müfredat ————— */}
         <div className="card stack-sm">
           <div className="row tiny">
-            <span className="dim">Müfredat</span>
+            <span className="dim">Üniteler</span>
             <div className="spacer" />
             <span className="tabular dim">
-              {prog.completed} / {prog.total} ders
+              {bitenUnite} / {uniteler.length} ünite
             </span>
           </div>
-          <Bar value={prog.percent} />
+          <Bar value={uniteler.length ? (bitenUnite / uniteler.length) * 100 : 0} />
           <div className="row">
-            <Link to="/lessons" className="tiny dim" style={{ textDecoration: 'underline' }}>
-              Bütün dersler
+            <Link to="/uniteler" className="tiny dim" style={{ textDecoration: 'underline' }}>
+              Bütün üniteler
             </Link>
             <div className="spacer" />
             <Link to="/calis" className="tiny dim" style={{ textDecoration: 'underline' }}>

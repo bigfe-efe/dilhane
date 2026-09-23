@@ -49,6 +49,15 @@ const GROUPS: Group[] = [
     ],
   },
   {
+    // Dinleme sınavda ayrı barajlı bölüm; uygulamada hiç karşılığı yoktu.
+    id: 'dinleme',
+    title: 'Dinleme',
+    note: 'Sınavda ayrı puanlanır ve kendi barajı var. Her gün 10 dakika: fiyat, saat, tarih ve cümle.',
+    items: [
+      { to: '/dinleme', icon: 'headphones', title: 'Dinleme alıştırması', sub: 'Duy, yaz ya da seç — sınavın en çok sorduğu bilgiler' },
+    ],
+  },
+  {
     id: 'kanji',
     title: 'Kanji',
     note: 'N5’in 106 kanjisi. Kartlarla öğren, tabloda göz gezdir.',
@@ -76,7 +85,7 @@ const GROUPS: Group[] = [
     note: 'Nerede olduğunu ölçer. Ayda bir deneme yeterli.',
     items: [
       { to: '/n5-deneme', glyph: '模', title: 'N5 deneme sınavı', sub: 'Gerçek biçim, süreli, bölüm bölüm sonuç' },
-      { to: '/rota', icon: 'target', title: 'Rota ve çalışma planı', sub: 'Nerede olduğun ve sırada ne var' },
+      { to: '/n5', glyph: '五', title: 'N5 hazırlığı', sub: 'Geri sayım, dönem planı ve tempo' },
     ],
   },
   {
