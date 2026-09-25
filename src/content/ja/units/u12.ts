@@ -30,7 +30,7 @@ export const u12: Unit = {
         'より Türkçedeki “-den (daha)” ekidir ve karşılaştırılan şeyin ARKASINA gelir. Japoncada ayrıca “daha” kelimesi söylenmez; より yeter.',
       examples: [
         { ja: '今日は昨日より寒いです。', kana: 'きょうはきのうよりさむいです。', tr: 'Bugün dünden soğuk.' },
-        { ja: '電車はバスよりはやいです。', kana: 'でんしゃはバスよりはやいです。', tr: 'Tren otobüsten hızlı.' },
+        { ja: '電車はバスより速いです。', kana: 'でんしゃはバスよりはやいです。', tr: 'Tren otobüsten hızlı.' },
       ],
       ref: 'ja-yori-hou',
     },

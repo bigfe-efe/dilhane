@@ -1,8 +1,10 @@
 import { useState, type ReactNode } from 'react'
 import { JaOkunus } from '@/components/JaOkunus'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Chips, SpeakBtn, TopBar } from '@/components/ui'
 import { kanaToRomaji } from '@/lib/ja-phonetic'
+import { EKLER, EK_CIFTLERI, type Ek } from '@/content/ja/ekler'
+import { UNIT_BY_ID } from '@/content/ja/units'
 import {
   AYIN_GUNLERI,
   AYLAR,
@@ -51,7 +53,7 @@ import {
 // en hızlı yolu o. Yıldız (★) düzensiz ya da en sık hata yapılan satırları
 // işaretliyor — asıl ezberlenecek liste yıldızlılar.
 
-type Bolum = 'sayilar' | 'tarih' | 'saat' | 'kosoado' | 'tanitim'
+type Bolum = 'sayilar' | 'tarih' | 'saat' | 'kosoado' | 'tanitim' | 'ekler'
 
 const BOLUMLER: { id: Bolum; label: string }[] = [
   { id: 'sayilar', label: 'Sayılar' },
@@ -59,6 +61,7 @@ const BOLUMLER: { id: Bolum; label: string }[] = [
   { id: 'saat', label: 'Saat' },
   { id: 'kosoado', label: 'Bu · şu · o' },
   { id: 'tanitim', label: 'Kendini tanıt' },
+  { id: 'ekler', label: 'Ekler (は・の…)' },
 ]
 
 export default function BasicsPage() {
@@ -68,7 +71,7 @@ export default function BasicsPage() {
 
   return (
     <>
-      <TopBar title="Temel bilgiler" sub="Sayılar, tarih, saat, bu/şu/o, kendini tanıtma" back="/calis" />
+      <TopBar title="Temel bilgiler" sub="Sayılar, tarih, saat, bu/şu/o, kendini tanıtma, ekler" back="/calis" />
 
       <div className="page stack-lg lang-ja">
         <Chips items={BOLUMLER} value={bolum} onChange={(b) => setParams({ b }, { replace: true })} />
@@ -81,6 +84,7 @@ export default function BasicsPage() {
         {bolum === 'saat' && <Saat />}
         {bolum === 'kosoado' && <Kosoado />}
         {bolum === 'tanitim' && <Tanitim />}
+        {bolum === 'ekler' && <Ekler />}
       </div>
     </>
   )
@@ -718,6 +722,136 @@ function Tanitim() {
           ))}
         </div>
       </Bolumcuk>
+    </div>
+  )
+}
+
+// ————————————————————————— Ekler —————————————————————————
+
+/** Ekin romajideki kelimeleri: 'gurai · goro' → ['gurai', 'goro'] */
+const ekLatin = (e: Ek) => e.okunus.split(' · ')
+/** Ekin yazılışları: 'ぐらい・ごろ' → ['ぐらい', 'ごろ'] */
+const ekYazilis = (e: Ek) => e.ek.split('・')
+const EK_LATIN: Record<string, string> = { は: 'wa', が: 'ga', を: 'o', の: 'no', に: 'ni', へ: 'e', で: 'de', と: 'to', や: 'ya' }
+
+function Ekler() {
+  const git = (id: string) => document.getElementById(`ek-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+
+  return (
+    <div className="stack-lg">
+      <div className="card card--pad-lg stack-sm">
+        <div className="card-title">Japonca ekler, Türkçe ekler gibi</div>
+        <div className="small">
+          Türkçede “okul<b>a</b> gidiyorum” deriz; ek kelimenin arkasına gelir. Japoncada da aynısı:{' '}
+          <span className="ja">学校<b className="jo-vurgu">に</b>行きます</span>. Tek fark, Japonca ekin ayrı bir hece olarak
+          yazılması. Bu yüzden her ekin önce Türkçe karşılığını öğren; anlamı oradan kurmak ezberden hızlı.
+        </div>
+        <div className="tiny faint">
+          Üç ek yazıldığı gibi okunmaz: は <b>wa</b>, を <b>o</b>, へ <b>e</b>. Aşağıdaki örneklerde anlatılan ek renkli.
+        </div>
+      </div>
+
+      <Bolumcuk baslik="Hızlı tablo" alt="Bir eke dokun, ayrıntısına git.">
+        <div className="ek-tablo">
+          {EKLER.map((e) => (
+            <button key={e.id} className={`ek-satir${e.star ? ' is-star' : ''}`} onClick={() => git(e.id)}>
+              <span className="ja ek-satir-ek">{e.ek}</span>
+              <span className="ek-satir-okunus">{e.okunus}</span>
+              <span className="ek-satir-tr">{e.tr}</span>
+            </button>
+          ))}
+        </div>
+      </Bolumcuk>
+
+      <Bolumcuk baslik="Ekler tek tek">
+        <div className="stack">
+          {EKLER.map((e) => (
+            <EkKart key={e.id} e={e} />
+          ))}
+        </div>
+      </Bolumcuk>
+
+      <Bolumcuk baslik="Sık karıştırılanlar" alt="Her çiftte aynı cümle iki ekle — farkı yan yana gör.">
+        <div className="stack">
+          {EK_CIFTLERI.map((c) => (
+            <div key={c.baslik} className="card stack-sm is-star">
+              <div className="row" style={{ gap: 8 }}>
+                <span className="card-title ja">{c.baslik}</span>
+                <Yildiz />
+              </div>
+              <div className="small">{c.kural}</div>
+              {c.ornekler.map((o) => (
+                <div key={o.ja} className="unit-ex">
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <JaOkunus
+                      ja={o.ja}
+                      kana={o.kana}
+                      latin={o.latin}
+                      tr={o.tr}
+                      jaClass="unit-ex-ja"
+                      vurgu={c.ekler}
+                      vurguLatin={c.ekler.map((x) => EK_LATIN[x]).filter(Boolean)}
+                    />
+                  </div>
+                  <SpeakBtn text={o.ja} lang="ja" size="sm" reading={o.kana} />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </Bolumcuk>
+    </div>
+  )
+}
+
+function EkKart({ e }: { e: Ek }) {
+  const unite = e.unite ? UNIT_BY_ID.get(e.unite) : undefined
+  return (
+    <div id={`ek-${e.id}`} className={`card stack-sm ek-kart${e.star ? ' is-star' : ''}`}>
+      <div className="row" style={{ gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+        <span className="ja ek-buyuk">{e.ek}</span>
+        <div style={{ flex: 1, minWidth: 160 }}>
+          <div className="ek-okunus">{e.okunus}</div>
+          <div className="card-title">{e.tr}</div>
+        </div>
+        {e.star && <Yildiz />}
+        {unite && (
+          <Link to={`/unite/${unite.id}?b=gramer`} className="badge tiny" title={unite.title}>
+            Ünite {unite.no}
+          </Link>
+        )}
+      </div>
+      <div className="small">{e.ozet}</div>
+
+      {e.kullanimlar.map((k) => (
+        <div key={k.baslik} className="stack-sm">
+          <div className="tb-sub">{k.baslik}</div>
+          {k.aciklama && <div className="tiny dim">{k.aciklama}</div>}
+          {k.ornekler.map((o) => (
+            <div key={o.ja} className="unit-ex">
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <JaOkunus
+                  ja={o.ja}
+                  kana={o.kana}
+                  latin={o.latin}
+                  tr={o.tr}
+                  jaClass="unit-ex-ja"
+                  vurgu={ekYazilis(e)}
+                  vurguLatin={ekLatin(e)}
+                />
+              </div>
+              <SpeakBtn text={o.ja} lang="ja" size="sm" reading={o.kana} />
+            </div>
+          ))}
+        </div>
+      ))}
+
+      {e.dikkat && (
+        <div className="feedback feedback--bad tiny">
+          <b>Dikkat: </b>
+          {e.dikkat}
+        </div>
+      )}
     </div>
   )
 }

@@ -3630,6 +3630,24 @@ ul.tight li {
 .jo-sheet .jo-kana { font-size: 1.25rem; color: var(--text-dim); }
 .jo-sheet .jo-tr { font-size: 1.15rem; color: var(--text); }
 
+/* ————— Ekler ————— */
+.jo-vurgu { background: transparent; color: var(--warn); font-weight: 700; }
+.jo-romaji .jo-vurgu { text-decoration: underline; text-underline-offset: 3px; }
+.ek-tablo { display: grid; gap: 4px; }
+.ek-satir {
+  display: grid; grid-template-columns: 64px 64px minmax(0, 1fr); align-items: center; gap: 10px;
+  padding: 8px 12px; border-radius: 10px; background: var(--bg-elev-2); border: 1px solid transparent;
+  color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.ek-satir:hover { border-color: var(--accent); }
+.ek-satir.is-star { border-left: 3px solid var(--warn); }
+.ek-satir-ek { font-size: 1.45rem; font-weight: 600; }
+.ek-satir-okunus { color: var(--accent); font-size: 0.9rem; }
+.ek-satir-tr { font-size: 0.9rem; }
+.ek-kart { scroll-margin-top: 80px; }
+.ek-buyuk { font-size: 2.6rem; font-weight: 600; line-height: 1; min-width: 56px; text-align: center; }
+.ek-okunus { color: var(--accent); font-size: 1rem; font-weight: 600; }
+
 /* ————— Resmî örnek sınav ————— */
 .ofx-kod { background: var(--bg-elev-2); padding: 10px 12px; border-radius: 10px; font-family: var(--ff-mono); }
 .ofx-sets { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }

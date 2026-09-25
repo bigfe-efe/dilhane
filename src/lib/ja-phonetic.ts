@@ -313,7 +313,10 @@ export function romajiWords(ja: string, kana: string): string {
     oncekiKanji = p.tur === 'kanji'
   }
 
-  return kelimeler.join(' ')
+  // Kanji + tek hece + kanji: 買い物 "kai mono" diye bölünüyordu. Genel bir
+  // kural yazılamıyor — aynı biçim 古い本'de ("furui hon") iki ayrı kelime.
+  // N5'te geçen …物 birleşikleri tek tek tanınıyor.
+  return kelimeler.join(' ').replace(/\b(kai|tabe|nomi|nori|yomi|wasure) mono\b/g, '$1mono')
 }
 
 /** Ekin okunuşu — yazıldığı gibi değil. */
