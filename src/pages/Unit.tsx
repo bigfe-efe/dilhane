@@ -10,6 +10,8 @@ import { ChoukaiMetin, ChoukaiPlayer, MockPrompt, SecenekListesi } from '@/compo
 import { StrokeOrder } from '@/components/StrokeOrder'
 import { KANJI_BY_CHAR } from '@/content/ja/kanji-n5'
 import { JaOkunus } from '@/components/JaOkunus'
+import { KanjiAnlamlari, KelimeKirilimi } from '@/components/KanjiParcalari'
+import { kanaToRomaji } from '@/lib/ja-phonetic'
 import { LESSONS_BY_ID, unitVocabIds } from '@/content'
 import { cardId, db, ensureCards } from '@/db/db'
 import { useUnit } from '@/db/hooks'
@@ -290,33 +292,31 @@ function Kelime({ unit }: { unit: Unit }) {
         </div>
       )}
 
-      {/* Ünitenin N5 kanjileri: 106 kanji 14 üniteye elle dağıtıldı; burada
-          yalnızca bu ünitenin payı. Dokununca çizim sırası açılır. */}
+      {/* Ünitenin N5 kanjileri — TEK TEK.
+          Öğrenci kanjiyi kelimenin içinde öğreniyor (先生 = öğretmen) ama
+          先'yi ve 生'yi ayrı ayrı tanımıyordu; N5'in kanji okuma soruları ise
+          tam bunu soruyor. Her kart: kanjinin kendi anlamı ve okunuşları, sonra
+          bu ünitedeki kelimelerde hangi anlamı ve okunuşu taşıdığı. */}
       {kanjiler.length > 0 && (
-        <div className="card stack-sm">
+        <div className="stack-sm">
           <div className="row">
-            <span className="card-title">Bu ünitenin N5 kanjileri</span>
+            <h2 style={{ margin: 0 }}>Bu ünitenin kanjileri — tek tek</h2>
             <div className="spacer" />
             <span className="tiny faint tabular">{kanjiler.length}</span>
           </div>
-          <div className="unit-kanji-row">
-            {kanjiler.map((ch) => {
-              const k = KANJI_BY_CHAR.get(ch)
-              return (
-                <button
-                  key={ch}
-                  className="unit-kanji"
-                  onClick={() => setAcik({ ja: ch, kana: ch, tr: k?.meaningsTr.join(', ') ?? '' })}
-                >
-                  <span className="ja unit-kanji-ch">{ch}</span>
-                  <span className="unit-kanji-tr">{k?.meaningsTr[0] ?? ''}</span>
-                </button>
-              )
-            })}
+          <div className="card-sub">
+            Kelimeleri biliyorsun; burada onları oluşturan kanjileri tek tek görüyorsun. Sınav kanjiyi tek başına da
+            sorar: aynı 生, 学生’de <b>sei</b>, 生まれる’da <b>u</b> okunur. Kanjiye dokunursan çizim sırası açılır.
           </div>
-          <div className="tiny faint">Dokun: çizim sırası, anlam ve okunuşlar.</div>
+          <div className="cols-2">
+            {kanjiler.map((ch) => (
+              <KanjiKart key={ch} ch={ch} unit={unit} onAc={(v) => setAcik(v)} />
+            ))}
+          </div>
         </div>
       )}
+
+      <h2 style={{ margin: '8px 0 0' }}>Kelimeler</h2>
       <div className="cols-2">
         {unit.vocab.map((v) => (
           <div
@@ -335,6 +335,7 @@ function Kelime({ unit }: { unit: Unit }) {
             <div className="row">
               <div className="jo-kart" style={{ flex: 1, minWidth: 0 }}>
                 <JaOkunus ja={v.ja} kana={v.kana} tr={v.tr} jaClass="unit-vocab-ja">
+                  <KanjiAnlamlari ja={v.ja} kana={v.kana} />
                   {v.star && <Yildiz label="Çok kullanılır" />}
                   {v.note && <div className="tiny dim">{v.note}</div>}
                 </JaOkunus>
@@ -349,6 +350,73 @@ function Kelime({ unit }: { unit: Unit }) {
       </div>
 
       {acik && <KelimeSheet v={acik} onClose={() => setAcik(null)} />}
+    </div>
+  )
+}
+
+/** "い-きる" → "い(きる)": tireden sonrası okurigana */
+const kunGoster = (k: string) => k.replace(/^-/, '…').replace(/-(.+)$/, '($1)')
+const katakanadanHiragana = (s: string) => s.replace(/[ァ-ヶ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x60))
+
+/**
+ * Tek bir kanjinin kartı: anlamı, on/kun okunuşları ve bu ünitedeki
+ * kelimelerde nasıl kullanıldığı. Ünitenin kelime listesinde geçmiyorsa
+ * (yalnızca metinde geçiyorsa) kanjinin N5 örnek kelimeleri gösterilir.
+ */
+function KanjiKart({ ch, unit, onAc }: { ch: string; unit: Unit; onAc: (v: UnitVocab) => void }) {
+  const k = KANJI_BY_CHAR.get(ch)
+  if (!k) return null
+  const uniteKelimeleri = unit.vocab.filter((v) => v.ja.includes(ch))
+  const kelimeler = uniteKelimeleri.length
+    ? uniteKelimeleri.slice(0, 3).map((v) => ({ ja: v.ja, kana: v.kana, tr: v.tr }))
+    : k.words.slice(0, 2).map((w) => ({ ja: w.term, kana: w.reading, tr: w.tr }))
+
+  return (
+    <div className="card stack-sm kk-kart">
+      <div className="row" style={{ gap: 12, alignItems: 'flex-start' }}>
+        <button
+          className="ja kk-buyuk"
+          onClick={() => onAc({ ja: ch, kana: ch, tr: k.meaningsTr.join(', ') })}
+          aria-label={`${ch} çizim sırası`}
+        >
+          {ch}
+        </button>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="card-title">{k.meaningsTr.join(', ')}</div>
+          <div className="kk-okunuslar">
+            {k.on.length > 0 && (
+              <div>
+                <span className="kk-etiket">on</span>
+                {k.on.map((o, i) => (
+                  <span key={o}>
+                    {i > 0 && ' · '}
+                    <span className="ja">{o}</span> <span className="kk-romaji">{kanaToRomaji(katakanadanHiragana(o))}</span>
+                  </span>
+                ))}
+              </div>
+            )}
+            {k.kun.length > 0 && (
+              <div>
+                <span className="kk-etiket">kun</span>
+                {k.kun.map((o, i) => (
+                  <span key={o}>
+                    {i > 0 && ' · '}
+                    <span className="ja">{kunGoster(o)}</span>{' '}
+                    <span className="kk-romaji">{kunGoster(kanaToRomaji(o.replace(/-/g, '|')).replace(/\|/g, '-'))}</span>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="tiny faint">{k.strokes} çizgi</div>
+        </div>
+      </div>
+      <div className="tb-sub">{uniteKelimeleri.length ? 'Bu ünitede' : 'Örnek kelimeler'}</div>
+      <div className="stack-sm">
+        {kelimeler.map((w) => (
+          <KelimeKirilimi key={w.ja} ja={w.ja} kana={w.kana} tr={w.tr} vurgu={ch} />
+        ))}
+      </div>
     </div>
   )
 }

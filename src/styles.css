@@ -3630,6 +3630,36 @@ ul.tight li {
 .jo-sheet .jo-kana { font-size: 1.25rem; color: var(--text-dim); }
 .jo-sheet .jo-tr { font-size: 1.15rem; color: var(--text); }
 
+/* ————— Kanjiler tek tek (ünite kelime sekmesi) ————— */
+.kk-kart { scroll-margin-top: 80px; }
+.kk-buyuk {
+  font-size: 3rem; font-weight: 600; line-height: 1; width: 72px; height: 72px; flex: none;
+  display: grid; place-items: center; border-radius: 12px; border: 1px solid var(--line);
+  background: var(--bg-elev-2); color: inherit; cursor: pointer;
+}
+.kk-buyuk:hover { border-color: var(--accent); }
+.kk-okunuslar { display: grid; gap: 2px; font-size: 0.9rem; margin-top: 2px; }
+.kk-etiket {
+  display: inline-block; min-width: 30px; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--text-dim); font-weight: 650;
+}
+.kk-romaji { color: var(--accent); font-size: 0.85rem; }
+.kk-kelime-satir { padding: 8px 10px; border-radius: 10px; background: var(--bg-elev-2); display: grid; gap: 6px; }
+.kk-kelime { font-size: 1.3rem; font-weight: 600; }
+.kk-parcalar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+.kk-arti { color: var(--text-faint); }
+.kk-parca {
+  display: inline-flex; align-items: baseline; gap: 5px; padding: 3px 8px; border-radius: 8px;
+  border: 1px solid var(--line); font-size: 0.85rem;
+}
+.kk-parca b { font-size: 1.15rem; }
+.kk-parca.is-on { border-color: var(--warn); background: var(--warn-soft); }
+.kk-ok { color: var(--accent); }
+.kk-an { color: var(--text-dim); }
+/* Kelime kartında: 先 önce + 生 hayat */
+.kk-kisa { font-size: 0.85rem; color: var(--text-dim); margin-top: 2px; }
+.kk-kisa .ja { color: var(--text); font-weight: 600; }
+
 /* ————— Ekler ————— */
 .jo-vurgu { background: transparent; color: var(--warn); font-weight: 700; }
 .jo-romaji .jo-vurgu { text-decoration: underline; text-underline-offset: 3px; }
