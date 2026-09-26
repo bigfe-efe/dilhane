@@ -3660,6 +3660,25 @@ ul.tight li {
 .kk-kisa { font-size: 0.85rem; color: var(--text-dim); margin-top: 2px; }
 .kk-kisa .ja { color: var(--text); font-weight: 600; }
 
+/* ————— Olumlu · olumsuz (çekimler) ————— */
+.ck-kiyas { display: grid; gap: 2px; padding: 10px 12px; border-radius: 10px; background: var(--bg-elev-2); font-size: 1.3rem; }
+.ck-kiyas .small { font-size: 0.95rem; }
+.ck-izgara { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+@media (min-width: 900px) { .ck-izgara { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.ck-hucre { display: grid; gap: 1px; min-width: 0; padding: 8px 10px; border-radius: 10px; background: var(--bg-elev-2); }
+.ck-ja { font-size: 1.3rem; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; }
+.ck-romaji { color: var(--accent); font-size: 0.85rem; overflow-wrap: anywhere; }
+.ck-romaji b { color: var(--warn); }
+.ck-tr { font-size: 0.9rem; }
+.ck-son-ek { font-size: 1.4rem; font-weight: 600; }
+.ck-tur { text-transform: none; }
+.ck-tur--olumsuz, .ck-tur--yasak { color: var(--bad); border-color: var(--bad); }
+.ck-tur--geçmiş { color: var(--warn); border-color: var(--warn); }
+.ck-tur--rica, .ck-tur--teklif, .ck-tur--izin, .ck-tur--istek, .ck-tur--zorunluluk { color: var(--accent); border-color: var(--accent); }
+.ck-soru .ck-hucre { background: transparent; padding: 4px 0; }
+.ck-soru .ck-ja { font-size: clamp(1.8rem, 5vw, 2.4rem); }
+.ck-soru .ck-romaji { font-size: 1rem; }
+
 /* ————— Ekler ————— */
 .jo-vurgu { background: transparent; color: var(--warn); font-weight: 700; }
 .jo-romaji .jo-vurgu { text-decoration: underline; text-underline-offset: 3px; }

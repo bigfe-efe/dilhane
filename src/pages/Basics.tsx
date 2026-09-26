@@ -4,6 +4,8 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { Chips, SpeakBtn, TopBar } from '@/components/ui'
 import { kanaToRomaji } from '@/lib/ja-phonetic'
 import { EKLER, EK_CIFTLERI, type Ek } from '@/content/ja/ekler'
+import { CEKIM_TABLOSU, CUMLE_SONLARI, SUTUNLAR, TANIMA_KURALLARI, type Hucre } from '@/content/ja/cekimler'
+import { shuffle } from '@/lib/shuffle'
 import { UNIT_BY_ID } from '@/content/ja/units'
 import {
   AYIN_GUNLERI,
@@ -53,7 +55,7 @@ import {
 // en hızlı yolu o. Yıldız (★) düzensiz ya da en sık hata yapılan satırları
 // işaretliyor — asıl ezberlenecek liste yıldızlılar.
 
-type Bolum = 'sayilar' | 'tarih' | 'saat' | 'kosoado' | 'tanitim' | 'ekler'
+type Bolum = 'sayilar' | 'tarih' | 'saat' | 'kosoado' | 'tanitim' | 'ekler' | 'cekim'
 
 const BOLUMLER: { id: Bolum; label: string }[] = [
   { id: 'sayilar', label: 'Sayılar' },
@@ -62,6 +64,7 @@ const BOLUMLER: { id: Bolum; label: string }[] = [
   { id: 'kosoado', label: 'Bu · şu · o' },
   { id: 'tanitim', label: 'Kendini tanıt' },
   { id: 'ekler', label: 'Ekler (は・の…)' },
+  { id: 'cekim', label: 'Olumlu · olumsuz' },
 ]
 
 export default function BasicsPage() {
@@ -85,6 +88,7 @@ export default function BasicsPage() {
         {bolum === 'kosoado' && <Kosoado />}
         {bolum === 'tanitim' && <Tanitim />}
         {bolum === 'ekler' && <Ekler />}
+        {bolum === 'cekim' && <Cekimler />}
       </div>
     </>
   )
@@ -851,6 +855,241 @@ function EkKart({ e }: { e: Ek }) {
           <b>Dikkat: </b>
           {e.dikkat}
         </div>
+      )}
+    </div>
+  )
+}
+
+// ————————————————————————— Olumlu · olumsuz (çekimler) —————————————————————————
+
+const TUR_ETIKET: Record<string, string> = {
+  olumlu: 'olumlu',
+  olumsuz: 'olumsuz',
+  geçmiş: 'geçmiş',
+  rica: 'rica',
+  istek: 'istek',
+  teklif: 'teklif',
+  izin: 'izin',
+  yasak: 'yasak',
+  zorunluluk: 'zorunluluk',
+  diğer: '',
+}
+
+function CekimHucre({ c, etiket, ekGizli }: { c: Hucre; etiket?: string; ekGizli?: boolean }) {
+  return (
+    <div className="ck-hucre">
+      {etiket && <div className="tb-sub">{etiket}</div>}
+      <div className="ja ck-ja">
+        {c.ja[0]}
+        {ekGizli ? c.ja[1] : <mark className="jo-vurgu">{c.ja[1]}</mark>}
+      </div>
+      <div className="ck-romaji">
+        {kanaToRomaji(c.kana[0])}
+        {ekGizli ? kanaToRomaji(c.kana[1]) : <b>{kanaToRomaji(c.kana[1])}</b>}
+      </div>
+      {!ekGizli && <div className="ck-tr">{c.tr}</div>}
+    </div>
+  )
+}
+
+function Cekimler() {
+  const [bicim, setBicim] = useState<'kibar' | 'sade'>('kibar')
+  return (
+    <div className="stack-lg">
+      <div className="card card--pad-lg stack-sm">
+        <div className="card-title">Japonca da Türkçe gibi ek ekler</div>
+        <div className="small">
+          Olumsuzluk ve geçmiş, kelimenin arkasına <b>sırayla</b> eklenir — tıpkı Türkçede olduğu gibi. İngilizceyle
+          karşılaştırmana gerek yok; Türkçe daha yakın:
+        </div>
+        <div className="ck-kiyas">
+          <div>
+            <span className="ja">食べ</span>
+            <mark className="jo-vurgu ja">ませ</mark>
+            <mark className="jo-vurgu ja">ん</mark>
+            <mark className="jo-vurgu ja">でした</mark>
+          </div>
+          <div className="ck-romaji">
+            tabe · <b>mase</b> · <b>n</b> · <b>deshita</b>
+          </div>
+          <div className="small">
+            ye · <b>me</b> · <b>di</b> · <b>m</b> → yemedim
+          </div>
+        </div>
+        <div className="tiny faint">Tablolarda kök düz, ek renkli yazılı. Anlamı değiştiren her zaman renkli kısım.</div>
+      </div>
+
+      <Bolumcuk baslik="Çekim tablosu" alt="Aynı kelimenin dört hâli. Kibar: öğretmene, tanımadığına. Sade: arkadaşa, okuma metinlerinde.">
+        <Chips
+          items={[
+            { id: 'kibar' as const, label: 'Kibar (です・ます)' },
+            { id: 'sade' as const, label: 'Sade (arkadaş dili)' },
+          ]}
+          value={bicim}
+          onChange={setBicim}
+        />
+        <div className="stack">
+          {CEKIM_TABLOSU.map((r) => (
+            <div key={r.id} className={`card stack-sm${r.star ? ' is-star' : ''}`}>
+              <div className="row" style={{ gap: 8 }}>
+                <span className="card-title">{r.tur}</span>
+                <span className="ja">{r.kelime}</span>
+                <span className="small dim">· {r.anlam}</span>
+                {r.star && <Yildiz />}
+              </div>
+              <div className="ck-izgara">
+                {(bicim === 'kibar' ? r.kibar : r.sade).map((c, i) => (
+                  <CekimHucre key={i} c={c} etiket={SUTUNLAR[i]} />
+                ))}
+              </div>
+              {r.not && <div className="tiny dim">{r.not}</div>}
+            </div>
+          ))}
+        </div>
+        <Link to="/verbs" className="tiny dim" style={{ textDecoration: 'underline' }}>
+          Başka fiil ve sıfatların tam çekim tabloları
+        </Link>
+      </Bolumcuk>
+
+      <Bolumcuk baslik="Cümle sonunu tanıma" alt="Okurken sona bak: bu ekler cümlenin olumlu mu, olumsuz mu, geçmiş mi olduğunu söyler.">
+        <Kurallar list={TANIMA_KURALLARI} />
+      </Bolumcuk>
+
+      <Bolumcuk baslik="Cümle sonu sözlüğü" alt="N5’te karşına çıkacak cümle sonları ve Türkçe karşılıkları.">
+        <div className="stack-sm">
+          {CUMLE_SONLARI.map((c) => (
+            <div key={c.son} className="card stack-sm ck-son">
+              <div className="row" style={{ gap: 10, flexWrap: 'wrap', alignItems: 'baseline' }}>
+                <span className="ja ck-son-ek">{c.son}</span>
+                <span className="ck-romaji">{c.okunus}</span>
+                <span className="card-title" style={{ fontSize: '0.95rem' }}>
+                  {c.tr}
+                </span>
+                <div className="spacer" />
+                {TUR_ETIKET[c.tur] && <span className={`badge tiny ck-tur ck-tur--${c.tur}`}>{TUR_ETIKET[c.tur]}</span>}
+              </div>
+              <div className="unit-ex">
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <JaOkunus ja={c.ornek.ja} kana={c.ornek.kana} latin={c.ornek.latin} tr={c.ornek.tr} jaClass="unit-ex-ja" />
+                </div>
+                <SpeakBtn text={c.ornek.ja} lang="ja" size="sm" reading={c.ornek.kana} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </Bolumcuk>
+
+      <CekimTesti />
+    </div>
+  )
+}
+
+interface CekimSorusu {
+  c: Hucre
+  secenekler: string[]
+  dogru: number
+  tur: string
+  kelime: string
+}
+
+function cekimSorulari(n: number): CekimSorusu[] {
+  return Array.from({ length: n }, () => {
+    const r = CEKIM_TABLOSU[Math.floor(Math.random() * CEKIM_TABLOSU.length)]
+    const hucreler = Math.random() < 0.5 ? r.kibar : r.sade
+    const i = Math.floor(Math.random() * 4)
+    const secenekler = shuffle(hucreler.map((x) => x.tr))
+    return { c: hucreler[i], secenekler, dogru: secenekler.indexOf(hucreler[i].tr), tur: r.tur, kelime: r.kelime }
+  })
+}
+
+/**
+ * Çekimi tanı: Japonca biçimi gör, anlamını seç. Ek renklendirilmiyor —
+ * okurken de renk yok; ekin kendisini tanımak gerekiyor.
+ */
+function CekimTesti() {
+  const [sorular, setSorular] = useState<CekimSorusu[] | null>(null)
+  const [i, setI] = useState(0)
+  const [secilen, setSecilen] = useState<number | null>(null)
+  const [skor, setSkor] = useState(0)
+
+  const basla = () => {
+    setSorular(cekimSorulari(10))
+    setI(0)
+    setSecilen(null)
+    setSkor(0)
+  }
+
+  if (!sorular) {
+    return (
+      <div className="card card--pad-lg stack-sm card--accent">
+        <div className="card-title">Çekimi tanı</div>
+        <div className="small">Japonca biçimi gör, Türkçe anlamını seç. 10 soru; kibar ve sade biçimler karışık.</div>
+        <button className="btn btn--primary" onClick={basla}>
+          Başla
+        </button>
+      </div>
+    )
+  }
+
+  if (i >= sorular.length) {
+    return (
+      <div className="card card--pad-lg center stack-sm card--accent">
+        <div style={{ fontSize: '2rem', fontWeight: 700 }}>
+          {skor} / {sorular.length}
+        </div>
+        <div className="small dim">{skor >= 8 ? 'Cümle sonlarını tanıyorsun.' : 'Yanlış yaptığın hücrelere tabloda bir daha bak, sonra tekrar dene.'}</div>
+        <button className="btn btn--primary" onClick={basla}>
+          Yeni 10 soru
+        </button>
+      </div>
+    )
+  }
+
+  const q = sorular[i]
+  const cevaplandi = secilen !== null
+  return (
+    <div className="card card--pad-lg stack-sm card--accent">
+      <div className="row tiny faint">
+        <span>
+          Çekimi tanı · {q.tur} ({q.kelime})
+        </span>
+        <div className="spacer" />
+        <span className="tabular">
+          {i + 1} / {sorular.length}
+        </span>
+      </div>
+      <div className="ck-soru">
+        <CekimHucre c={q.c} ekGizli={!cevaplandi} />
+      </div>
+      <div className="n5-opt-grid">
+        {q.secenekler.map((s, k) => {
+          const durum = !cevaplandi ? '' : k === q.dogru ? ' is-correct' : k === secilen ? ' is-wrong' : ' is-muted'
+          return (
+            <button
+              key={k}
+              className={`option${durum}`}
+              disabled={cevaplandi}
+              onClick={() => {
+                setSecilen(k)
+                if (k === q.dogru) setSkor((x) => x + 1)
+              }}
+            >
+              <span className="key">{k + 1}</span>
+              <span>{s}</span>
+            </button>
+          )
+        })}
+      </div>
+      {cevaplandi && (
+        <button
+          className="btn btn--primary"
+          onClick={() => {
+            setI(i + 1)
+            setSecilen(null)
+          }}
+        >
+          {i + 1 >= sorular.length ? 'Sonucu gör' : 'Sonraki'}
+        </button>
       )}
     </div>
   )
