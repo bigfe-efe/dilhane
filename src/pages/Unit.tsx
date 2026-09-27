@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Badge, Chips, Sheet, SpeakBtn, TopBar } from '@/components/ui'
+import { Sheet, SpeakBtn, TopBar } from '@/components/ui'
 import { Icon } from '@/components/icons'
 import { ExerciseRunner } from '@/components/ExerciseRunner'
-import { UNIT_BY_ID, unitKanji, type Unit, type UnitVocab } from '@/content/ja/units'
+import { UNIT_BY_ID, unitKanji, type Unit, type UnitGrammar, type UnitVocab } from '@/content/ja/units'
 import { CHOUKAI, MONDAI, karisikKopya, type ChoukaiQ, type MockQ } from '@/content/ja/n5-mock'
 import { ChoukaiMetin, ChoukaiPlayer, MockPrompt, SecenekListesi } from '@/components/N5Soru'
 import { StrokeOrder } from '@/components/StrokeOrder'
@@ -12,31 +12,26 @@ import { KANJI_BY_CHAR } from '@/content/ja/kanji-n5'
 import { JaOkunus } from '@/components/JaOkunus'
 import { KanjiAnlamlari, KelimeKirilimi } from '@/components/KanjiParcalari'
 import { kanaToRomaji } from '@/lib/ja-phonetic'
-import { LESSONS_BY_ID, unitVocabIds } from '@/content'
+import { yeniKelimeler } from '@/lib/yeni-kelime'
+import { ekAlistirma, eskiSekme, genkiDersleri, kitapSayfalari, type Sayfa, type SayfaTur } from '@/content/ja/unit-kitap'
+import { unitVocabIds } from '@/content'
 import { cardId, db, ensureCards } from '@/db/db'
 import { useUnit } from '@/db/hooks'
 
-// Ünite sayfası.
+// Ünite sayfası — bir kitap gibi.
 //
-// Bölümler sekmeli: hedef, dilbilgisi, kelime, metin, ödev, test. Hepsi tek
-// sayfada alt alta olsaydı ünite 2000 piksel uzunluğunda olur ve öğrenci
-// kaldığı yeri bulamazdı. Sekme, "bugün hangi parçayı çalışıyorum"u da
-// netleştiriyor.
-
-type Bolum = 'hedef' | 'gramer' | 'kelime' | 'metin' | 'odev' | 'test' | 'n5'
-
-const BOLUMLER: { id: Bolum; label: string }[] = [
-  { id: 'hedef', label: 'Hedefler' },
-  { id: 'gramer', label: 'Dilbilgisi' },
-  { id: 'kelime', label: 'Kelime' },
-  { id: 'metin', label: 'Metin' },
-  { id: 'odev', label: 'Ödev' },
-  { id: 'test', label: 'Test' },
-  { id: 'n5', label: 'N5 soruları' },
-]
+// Önceden sekmeliydi (Hedefler, Dilbilgisi, Kelime…) ve hangi sekmenin ne
+// için, hangi sırayla çalışılacağı yazmıyordu. Artık sayfalar sabit bir
+// sırayla okunuyor (sıra ve gerekçesi: content/ja/unit-kitap.ts), her
+// sayfanın başında "bu sayfada ne yapacaksın" kutusu var, altta önceki /
+// sonraki. "Sonraki"ye basmak sayfayı okundu işaretler; Bugün listesi
+// kaldığın sayfayı buradan biliyor.
 
 /** Ünite kaydını oluşturur ya da günceller — her yerde aynı varsayılanlarla. */
-async function kaydet(unitId: string, patch: Partial<{ homework: string[]; testBest: number; testAt: number; status: 'in-progress' | 'completed' }>) {
+async function kaydet(
+  unitId: string,
+  patch: Partial<{ homework: string[]; pages: string[]; testBest: number; testAt: number; status: 'in-progress' | 'completed' }>,
+) {
   const mevcut = await db.units.get(unitId)
   await db.units.put({
     unitId,
@@ -62,16 +57,16 @@ async function kelimeleriEkle(unitId: string): Promise<number> {
   return kelime + kanji
 }
 
+const GUN_ADI: Record<Sayfa['gun'], string> = { 1: '1. gün · öğren', 2: '2. gün · kullan', 0: 'İsteğe bağlı' }
+
 export default function UnitPage() {
   const { id } = useParams<{ id: string }>()
   const unit = id ? UNIT_BY_ID.get(id) : undefined
-  // Bölüm adreste: Bugün listesi "ödevlere devam et" derken doğrudan Ödev
-  // sekmesini açabilsin.
+  // Sayfa adreste (?s=kelime): Bugün listesi kaldığın sayfayı doğrudan açsın.
+  // Eski sekme adresleri (?b=gramer) karşılık gelen sayfaya düşer.
   const [params, setParams] = useSearchParams()
-  const istenen = params.get('b') as Bolum | null
-  const bolum: Bolum = BOLUMLER.some((b) => b.id === istenen) ? istenen! : 'hedef'
-  const setBolum = (b: Bolum) => setParams({ b }, { replace: true })
   const prog = useUnit(id)
+  const [icindekiler, setIcindekiler] = useState(false)
 
   if (!unit) {
     return (
@@ -86,29 +81,330 @@ export default function UnitPage() {
     )
   }
 
+  const sayfalar = kitapSayfalari(unit)
+  const istenen = params.get('s') ?? eskiSekme(params.get('b'))
+  const idx = Math.max(0, sayfalar.findIndex((p) => p.id === istenen))
+  const sayfa = sayfalar[idx]
+  const sonrakiSayfa = sayfalar[idx + 1]
+  const okunan = new Set(prog?.pages ?? [])
+
+  const git = (i: number) => {
+    setParams({ s: sayfalar[i].id }, { replace: true })
+    window.scrollTo(0, 0)
+  }
+  const okundu = () => kaydet(unit.id, { pages: [...new Set([...okunan, sayfa.id])] })
+
+  const gunBitti = sayfa.gun === 1 && sonrakiSayfa?.gun === 2
+
   return (
     <>
       <TopBar title={`${unit.no}. ${unit.title}`} sub={unit.subtitle} back="/uniteler" />
 
       <div className="page stack-lg lang-ja">
-        <Chips items={BOLUMLER} value={bolum} onChange={(v) => setBolum(v)} />
+        {/* Kitabın başlığı: hangi sayfadasın, kaçıncı gün, ilerleme çizgisi */}
+        <div className="kitap-bas">
+          <button className="kitap-baslik" onClick={() => setIcindekiler(true)} aria-label="İçindekiler">
+            <span className="tiny faint kitap-ust">
+              Sayfa {idx + 1} / {sayfalar.length} · {GUN_ADI[sayfa.gun]}
+            </span>
+            <span className="kitap-sayfa-adi">
+              {sayfa.tur === 'gramer' ? <span className="faint">Dilbilgisi · </span> : null}
+              {sayfa.baslik}
+            </span>
+            <span className="kitap-icindekiler tiny">
+              İçindekiler <Icon name="down" size={12} />
+            </span>
+          </button>
+          <div className="kitap-cizgi" role="list">
+            {sayfalar.map((p, i) => (
+              <button
+                key={p.id}
+                role="listitem"
+                className={`kitap-nokta${i === idx ? ' is-on' : ''}${okunan.has(p.id) ? ' is-read' : ''}${p.gun === 0 ? ' is-opt' : ''}`}
+                onClick={() => git(i)}
+                title={p.baslik}
+                aria-label={`${i + 1}. sayfa: ${p.baslik}`}
+              />
+            ))}
+          </div>
+        </div>
 
-        {bolum === 'hedef' && <Hedefler unit={unit} testBest={prog?.testBest ?? 0} />}
-        {bolum === 'gramer' && <Gramer unit={unit} />}
-        {bolum === 'kelime' && <Kelime unit={unit} />}
-        {bolum === 'metin' && <Metin unit={unit} />}
-        {bolum === 'odev' && <Odev unit={unit} yapilan={prog?.homework ?? []} />}
-        {bolum === 'test' && <Test unit={unit} best={prog?.testBest ?? 0} />}
-        {bolum === 'n5' && <N5Pratik key={unit.id} unit={unit} />}
+        <Rehber tur={sayfa.tur} />
+
+        {sayfa.tur === 'giris' && (
+          <Giris unit={unit} sayfalar={sayfalar} okunan={okunan} testBest={prog?.testBest ?? 0} git={git} />
+        )}
+        {sayfa.tur === 'kelime' && <Kelime unit={unit} />}
+        {sayfa.tur === 'kanji' && <Kanjiler unit={unit} />}
+        {sayfa.tur === 'gramer' && (
+          <GramerKart unit={unit} g={unit.grammar[sayfa.gramer!]} sira={sayfa.gramer! + 1} toplam={unit.grammar.length} />
+        )}
+        {sayfa.tur === 'kurallar' && <Kurallar unit={unit} />}
+        {sayfa.tur === 'metin' && <Metin key={unit.id} unit={unit} />}
+        {sayfa.tur === 'alistirma' && <Alistirma key={unit.id} unit={unit} />}
+        {sayfa.tur === 'odev' && <Odev unit={unit} yapilan={prog?.homework ?? []} />}
+        {sayfa.tur === 'test' && <Test unit={unit} best={prog?.testBest ?? 0} />}
+        {sayfa.tur === 'n5' && <N5Pratik key={unit.id} unit={unit} />}
+
+        {/* Öğrenci üniteyi iki gecede çalışıyor: öğrenme günü bitince söyle */}
+        {gunBitti && (
+          <div className="card stack-sm kitap-gun-sonu">
+            <div className="card-title">1. günün sonu</div>
+            <div className="small">
+              Bugünlük yeni bilgi bu kadar. Yatmadan önce kelime sayfasına bir kez göz at, deftere yazdığın kalıpları
+              sesli oku. Yarın <b>{sonrakiSayfa.baslik}</b> sayfasından devam: bugün öğrendiklerini kullanacaksın.
+            </div>
+          </div>
+        )}
+
+        <div className="kitap-alt">
+          <button className="btn" disabled={idx === 0} onClick={() => git(idx - 1)}>
+            ‹ Önceki
+          </button>
+          {sonrakiSayfa ? (
+            <button
+              className="btn btn--primary kitap-sonraki"
+              onClick={async () => {
+                await okundu()
+                git(idx + 1)
+              }}
+            >
+              <span className="kitap-sonraki-etiket">Sonraki</span>
+              <span className="kitap-sonraki-ad">{sonrakiSayfa.baslik} ›</span>
+            </button>
+          ) : (
+            <Link to="/uniteler" className="btn btn--primary" onClick={() => void okundu()}>
+              Ünitelere dön
+            </Link>
+          )}
+        </div>
       </div>
+
+      {icindekiler && (
+        <Sheet onClose={() => setIcindekiler(false)}>
+          <Icindekiler
+            sayfalar={sayfalar}
+            okunan={okunan}
+            aktif={idx}
+            git={(i) => {
+              setIcindekiler(false)
+              git(i)
+            }}
+          />
+        </Sheet>
+      )}
     </>
   )
 }
 
-// ————————————————————————— Hedefler —————————————————————————
+// ————————————————————————— İçindekiler —————————————————————————
 
-function Hedefler({ unit, testBest }: { unit: Unit; testBest: number }) {
-  const dersler = (unit.lessonIds ?? []).map((lid) => LESSONS_BY_ID.get(lid)).filter(Boolean)
+function Icindekiler({
+  sayfalar,
+  okunan,
+  aktif,
+  git,
+}: {
+  sayfalar: Sayfa[]
+  okunan: Set<string>
+  aktif: number
+  git: (i: number) => void
+}) {
+  return (
+    <div className="stack">
+      <h2 style={{ margin: 0 }}>İçindekiler</h2>
+      {([1, 2, 0] as const).map((gun) => {
+        const liste = sayfalar.map((p, i) => ({ p, i })).filter(({ p }) => p.gun === gun)
+        if (!liste.length) return null
+        const dk = liste.reduce((n, { p }) => n + p.dakika, 0)
+        return (
+          <div key={gun} className="stack-sm">
+            <div className="row tb-sub">
+              <span>{GUN_ADI[gun]}</span>
+              <div className="spacer" />
+              {gun !== 0 && <span className="tabular">~{dk} dk</span>}
+            </div>
+            {liste.map(({ p, i }) => (
+              <SayfaSatiri key={p.id} p={p} no={i + 1} okundu={okunan.has(p.id)} aktif={i === aktif} onClick={() => git(i)} />
+            ))}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function SayfaSatiri({ p, no, okundu, aktif, onClick }: { p: Sayfa; no: number; okundu: boolean; aktif?: boolean; onClick: () => void }) {
+  return (
+    <button className={`kitap-satir${aktif ? ' is-on' : ''}${okundu ? ' is-read' : ''}`} onClick={onClick}>
+      <span className="kitap-satir-no">{okundu ? <Icon name="check" size={13} /> : no}</span>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span className="kitap-satir-ad">
+          {p.tur === 'gramer' && <span className="faint">Dilbilgisi · </span>}
+          {p.baslik}
+        </span>
+        {p.alt && <span className="kitap-satir-alt ja">{p.alt}</span>}
+      </span>
+      <span className="tiny faint tabular">{p.dakika} dk</span>
+    </button>
+  )
+}
+
+// ————————————————————————— Sayfa rehberi —————————————————————————
+//
+// Her sayfanın başında: bu sayfada ne yapacaksın, nasıl. Öğrencinin sorusu
+// buydu: "dilbilgisini okuyup kelimeleri mi ezberlemeliyim, metinleri ne
+// yapmalıyım". Rehber kapatılabilir; kapalılık sayfa TÜRÜNE göre hatırlanır
+// (bir dilbilgisi sayfasında kapatınca hepsinde kapanır), çünkü on dört
+// ünite boyunca aynı yönergeyi okumak gerekmez.
+
+const REHBER: Record<SayfaTur, { baslik: string; adimlar: string[]; not?: string }> = {
+  giris: {
+    baslik: 'Bu ünite nasıl çalışılır',
+    adimlar: [
+      'Ünite bir kitap gibi: sayfaları sırayla oku, alttaki “Sonraki” ile ilerle. Okuduğun sayfa işaretlenir.',
+      'Her sayfanın başında, bu kutu gibi, o sayfada ne yapacağın yazar.',
+      'İki gecede biter: 1. gün kelime, kanji ve dilbilgisi (öğrenme); 2. gün metin, alıştırma, ödev ve test (kullanma).',
+      'Ünite testinde %70 alınca ünite biter; kelimeler ve kanjiler tekrar kartlarına girer.',
+    ],
+  },
+  kelime: {
+    baslik: 'Kelimeler — ezberleme, tanı',
+    adimlar: [
+      'Her kelimeyi dinle (▶) ve iki kez sesli tekrar et.',
+      'Deftere yaz: yazılışı, okunuşu, anlamı. Yıldızlı olanlar en sık kullanılanlar.',
+      'Kanjili kelimede altındaki satıra bak: 先 önce + 生 hayat gibi, kelimeyi parçalarından tanı.',
+      'Sayfanın başındaki “Tekrara ekle”ye bas. Kalıcı ezberi tekrar kartları yapar, her gün birkaç dakika.',
+    ],
+    not: 'Amaç bu sayfada hepsini ezberlemek değil: sonraki sayfalardaki örneklerde görünce tanıyabilmek. Kelimeler dilbilgisinden ÖNCE geliyor, örnekleri takılmadan okuyabilesin diye.',
+  },
+  kanji: {
+    baslik: 'Kanjiler — tek tek',
+    adimlar: [
+      'Her kartta kanjinin kendi anlamına bak, sonra “Bu ünitede” kısmında hangi kelimelerde nasıl okunduğuna.',
+      'Kanjiye dokun, çizim sırasını izle; deftere her kanjiyi 3–5 kez sırasıyla yaz.',
+      'Okunuşların hepsini ezberlemeye çalışma. Bu ünitedeki kelimelerde okunduğu hâlini bil, yeter.',
+    ],
+  },
+  gramer: {
+    baslik: 'Dilbilgisi — bir kalıp, bir sayfa',
+    adimlar: [
+      'Açıklamayı oku. “Kalıp” kutusu konunun özeti: onu deftere yaz.',
+      'Örnekleri dinle ve sesli oku. Önce Türkçesine bakmadan anlamaya çalış.',
+      '“Dikkat” kutusu en sık yapılan hata; onu da not al.',
+      'Kalıpla kendi hayatından iki cümle kur, deftere yaz. (Ödev sayfasında bunu tekrar yapacaksın.)',
+    ],
+    not: 'Bir örnekte “Henüz görmediğin” kutusu çıkarsa: o kelime ileriki bir ünitenin. Anlamı orada yazıyor; şimdi ezberlemen gerekmiyor.',
+  },
+  kurallar: {
+    baslik: 'Kurallar',
+    adimlar: ['Kısa kuralları oku.', '★ olanları deftere yaz: bunlar sınavda ya da konuşmada doğrudan hata kaynağı.'],
+  },
+  metin: {
+    baslik: 'Okuma metni — öğrendiklerin bir arada',
+    adimlar: [
+      'Türkçe kapalıyken metni bir kez baştan sona dinle (üstteki ▶).',
+      'Satır satır sesli oku. Takıldığın satırda Türkçeyi aç, sonra tekrar kapat.',
+      'İkinci okumada Latin’i kapat, kanadan oku. Üçüncüde kanayı da kapat.',
+      'Metin sorularını çöz.',
+    ],
+    not: 'Metni ezberlemen gerekmiyor. Her kelimeyi anlamasan da genel anlamı yakala: sınavın okuma bölümü de bunu ister.',
+  },
+  alistirma: {
+    baslik: 'Alıştırma — test öncesi ısınma',
+    adimlar: [
+      'Bu ünitede öğrendiklerinle çözülebilen yapı ve cümle soruları.',
+      'Yanlış yaptığın soruda açıklamayı oku; gerekirse ilgili dilbilgisi sayfasına dön (İçindekiler).',
+    ],
+    not: 'Sorular Genki I sırasındaki derslerden alındı. Genki’yi ayrıca çalışman gerekmiyor: o derslerin bu üniteye uyan alıştırmaları burada.',
+  },
+  odev: {
+    baslik: 'Ödev — kâğıt üstünde',
+    adimlar: [
+      'Her ödevi deftere yap. “Nasıl yapılır” adımlarını sırayla izle; örnek sana biçimi gösterir.',
+      'Bitirince soldaki kutuyu işaretle.',
+      'Takılırsan İçindekiler’den ilgili dilbilgisi sayfasına dön.',
+    ],
+  },
+  test: {
+    baslik: 'Ünite testi',
+    adimlar: [
+      'Kitaba bakmadan çöz.',
+      '%70 ve üstü: ünite biter, kelimeler ve kanjiler tekrar kartlarına girer.',
+      'Altında kalırsan yanlış yaptığın konuların dilbilgisi sayfalarını tekrar oku, sonra yeniden dene.',
+    ],
+  },
+  n5: {
+    baslik: 'N5 soruları — isteğe bağlı',
+    adimlar: [
+      'Üniteyi bitirmek için gerekmez; test yeterli.',
+      'Bu ünitenin konusu gerçek sınavın biçiminde: tamamen Japonca, dört şık, dinleme.',
+      'Önerim: üniteyi bitirdiğin günün ertesinde ısınma olarak çöz.',
+    ],
+  },
+}
+
+const REHBER_ANAHTAR = 'unite-rehber-kapali'
+
+function Rehber({ tur }: { tur: SayfaTur }) {
+  const [kapali, setKapali] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(REHBER_ANAHTAR) ?? '[]')
+    } catch {
+      return []
+    }
+  })
+  const r = REHBER[tur]
+  const acik = !kapali.includes(tur)
+  const cevir = () => {
+    const yeni = acik ? [...kapali, tur] : kapali.filter((t) => t !== tur)
+    setKapali(yeni)
+    try {
+      localStorage.setItem(REHBER_ANAHTAR, JSON.stringify(yeni))
+    } catch {
+      /* depolama kapalı: yalnızca bu oturumda hatırlanır */
+    }
+  }
+  return (
+    <div className={`kitap-rehber${acik ? '' : ' is-kapali'}`}>
+      <button className="kitap-rehber-bas" onClick={cevir} aria-expanded={acik}>
+        <Icon name="bulb" size={16} />
+        <span style={{ flex: 1 }}>
+          <span className="kitap-rehber-etiket">Bu sayfada</span> {r.baslik}
+        </span>
+        <span className="tiny faint">{acik ? 'Gizle' : 'Göster'}</span>
+      </button>
+      {acik && (
+        <>
+          <ol className="kitap-rehber-adim">
+            {r.adimlar.map((a) => (
+              <li key={a}>{a}</li>
+            ))}
+          </ol>
+          {r.not && <div className="kitap-rehber-not">{r.not}</div>}
+        </>
+      )}
+    </div>
+  )
+}
+
+// ————————————————————————— Başlarken —————————————————————————
+
+function Giris({
+  unit,
+  sayfalar,
+  okunan,
+  testBest,
+  git,
+}: {
+  unit: Unit
+  sayfalar: Sayfa[]
+  okunan: Set<string>
+  testBest: number
+  git: (i: number) => void
+}) {
+  const genki = genkiDersleri(unit)
+  const kaldigin = okunan.size ? sayfalar.findIndex((p) => p.gun !== 0 && !okunan.has(p.id)) : -1
 
   const onemli = [
     ...unit.grammar.filter((g) => g.star).map((g) => ({ baslik: g.title, nerede: 'Dilbilgisi' })),
@@ -118,6 +414,18 @@ function Hedefler({ unit, testBest }: { unit: Unit; testBest: number }) {
 
   return (
     <div className="stack">
+      {kaldigin > 0 && (
+        <button className="card card--link row kitap-devam" onClick={() => git(kaldigin)}>
+          <Icon name="play" size={18} style={{ color: 'var(--accent)' }} />
+          <span style={{ flex: 1, textAlign: 'left' }}>
+            <span className="tiny faint">Kaldığın yer</span>
+            <br />
+            <b>{sayfalar[kaldigin].baslik}</b>
+          </span>
+          <Icon name="right" size={16} />
+        </button>
+      )}
+
       <div className="card stack-sm">
         <div className="card-title">Bu ünitede ne öğreneceksin</div>
         <ul className="tight small">
@@ -126,22 +434,40 @@ function Hedefler({ unit, testBest }: { unit: Unit; testBest: number }) {
           ))}
         </ul>
         <div className="tiny faint">
-          Tahmini süre {unit.minutes} dakika · {unit.grammar.length} dilbilgisi konusu · {unit.vocab.length} kelime
+          {unit.grammar.length} dilbilgisi konusu · {unit.vocab.length} kelime · {unitKanji(unit.id).length} kanji
           {testBest > 0 && ` · en iyi test sonucun %${testBest}`}
         </div>
       </div>
 
+      {/* Planın kendisi: hangi gün hangi sayfalar, kaç dakika */}
+      <div className="stack-sm">
+        <h2 style={{ margin: 0 }}>Plan</h2>
+        {([1, 2, 0] as const).map((gun) => {
+          const liste = sayfalar.map((p, i) => ({ p, i })).filter(({ p }) => p.gun === gun)
+          if (!liste.length) return null
+          return (
+            <div key={gun} className="card stack-sm">
+              <div className="row">
+                <span className="card-title">{GUN_ADI[gun]}</span>
+                <div className="spacer" />
+                {gun !== 0 && <span className="tiny faint tabular">~{liste.reduce((n, { p }) => n + p.dakika, 0)} dk</span>}
+              </div>
+              {liste.map(({ p, i }) => (
+                <SayfaSatiri key={p.id} p={p} no={i + 1} okundu={okunan.has(p.id)} onClick={() => git(i)} />
+              ))}
+            </div>
+          )
+        })}
+      </div>
+
       {/*
-        Yıldızlı bilgiler tek yerde toplanıyor. Ünite sayfası altı sekme;
-        kritik bilgi dilbilgisi, kural ve ödev sekmelerine dağılmış hâlde
-        kalıyordu ve "neyi kaçırmamalıyım" sorusunun cevabı hiçbir ekranda
-        yoktu. Burada özet var, yıldızın kendisi ilgili sekmede duruyor.
+        Yıldızlı bilgiler tek yerde toplanıyor: kritik bilgi dilbilgisi, kural
+        ve ödev sayfalarına dağılmış; "neyi kaçırmamalıyım" sorusunun cevabı
+        burada, yıldızın kendisi ilgili sayfada.
       */}
       {onemli.length > 0 && (
         <div className="card card--pad-lg stack-sm is-star">
-          <div className="row" style={{ gap: 8 }}>
-            <span className="card-title">★ Bunları atlama</span>
-          </div>
+          <span className="card-title">★ Bunları atlama</span>
           <ul className="tight small">
             {onemli.map((o) => (
               <li key={o.baslik}>
@@ -149,93 +475,138 @@ function Hedefler({ unit, testBest }: { unit: Unit; testBest: number }) {
               </li>
             ))}
           </ul>
-          <div className="tiny faint">
-            Bu ünitenin en çok hata yaptırdığı noktalar. İlgili sekmede yanlarında ★ var.
-          </div>
         </div>
       )}
 
-      {unit.rules?.length ? (
-        <div className="stack-sm">
-          <h2>Bilmen gereken kurallar</h2>
-          {unit.rules.map((r) => (
-            <div key={r.title} className={`card stack-sm${r.star ? ' is-star' : ''}`}>
-              <div className="row" style={{ gap: 8 }}>
-                <span className="card-title">{r.title}</span>
-                {r.star && <Yildiz />}
-              </div>
-              <div className="small">{r.body}</div>
-            </div>
-          ))}
-        </div>
-      ) : null}
-
-      {dersler.length > 0 && (
-        <div className="stack-sm">
-          <h2>İlgili Genki dersleri</h2>
-          <div className="card-sub" style={{ marginTop: -2 }}>
-            Aynı konuyu kitabın sırasıyla çalışmak istersen.
-          </div>
-          {dersler.map((l) => (
-            <Link key={l!.id} to={`/lesson/${l!.id}`} className="card card--link">
-              <div className="row">
-                <span className="entry-icon">
-                  <Icon name="book" size={18} />
+      <div className="stack-sm">
+        <h2 style={{ margin: 0 }}>Sık sorulanlar</h2>
+        <SSS s="Kelimeleri ezberlemeli miyim?">
+          Bu ünitede tanıyacak kadar öğren: görünce anlamını hatırla. Kalıcı ezberi tekrar kartları yapar; test geçilince
+          kelimeler kendiliğinden eklenir, istersen Kelimeler sayfasından hemen de ekleyebilirsin.
+        </SSS>
+        <SSS s="Dilbilgisi örneklerinde tanımadığım kanji var.">
+          Kelimeler ve kanjiler dilbilgisinden önce geliyor, ünitenin kendi kelimelerini orada görmüş olursun. İleriki
+          bir ünitenin kelimesi geçiyorsa örneğin altında “Henüz görmediğin” kutusunda anlamıyla yazar; şimdilik
+          ezberlemen gerekmez.
+        </SSS>
+        <SSS s="Genki dersini de yapmalı mıyım?">
+          Hayır, ayrı bir iş değil. Bu ünite{' '}
+          {genki.length ? (
+            <>
+              Genki I’in{' '}
+              {genki.map((n, i) => (
+                <span key={n}>
+                  {i > 0 && (i === genki.length - 1 ? ' ve ' : ', ')}
+                  {n === 0 ? 'selamlaşma bölümü' : `${n}. ders`}
                 </span>
-                <div className="stack-sm" style={{ gap: 1, flex: 1 }}>
-                  <div className="card-title">{l!.title}</div>
-                  <div className="card-sub">{l!.subtitle}</div>
-                </div>
-                <Icon name="right" size={16} style={{ color: 'var(--faint)' }} />
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
+              ))}{' '}
+              konularını kapsıyor
+            </>
+          ) : (
+            'kendi konusunu baştan sona anlatıyor'
+          )}
+          ; o derslerin bu üniteye uyan alıştırmaları Alıştırma sayfasında. Kitabın varsa aynı konuyu ek kaynak olarak
+          okuyabilirsin, ama ünite tek başına yeterli.
+        </SSS>
+        <SSS s="N5 soruları zorunlu mu?">
+          Hayır. Ünite testte %70 ile biter. N5 soruları aynı konunun gerçek sınavdaki biçimi; sınav biçimine alışmak
+          için ertesi gün ısınma olarak çözmen iyi olur.
+        </SSS>
+        <SSS s="Metni ne yapmalıyım?">
+          Sesli oku ve anla; ezberleme. Önce Latin ve kana açık, sonra kapatarak üç kez. Metin, ünitede öğrendiklerinin
+          gerçek bir konuşmada ya da yazıda nasıl bir araya geldiğini gösteriyor.
+        </SSS>
+      </div>
+    </div>
+  )
+}
+
+function SSS({ s, children }: { s: string; children: React.ReactNode }) {
+  return (
+    <details className="card kitap-sss">
+      <summary>{s}</summary>
+      <div className="small" style={{ marginTop: 8 }}>
+        {children}
+      </div>
+    </details>
+  )
+}
+
+// ————————————————————————— Henüz görülmemiş kelimeler —————————————————————————
+
+/** Örnek cümlenin altında: bu üniteye kadar görülmemiş kanjili kelimeler */
+function YeniKelimeler({ ja, unitId }: { ja: string; unitId: string }) {
+  const ws = yeniKelimeler(ja, unitId)
+  if (!ws.length) return null
+  return (
+    <div className="yk">
+      <span className="yk-etiket">Henüz görmediğin</span>
+      {ws.map((w) => (
+        <span key={w.ja} className="yk-kelime">
+          <b className="ja">{w.ja}</b>
+          {w.kana && <span className="yk-romaji">{kanaToRomaji(w.kana)}</span>}
+          <span className="yk-tr">{w.tr}</span>
+        </span>
+      ))}
     </div>
   )
 }
 
 // ————————————————————————— Dilbilgisi —————————————————————————
 
-function Gramer({ unit }: { unit: Unit }) {
+function GramerKart({ unit, g, sira, toplam }: { unit: Unit; g: UnitGrammar; sira: number; toplam: number }) {
   return (
-    <div className="stack">
-      {unit.grammar.map((g) => (
-        <div key={g.title} className={`card stack-sm${g.star ? ' is-star' : ''}`}>
-          <div className="row">
-            <div className="card-title" style={{ flex: 1 }}>
-              {g.title} {g.star && <Yildiz />}
+    <div className={`card stack-sm${g.star ? ' is-star' : ''}`}>
+      <div className="tiny faint">
+        Konu {sira} / {toplam}
+      </div>
+      <div className="card-title">
+        {g.title} {g.star && <Yildiz />}
+      </div>
+      <div className="kitap-kalip">
+        <span className="kitap-kalip-etiket">Kalıp</span>
+        <span className="ja">{g.pattern}</span>
+      </div>
+      <div className="small">{g.explain}</div>
+
+      <div className="stack-sm" style={{ marginTop: 4 }}>
+        {g.examples.map((e) => (
+          <div key={e.ja} className="unit-ex">
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <JaOkunus ja={e.ja} kana={e.kana} tr={e.tr} jaClass="unit-ex-ja" />
+              <YeniKelimeler ja={e.ja} unitId={unit.id} />
             </div>
-            <Badge tone="accent">
-              <span className="ja">{g.pattern}</span>
-            </Badge>
+            <SpeakBtn text={e.ja} lang="ja" size="sm" reading={e.kana} />
           </div>
-          <div className="small">{g.explain}</div>
+        ))}
+      </div>
 
-          <div className="stack-sm" style={{ marginTop: 4 }}>
-            {g.examples.map((e) => (
-              <div key={e.ja} className="unit-ex">
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <JaOkunus ja={e.ja} kana={e.kana} tr={e.tr} jaClass="unit-ex-ja" />
-                </div>
-                <SpeakBtn text={e.ja} lang="ja" size="sm" reading={e.kana} />
-              </div>
-            ))}
+      {g.pitfall && (
+        <div className="feedback feedback--bad tiny">
+          <b>Dikkat: </b>
+          {g.pitfall}
+        </div>
+      )}
+
+      {g.ref && (
+        <Link to={`/grammar/${g.ref}`} className="btn btn--sm btn--ghost" style={{ justifySelf: 'start' }}>
+          Ayrıntılı anlatım
+        </Link>
+      )}
+    </div>
+  )
+}
+
+function Kurallar({ unit }: { unit: Unit }) {
+  return (
+    <div className="stack-sm">
+      {(unit.rules ?? []).map((r) => (
+        <div key={r.title} className={`card stack-sm${r.star ? ' is-star' : ''}`}>
+          <div className="row" style={{ gap: 8 }}>
+            <span className="card-title">{r.title}</span>
+            {r.star && <Yildiz />}
           </div>
-
-          {g.pitfall && (
-            <div className="feedback feedback--bad tiny">
-              <b>Dikkat: </b>
-              {g.pitfall}
-            </div>
-          )}
-
-          {g.ref && (
-            <Link to={`/grammar/${g.ref}`} className="btn btn--sm btn--ghost" style={{ justifySelf: 'start' }}>
-              Ayrıntılı anlatım
-            </Link>
-          )}
+          <div className="small">{r.body}</div>
         </div>
       ))}
     </div>
@@ -260,10 +631,6 @@ function Kelime({ unit }: { unit: Unit }) {
 
   return (
     <div className="stack-sm">
-      <div className="card-sub">
-        Ünite boyunca geçen kelimeler. <b>Karta dokunursan çizgi sırasını</b> görürsün.
-      </div>
-
       {/* Ünitede öğrenilen kelime tekrar edilmezse bir hafta içinde gider.
           Test geçilince kendiliğinden ekleniyor; beklemek istemeyen buradan
           ekler. */}
@@ -292,31 +659,6 @@ function Kelime({ unit }: { unit: Unit }) {
         </div>
       )}
 
-      {/* Ünitenin N5 kanjileri — TEK TEK.
-          Öğrenci kanjiyi kelimenin içinde öğreniyor (先生 = öğretmen) ama
-          先'yi ve 生'yi ayrı ayrı tanımıyordu; N5'in kanji okuma soruları ise
-          tam bunu soruyor. Her kart: kanjinin kendi anlamı ve okunuşları, sonra
-          bu ünitedeki kelimelerde hangi anlamı ve okunuşu taşıdığı. */}
-      {kanjiler.length > 0 && (
-        <div className="stack-sm">
-          <div className="row">
-            <h2 style={{ margin: 0 }}>Bu ünitenin kanjileri — tek tek</h2>
-            <div className="spacer" />
-            <span className="tiny faint tabular">{kanjiler.length}</span>
-          </div>
-          <div className="card-sub">
-            Kelimeleri biliyorsun; burada onları oluşturan kanjileri tek tek görüyorsun. Sınav kanjiyi tek başına da
-            sorar: aynı 生, 学生’de <b>sei</b>, 生まれる’da <b>u</b> okunur. Kanjiye dokunursan çizim sırası açılır.
-          </div>
-          <div className="cols-2">
-            {kanjiler.map((ch) => (
-              <KanjiKart key={ch} ch={ch} unit={unit} onAc={(v) => setAcik(v)} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      <h2 style={{ margin: '8px 0 0' }}>Kelimeler</h2>
       <div className="cols-2">
         {unit.vocab.map((v) => (
           <div
@@ -348,8 +690,78 @@ function Kelime({ unit }: { unit: Unit }) {
           </div>
         ))}
       </div>
+      <div className="tiny faint">Karta dokunursan kanjilerin çizim sırası açılır.</div>
 
       {acik && <KelimeSheet v={acik} onClose={() => setAcik(null)} />}
+    </div>
+  )
+}
+
+// Ünitenin N5 kanjileri — TEK TEK.
+// Öğrenci kanjiyi kelimenin içinde öğreniyor (先生 = öğretmen) ama 先'yi ve
+// 生'yi ayrı ayrı tanımıyordu; N5'in kanji okuma soruları ise tam bunu
+// soruyor. Her kart: kanjinin kendi anlamı ve okunuşları, sonra bu
+// ünitedeki kelimelerde hangi anlamı ve okunuşu taşıdığı.
+function Kanjiler({ unit }: { unit: Unit }) {
+  const [acik, setAcik] = useState<UnitVocab | null>(null)
+  const kanjiler = unitKanji(unit.id)
+  return (
+    <div className="stack-sm">
+      <div className="card-sub">
+        Kelimeleri gördün; burada onları oluşturan kanjiler tek tek. Sınav kanjiyi tek başına da sorar: aynı 生,
+        学生’de <b>sei</b>, 生まれる’da <b>u</b> okunur.
+      </div>
+      <div className="cols-2">
+        {kanjiler.map((ch) => (
+          <KanjiKart key={ch} ch={ch} unit={unit} onAc={(v) => setAcik(v)} />
+        ))}
+      </div>
+      {acik && <KelimeSheet v={acik} onClose={() => setAcik(null)} />}
+    </div>
+  )
+}
+
+// ————————————————————————— Alıştırma —————————————————————————
+
+function Alistirma({ unit }: { unit: Unit }) {
+  const liste = ekAlistirma(unit.id)
+  const [calisiyor, setCalisiyor] = useState(false)
+  const [sonuc, setSonuc] = useState<{ c: number; t: number } | null>(null)
+
+  if (calisiyor) {
+    return (
+      <ExerciseRunner
+        list={liste}
+        onFinish={(c, t) => {
+          setSonuc({ c, t })
+          setCalisiyor(false)
+        }}
+        onCancel={() => setCalisiyor(false)}
+      />
+    )
+  }
+
+  return (
+    <div className="stack">
+      {sonuc && (
+        <div className="card card--pad-lg center stack-sm">
+          <div style={{ fontSize: '2rem', fontWeight: 700 }}>
+            {sonuc.c} / {sonuc.t}
+          </div>
+          <div className="small dim">
+            {sonuc.c / sonuc.t >= 0.7
+              ? 'Teste hazırsın. Ödevden sonra testi çöz.'
+              : 'Yanlış yaptığın konuların dilbilgisi sayfalarına bir göz at; sonra ödeve geç.'}
+          </div>
+        </div>
+      )}
+      <div className="card stack-sm">
+        <div className="card-title">{liste.length} soru</div>
+        <div className="card-sub">Şıklı, boşluk doldurma, sıralama ve çeviri. Sonuç kaydedilmez; ısınma içindir.</div>
+      </div>
+      <button className="btn btn--primary btn--block btn--lg" onClick={() => { setSonuc(null); setCalisiyor(true) }}>
+        {sonuc ? 'Tekrar çöz' : 'Başla'}
+      </button>
     </div>
   )
 }
@@ -567,6 +979,7 @@ function Metin({ unit }: { unit: Unit }) {
                 gizle={{ kana: !kana, romaji: !latin }}
                 jaClass="unit-line-ja"
               />
+              <YeniKelimeler ja={l.ja} unitId={unit.id} />
             </div>
           </div>
         ))}
@@ -653,6 +1066,7 @@ function Odev({ unit, yapilan }: { unit: Unit; yapilan: string[] }) {
                   {h.example.map((e, i) => (
                     <div key={i} className="unit-hw-exline">
                       <JaOkunus ja={e.ja} kana={e.kana} tr={e.tr} jaClass="unit-hw-exja" />
+                      <YeniKelimeler ja={e.ja} unitId={unit.id} />
                     </div>
                   ))}
                 </div>

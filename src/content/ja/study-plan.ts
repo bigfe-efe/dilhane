@@ -70,6 +70,8 @@ export interface UnitState {
   homeworkDone: number
   homeworkTotal: number
   testBest: number
+  /** Kitapta okunmamış ilk sayfa; `reading`: ödev/test öncesi bir sayfa mı */
+  nextPage?: { id: string; title: string; reading: boolean }
 }
 
 export interface PlanContext {
@@ -110,8 +112,10 @@ export interface DailyPlan {
 // ————————————————————————— Ünitede sıradaki adım —————————————————————————
 
 export interface UnitStep {
-  /** Ünite sayfasında açılacak sekme */
-  tab: 'hedef' | 'odev' | 'test'
+  /** Ünite kitabında açılacak sayfa (unit-kitap.ts kimliği) */
+  page: string
+  /** Görev kimliği için adım türü: sayfa değiştikçe görev yenilenmesin */
+  key: 'basla' | 'oku' | 'odev' | 'test'
   title: string
   detail: string
 }
@@ -119,27 +123,38 @@ export interface UnitStep {
 /**
  * Ünitenin içinde bir sonraki iş.
  *
- * Ünite sayfası hangi sekmenin okunduğunu kaydetmiyor; kaydettiği iki şey
- * ödev işaretleri ve test sonucu. Adım bu ikisinden çıkarılıyor: hiç kayıt
- * yoksa başlanmamıştır, ödev eksikse ödev, ödev bittiyse test.
+ * Ünite bir kitap: "Sonraki"ye basılan sayfa okundu sayılıyor. Adım buradan
+ * çıkıyor: hiç kayıt yoksa başla; okunmamış bir öğrenme/kullanma sayfası
+ * varsa oradan devam; ödev eksikse ödev; yoksa test.
  */
 export function unitStep(u: UnitState): UnitStep {
   if (!u.status) {
     return {
-      tab: 'hedef',
+      page: 'giris',
+      key: 'basla',
       title: 'Başla',
-      detail: 'Hedefleri oku, sonra sırayla dilbilgisi, kelime ve metin. Bugün metni sesli okuyabilecek kadar ilerle.',
+      detail: 'Kitap gibi sırayla oku: önce kelimeler, sonra dilbilgisi. Her sayfanın başında ne yapacağın yazıyor.',
+    }
+  }
+  if (u.nextPage && u.nextPage.reading) {
+    return {
+      page: u.nextPage.id,
+      key: 'oku',
+      title: `Devam: ${u.nextPage.title}`,
+      detail: 'Kaldığın sayfadan devam et.',
     }
   }
   if (u.homeworkDone < u.homeworkTotal) {
     return {
-      tab: 'odev',
+      page: 'odev',
+      key: 'odev',
       title: `Ödevler (${u.homeworkDone}/${u.homeworkTotal})`,
-      detail: 'Kâğıt üstünde yap; her ödevin içinde adım adım yol ve örnek var. Takılırsan dilbilgisi sekmesine dön.',
+      detail: 'Kâğıt üstünde yap; her ödevin içinde adım adım yol ve örnek var. Takılırsan dilbilgisi sayfasına dön.',
     }
   }
   return {
-    tab: 'test',
+    page: 'test',
+    key: 'test',
     title: u.testBest > 0 ? `Testi tekrar çöz (en iyi %${u.testBest})` : 'Ünite testi',
     detail: '%70 ile ünite tamamlanır ve kelimeleri tekrar listene girer.',
   }
@@ -209,12 +224,12 @@ export function buildDailyPlan(ctx: PlanContext, now = new Date()): DailyPlan {
     tasks.push({
       // Kimlik adımı da içeriyor: ödevi bitirip teste geçince yeni görev
       // "yapılmamış" olarak görünsün.
-      id: `unite:${aktif.id}:${adim.tab}`,
+      id: `unite:${aktif.id}:${adim.key}`,
       kind: 'lesson',
       title: `Ünite ${aktif.no} · ${adim.title}`,
       detail: `${aktif.title}. ${adim.detail}`,
       minutes: 25,
-      to: `/unite/${aktif.id}?b=${adim.tab}`,
+      to: `/unite/${aktif.id}?s=${adim.page}`,
     })
   } else {
     // Üniteler bitti: resmî setler sırayla — 2018 hemen, 2012 son haftada.

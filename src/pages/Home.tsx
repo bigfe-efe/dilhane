@@ -4,6 +4,7 @@ import { Icon, type IconName } from '@/components/icons'
 import { useDailyDone, useDailyHistory, useDueCounts, useExamDate, useExams, useLeeches, usePendingSession, useToday, useUnitProgress } from '@/db/hooks'
 import { db, setSetting, todayKey } from '@/db/db'
 import { UNITS } from '@/content/ja/units'
+import { kitapSayfalari } from '@/content/ja/unit-kitap'
 import { EXAM_DATE_KEY, buildDailyPlan, type DailyTask, type TaskKind, type UnitState } from '@/content/ja/study-plan'
 
 /**
@@ -57,7 +58,17 @@ export default function Home() {
 
   const uniteler: UnitState[] = UNITS.map((u) => {
     const k = uniteKayit.get(u.id)
+    const okunan = new Set(k?.pages ?? [])
+    // Kitaptan önce başlanmış ünitede sayfa kaydı yok; ödev ya da test
+    // yapıldıysa okuma bitmiş sayılır, plan öğrenciyi başa göndermesin.
+    const eskiKayit = !okunan.size && ((k?.homework.length ?? 0) > 0 || (k?.testBest ?? 0) > 0)
+    const siradaki = eskiKayit ? undefined : kitapSayfalari(u).find((p) => p.gun !== 0 && !okunan.has(p.id))
     return {
+      nextPage: siradaki && {
+        id: siradaki.id,
+        title: siradaki.baslik,
+        reading: siradaki.tur !== 'odev' && siradaki.tur !== 'test',
+      },
       id: u.id,
       no: u.no,
       title: u.title,

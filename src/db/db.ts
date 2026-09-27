@@ -90,6 +90,8 @@ export interface UnitProgress {
   status: 'in-progress' | 'completed'
   /** Tamamlanmış ödev kimlikleri */
   homework: string[]
+  /** Okundu işaretlenen kitap sayfaları (unit-kitap.ts sayfa kimlikleri) */
+  pages?: string[]
   /** En iyi ünite testi yüzdesi */
   testBest: number
   testAt?: number

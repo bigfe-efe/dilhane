@@ -3902,3 +3902,79 @@ ul.tight li {
   color: var(--warn); background: var(--warn-soft); border: 1px solid var(--warn-soft);
 }
 .card.is-star { border-left: 3px solid var(--warn); }
+
+/* ————— Ünite kitabı ————— */
+.kitap-bas { display: grid; gap: 8px; }
+.kitap-baslik {
+  display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 2px 10px; text-align: left;
+  background: none; border: none; padding: 0; color: inherit; cursor: pointer;
+}
+.kitap-ust { grid-column: 1 / -1; }
+.kitap-sayfa-adi { font-size: 1.25rem; font-weight: 650; line-height: 1.3; min-width: 0; overflow-wrap: anywhere; }
+.kitap-icindekiler {
+  display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px;
+  border: 1px solid var(--line); color: var(--text-dim); white-space: nowrap;
+}
+.kitap-baslik:hover .kitap-icindekiler { border-color: var(--accent-line); color: var(--accent); }
+.kitap-cizgi { display: flex; gap: 3px; }
+.kitap-nokta {
+  flex: 1; height: 6px; min-width: 0; border-radius: 3px; border: none; padding: 0; cursor: pointer;
+  background: var(--line);
+}
+.kitap-nokta.is-read { background: var(--accent-line); }
+.kitap-nokta.is-opt { opacity: 0.55; }
+.kitap-nokta.is-on { background: var(--accent); opacity: 1; }
+
+.kitap-rehber {
+  border: 1px solid var(--accent-line); background: var(--accent-soft); border-radius: var(--r);
+  padding: 10px 14px; display: grid; gap: 6px;
+}
+.kitap-rehber.is-kapali { background: transparent; border-color: var(--line); padding-block: 6px; }
+.kitap-rehber-bas {
+  display: flex; align-items: center; gap: 8px; background: none; border: none; padding: 0; color: inherit;
+  cursor: pointer; text-align: left; font-size: 0.95rem; font-weight: 600;
+}
+.kitap-rehber-bas > svg { color: var(--accent); flex: none; }
+.kitap-rehber-etiket { color: var(--accent); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; margin-right: 4px; }
+.kitap-rehber-adim { margin: 0; padding-left: 22px; display: grid; gap: 4px; font-size: 0.9rem; line-height: 1.5; }
+.kitap-rehber-not { font-size: 0.85rem; color: var(--text-dim); border-top: 1px solid var(--accent-line); padding-top: 6px; }
+
+.kitap-alt { display: flex; gap: 8px; align-items: stretch; margin-top: 8px; }
+.kitap-alt > .btn:first-child { flex: none; }
+.kitap-sonraki { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 0; line-height: 1.25; }
+.kitap-sonraki-etiket { font-size: 0.7rem; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.05em; }
+.kitap-sonraki-ad { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kitap-gun-sonu { border-color: var(--warn); background: var(--warn-soft); }
+
+.kitap-satir {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 7px 8px; border-radius: 10px;
+  background: none; border: 1px solid transparent; color: inherit; text-align: left; cursor: pointer;
+}
+.kitap-satir:hover { background: var(--bg-elev-2); }
+.kitap-satir.is-on { border-color: var(--accent-line); background: var(--accent-soft); }
+.kitap-satir-no {
+  flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 0.75rem; border: 1px solid var(--line); color: var(--text-dim);
+}
+.kitap-satir.is-read .kitap-satir-no { background: var(--ok-dim); border-color: var(--ok); color: var(--ok); }
+.kitap-satir-ad { display: block; font-size: 0.92rem; font-weight: 560; }
+.kitap-satir-alt { display: block; font-size: 0.78rem; color: var(--text-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kitap-devam { width: 100%; gap: 12px; color: inherit; font: inherit; }
+.kitap-sss summary { cursor: pointer; font-weight: 600; font-size: 0.95rem; }
+
+/* Örneğin altında: henüz görülmemiş kelimeler */
+.yk {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin-top: 6px; padding-top: 6px;
+  border-top: 1px dashed var(--line); font-size: 0.82rem;
+}
+.yk-etiket { color: var(--warn); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 650; }
+.yk-kelime { display: inline-flex; align-items: baseline; gap: 5px; }
+.yk-kelime .ja { font-size: 0.98rem; }
+.yk-romaji { color: var(--accent); }
+.yk-tr { color: var(--text-dim); }
+.kitap-kalip {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 8px 12px; border-radius: 10px;
+  background: var(--accent-soft); border: 1px solid var(--accent-line); font-size: 1.1rem; font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.kitap-kalip-etiket { color: var(--accent); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; }
