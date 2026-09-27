@@ -3656,9 +3656,6 @@ ul.tight li {
 .kk-parca.is-on { border-color: var(--warn); background: var(--warn-soft); }
 .kk-ok { color: var(--accent); }
 .kk-an { color: var(--text-dim); }
-/* Kelime kartında: 先 önce + 生 hayat */
-.kk-kisa { font-size: 0.85rem; color: var(--text-dim); margin-top: 2px; }
-.kk-kisa .ja { color: var(--text); font-weight: 600; }
 
 /* ————— Olumlu · olumsuz (çekimler) ————— */
 .ck-kiyas { display: grid; gap: 2px; padding: 10px 12px; border-radius: 10px; background: var(--bg-elev-2); font-size: 1.3rem; }
@@ -3981,10 +3978,33 @@ ul.tight li {
 
 /* Kelime kartında örnek cümle */
 .unit-vocab-ornek {
-  display: flex; align-items: flex-start; gap: 8px; margin-top: 10px; padding-top: 8px;
+  margin-top: 12px; padding-top: 10px;
   border-top: 1px dashed var(--line); cursor: default;
 }
 .unit-vocab-ornek .jo-romaji { font-size: 0.85rem; }
 .unit-vocab-ornek .jo-kana { font-size: 0.9rem; }
 .unit-vocab-ornek .jo-tr { font-size: 0.9rem; color: var(--text-dim); }
 .unit-vocab-ornek-ja { font-size: 1.1rem; font-weight: 500; line-height: 1.5; overflow-wrap: anywhere; }
+
+/* Kelime kartı: solda kelime, sağda kanjileri tek tek */
+.unit-vocab-ust { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: flex-start; }
+.unit-vocab-sol { flex: 1 1 170px; min-width: 0; }
+.jo-ses { display: inline-flex; vertical-align: middle; margin-left: 8px; }
+.unit-vocab-ornek-ja .jo-ses { margin-left: 6px; }
+.uvk-liste { flex: 1 1 210px; min-width: 0; display: grid; gap: 6px; }
+.uvk {
+  display: flex; gap: 10px; align-items: flex-start; padding: 7px 10px; border-radius: 10px;
+  background: var(--bg-elev-2); border: 1px solid var(--line-soft);
+}
+.uvk-ch { font-size: 1.9rem; font-weight: 600; line-height: 1.1; flex: none; min-width: 1.2em; text-align: center; }
+.uvk-bilgi { flex: 1; min-width: 0; display: grid; gap: 1px; font-size: 0.8rem; line-height: 1.45; }
+.uvk-anlam { font-size: 0.92rem; font-weight: 600; color: var(--text); }
+.uvk-satir { color: var(--text-dim); overflow-wrap: anywhere; }
+.uvk-satir .ja { color: var(--text); }
+.uvk-etiket {
+  display: inline-block; min-width: 42px; font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--text-faint); font-weight: 650;
+}
+.uvk-romaji { color: var(--accent); }
+.uvk-alt { color: var(--text-faint); font-size: 0.72rem; }
+.uvk-ozel { font-size: 0.75rem; color: var(--warn); }

@@ -11,7 +11,7 @@ import { ChoukaiMetin, ChoukaiPlayer, MockPrompt, SecenekListesi } from '@/compo
 import { StrokeOrder } from '@/components/StrokeOrder'
 import { KANJI_BY_CHAR } from '@/content/ja/kanji-n5'
 import { JaOkunus } from '@/components/JaOkunus'
-import { KanjiAnlamlari, KelimeKirilimi } from '@/components/KanjiParcalari'
+import { KelimeKanjileri, KelimeKirilimi } from '@/components/KanjiParcalari'
 import { kanaToRomaji } from '@/lib/ja-phonetic'
 import { yeniKelimeler } from '@/lib/yeni-kelime'
 import { ekAlistirma, eskiSekme, genkiDersleri, kitapSayfalari, type Sayfa, type SayfaTur } from '@/content/ja/unit-kitap'
@@ -272,9 +272,9 @@ const REHBER: Record<SayfaTur, { baslik: string; adimlar: string[]; not?: string
   kelime: {
     baslik: 'Kelimeler — ezberleme, tanı',
     adimlar: [
-      'Her kelimeyi dinle (▶) ve iki kez sesli tekrar et.',
+      'Her kelimeyi dinle (yanındaki ses düğmesi) ve iki kez sesli tekrar et.',
       'Deftere yaz: yazılışı, okunuşu, anlamı. Yıldızlı olanlar en sık kullanılanlar.',
-      'Kanjili kelimede altındaki satıra bak: 先 önce + 生 hayat gibi, kelimeyi parçalarından tanı.',
+      'Kanjili kelimede sağdaki kanjilere bak: 毎朝 = 毎 her + 朝 sabah gibi, kelimeyi parçalarından tanı. “burada” satırı kanjinin bu kelimedeki okunuşu.',
       'Kartın altındaki örnek cümleyi dinle ve sesli oku. Kelime cümlede renkli; cümle yalnızca şimdiye kadar öğrendiğin kelimelerle kurulu.',
       'Sayfanın başındaki “Tekrara ekle”ye bas. Kalıcı ezberi tekrar kartları yapar, her gün birkaç dakika.',
     ],
@@ -676,20 +676,24 @@ function Kelime({ unit }: { unit: Unit }) {
               }
             }}
           >
-            <div className="row">
-              <div className="jo-kart" style={{ flex: 1, minWidth: 0 }}>
-                <JaOkunus ja={v.ja} kana={v.kana} tr={v.tr} jaClass="unit-vocab-ja">
-                  <KanjiAnlamlari ja={v.ja} kana={v.kana} />
+            {/* Üstte solda kelime, sağda kanjileri tek tek; altta tam
+                genişlikte örnek cümle. Ses düğmeleri yazının yanında. */}
+            <div className="unit-vocab-ust">
+              <div className="jo-kart unit-vocab-sol">
+                <JaOkunus
+                  ja={v.ja}
+                  kana={v.kana}
+                  tr={v.tr}
+                  jaClass="unit-vocab-ja"
+                  jaSonu={<Ses text={v.ja} reading={v.kana} />}
+                >
                   {v.star && <Yildiz label="Çok kullanılır" />}
                   {v.note && <div className="tiny dim">{v.note}</div>}
-                  <KelimeOrnegi unitId={unit.id} kelime={v.ja} />
                 </JaOkunus>
               </div>
-              {/* Ses düğmesi kartın kendi tıklamasını tetiklemesin */}
-              <span onClick={(e) => e.stopPropagation()}>
-                <SpeakBtn text={v.ja} lang="ja" size="sm" reading={v.kana} />
-              </span>
+              <KelimeKanjileri ja={v.ja} kana={v.kana} />
             </div>
+            <KelimeOrnegi unitId={unit.id} kelime={v.ja} />
           </div>
         ))}
       </div>
@@ -697,6 +701,15 @@ function Kelime({ unit }: { unit: Unit }) {
 
       {acik && <KelimeSheet v={acik} onClose={() => setAcik(null)} />}
     </div>
+  )
+}
+
+/** Yazının yanında küçük ses düğmesi; tıklaması karta geçmez (kart çizim sırasını açıyor) */
+function Ses({ text, reading }: { text: string; reading: string }) {
+  return (
+    <span className="jo-ses" onClick={(e) => e.stopPropagation()}>
+      <SpeakBtn text={text} lang="ja" size="sm" reading={reading} />
+    </span>
   )
 }
 
@@ -711,17 +724,15 @@ function KelimeOrnegi({ unitId, kelime }: { unitId: string; kelime: string }) {
   const parca = cumledekiKelime(o.ja, kelime)
   return (
     <div className="unit-vocab-ornek" onClick={(e) => e.stopPropagation()}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <JaOkunus
-          ja={o.ja}
-          kana={o.kana}
-          tr={o.tr}
-          latin={o.latin}
-          jaClass="unit-vocab-ornek-ja"
-          vurgu={parca ? [parca] : undefined}
-        />
-      </div>
-      <SpeakBtn text={o.ja} lang="ja" size="sm" reading={o.kana} />
+      <JaOkunus
+        ja={o.ja}
+        kana={o.kana}
+        tr={o.tr}
+        latin={o.latin}
+        jaClass="unit-vocab-ornek-ja"
+        vurgu={parca ? [parca] : undefined}
+        jaSonu={<Ses text={o.ja} reading={o.kana} />}
+      />
     </div>
   )
 }

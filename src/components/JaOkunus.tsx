@@ -25,6 +25,7 @@ export function JaOkunus({
   gizle,
   vurgu,
   vurguLatin,
+  jaSonu,
   children,
 }: {
   ja: string
@@ -41,6 +42,8 @@ export function JaOkunus({
   vurgu?: string[]
   /** Romaji satırında renklendirilecek kelimeler (wa, no…) */
   vurguLatin?: string[]
+  /** Yazılış satırının sonuna eklenecek küçük öğe (ses düğmesi) */
+  jaSonu?: ReactNode
   /** Türkçenin altına eklenecek not vb. */
   children?: ReactNode
 }) {
@@ -50,7 +53,10 @@ export function JaOkunus({
 
   return (
     <>
-      <div className={`ja ${jaClass}`}>{vurgu?.length ? vurgulaJa(ja, vurgu) : ja}</div>
+      <div className={`ja ${jaClass}`}>
+        {vurgu?.length ? vurgulaJa(ja, vurgu) : ja}
+        {jaSonu}
+      </div>
       {romaji && !gizle?.romaji && (
         <div className="jo-romaji">{vurguLatin?.length ? vurgulaLatin(romaji, vurguLatin) : romaji}</div>
       )}

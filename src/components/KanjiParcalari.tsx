@@ -1,6 +1,8 @@
 import { Fragment } from 'react'
 import { kelimeAyir } from '@/lib/kanji-ayir'
 import { kanaToRomaji, romajiWords } from '@/lib/ja-phonetic'
+import { kanjiBilgi, n5Kanji } from '@/content/ja/kanji-ek'
+import { UNIT_BY_ID, kanjiUnit } from '@/content/ja/units'
 
 // Kelimeden kanjiye köprü: 先生 = 先 (sen, önce) + 生 (sei, hayat).
 // Öğrenci kanjiyi kelimenin içinde öğreniyor; bu bileşen kelimeyi
@@ -56,23 +58,74 @@ export function KelimeKirilimi({ ja, kana, tr, vurgu }: { ja: string; kana: stri
   )
 }
 
+/** "い-きる" → "い(きる)": tireden sonrası okurigana */
+const kunGoster = (k: string) => k.replace(/^-/, '…').replace(/-(.+)$/, '($1)')
+const hiraganaya = (s: string) => s.replace(/[ァ-ヶ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x60))
+const KANJI_KARAKTER = /[\u4e00-\u9fff々]/
+
 /**
- * Kelime kartı için kısa satır: 先 önce + 生 hayat.
- * Yalnızca birden çok kanjili kelimelerde — tek kanjili kelimede kanjinin
- * anlamı zaten kelimenin anlamı.
+ * Kelime kartının sağ sütunu: kelimedeki her kanji tek tek — kendi anlamı,
+ * BU kelimedeki okunuşu, on/kun okunuşları, çizgi sayısı ve hangi ünitede
+ * öğretildiği. Öğrenci kanjiyi kelimeyle birlikte ama parçalarını da
+ * tanıyarak öğrenmek istedi (毎朝 = 毎 her + 朝 sabah).
  */
-export function KanjiAnlamlari({ ja, kana }: { ja: string; kana: string }) {
+export function KelimeKanjileri({ ja, kana }: { ja: string; kana: string }) {
   const a = kelimeAyir(ja, kana)
-  const kanjiler = a.parcalar.filter((p) => p.kanji)
-  if (kanjiler.length < 2) return null
+  const parcalar = a.parcalar.filter((p) => KANJI_KARAKTER.test(p.ch) && p.ch !== '々')
+  if (!parcalar.length) return null
   return (
-    <div className="kk-kisa">
-      {kanjiler.map((p, i) => (
-        <Fragment key={i}>
-          {i > 0 && ' + '}
-          <span className="ja">{p.ch}</span> {anlam(ja, p.ch, p.kanji!.meaningsTr[0])}
-        </Fragment>
+    <div className="uvk-liste">
+      {parcalar.map((p, i) => (
+        <KanjiMini key={i} ch={p.ch} okunus={a.ozel ? undefined : p.okunus} kelime={ja} />
       ))}
+      {a.ozel && <div className="uvk-ozel">Özel okunuş: kanjilerin okunuşundan kurulmaz, kelime bütün olarak okunur.</div>}
+    </div>
+  )
+}
+
+function KanjiMini({ ch, okunus, kelime }: { ch: string; okunus?: string; kelime: string }) {
+  const k = kanjiBilgi(ch)
+  const uid = kanjiUnit(ch)
+  const unite = uid ? UNIT_BY_ID.get(uid) : undefined
+  return (
+    <div className="uvk">
+      <span className="uvk-ch ja">{ch}</span>
+      <div className="uvk-bilgi">
+        <div className="uvk-anlam">{k ? anlam(kelime, ch, k.meaningsTr.slice(0, 2).join(', ')) : '—'}</div>
+        {okunus && (
+          <div className="uvk-satir">
+            <span className="uvk-etiket">burada</span>
+            <span className="ja">{okunus}</span> <span className="uvk-romaji">{kanaToRomaji(okunus)}</span>
+          </div>
+        )}
+        {k && k.on.length > 0 && (
+          <div className="uvk-satir">
+            <span className="uvk-etiket">on</span>
+            {k.on.slice(0, 2).map((o, i) => (
+              <span key={o}>
+                {i > 0 && ' · '}
+                <span className="ja">{o}</span> <span className="uvk-romaji">{kanaToRomaji(hiraganaya(o))}</span>
+              </span>
+            ))}
+          </div>
+        )}
+        {k && k.kun.length > 0 && (
+          <div className="uvk-satir">
+            <span className="uvk-etiket">kun</span>
+            {k.kun.slice(0, 2).map((o, i) => (
+              <span key={o}>
+                {i > 0 && ' · '}
+                <span className="ja">{kunGoster(o)}</span>{' '}
+                <span className="uvk-romaji">{kunGoster(kanaToRomaji(o.replace(/-/g, '|')).replace(/\|/g, '-'))}</span>
+              </span>
+            ))}
+          </div>
+        )}
+        <div className="uvk-alt">
+          {k && `${k.strokes} çizgi · `}
+          {unite ? `N5 · ${unite.no}. ünitenin kanjisi` : n5Kanji(ch) ? 'N5' : 'N5 dışı'}
+        </div>
+      </div>
     </div>
   )
 }

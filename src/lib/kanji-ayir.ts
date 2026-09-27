@@ -1,4 +1,4 @@
-import { KANJI_BY_CHAR } from '@/content/ja/kanji-n5'
+import { kanjiBilgi } from '@/content/ja/kanji-ek'
 import type { KanjiChar } from '@/types'
 
 /**
@@ -53,6 +53,7 @@ const EK_OKUNUSLAR: Record<string, { okunus: string; tur: 'on' | 'kun' }[]> = {
   来: [{ okunus: 'き', tur: 'kun' }, { okunus: 'こ', tur: 'kun' }],
   十: [{ okunus: 'じゅっ', tur: 'on' }, { okunus: 'じっ', tur: 'on' }],
   何: [{ okunus: 'なに', tur: 'kun' }, { okunus: 'なん', tur: 'kun' }],
+  切: [{ okunus: 'きっ', tur: 'kun' }],
 }
 
 const onbellek = new Map<string, { okunus: string; tur: 'on' | 'kun' }[]>()
@@ -94,7 +95,7 @@ export function kelimeAyir(ja: string, kana: string): KelimeAyrimi {
       const devam = ara(i + 1, j + 1)
       return devam ? [{ ch }, ...devam] : null
     }
-    const k = KANJI_BY_CHAR.get(ch === '々' ? karakterler[i - 1] : ch)
+    const k = kanjiBilgi(ch === '々' ? karakterler[i - 1] : ch)
     if (k) {
       for (const a of adaylar(k)) {
         if (!okunus.startsWith(a.okunus, j)) continue
@@ -103,7 +104,7 @@ export function kelimeAyir(ja: string, kana: string): KelimeAyrimi {
       }
       return null
     }
-    // N5 dışı kanji (勉, 強…): okunuşunu bilmiyoruz; 1–3 hece dene
+    // Verisi olmayan kanji (勉, 強…): okunuşunu bilmiyoruz; 1–3 hece dene
     for (let n = 1; n <= 3 && j + n <= okunus.length; n++) {
       const devam = ara(i + 1, j + n)
       if (devam) return [{ ch, okunus: okunus.slice(j, j + n) }, ...devam]
@@ -114,7 +115,7 @@ export function kelimeAyir(ja: string, kana: string): KelimeAyrimi {
   const sonuc = ara(0, 0)
   if (sonuc) return { parcalar: sonuc, ozel: false }
   return {
-    parcalar: karakterler.map((ch) => ({ ch, kanji: KANJI.test(ch) ? KANJI_BY_CHAR.get(ch) : undefined })),
+    parcalar: karakterler.map((ch) => ({ ch, kanji: KANJI.test(ch) ? kanjiBilgi(ch) : undefined })),
     ozel: true,
   }
 }
