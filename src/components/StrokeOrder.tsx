@@ -32,6 +32,10 @@ export function StrokeOrder({
    * Görünürlüğe bağlı: kart listesinde 14 kanji alt alta dururken hepsinin
    * aynı anda çizmesi hem dikkat dağıtıyor hem de işlemciyi boşa yoruyor.
    * Yalnızca ekranda olan oynar, ekrandan çıkan durur.
+   *
+   * `loop` yoksa BİR KEZ çizer: ekrandan çıkıp geri gelince yeniden
+   * başlamaz. Öğrenci kelime penceresinde kaydırırken çizimin durmadan
+   * baştan başlamasından rahatsız oldu; tekrar izlemek için "Oynat" var.
    */
   autoPlay?: boolean
   /** Bitince kısa bir aradan sonra baştan çizer — gif gibi */
@@ -59,6 +63,8 @@ export function StrokeOrder({
    * ve kapanış (closure) eski değeri görmemeli.
    */
   const looping = useRef(false)
+  /** Döngüsüz otomatik oynatma bir kez çalıştı mı */
+  const otomatikOynadi = useRef(false)
   const box = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -66,6 +72,7 @@ export function StrokeOrder({
     setGlyph(null)
     setMissing(false)
     paths.current = []
+    otomatikOynadi.current = false
     ensureStrokeData(char).then(() => {
       if (!alive) return
       const g = strokeGlyph(char)
@@ -193,9 +200,12 @@ export function StrokeOrder({
     const io = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
+          if (!loop && otomatikOynadi.current) return
+          otomatikOynadi.current = true
           looping.current = loop
           playRef.current()
-        } else {
+        } else if (loop) {
+          // Döngüsüz tek çizim kısa; ekrandan çıkınca yarıda kesilmesin
           stop()
         }
       },

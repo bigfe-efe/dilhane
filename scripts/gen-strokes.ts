@@ -15,6 +15,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { HIRAGANA, KATAKANA } from '../src/content/ja/kana'
 import { KANJI_N5 } from '../src/content/ja/kanji-n5'
+import { KANJI_EK } from '../src/content/ja/kanji-ek'
 
 const BASE = 'https://raw.githubusercontent.com/KanjiVG/kanjivg/master/kanji'
 const OUT_DIR = join('public', 'strokes')
@@ -110,7 +111,8 @@ async function main() {
   if (!existsSync(OUT_DIR)) mkdirSync(OUT_DIR, { recursive: true })
 
   const kana = uniqueChars([...HIRAGANA.map((k) => k.char), ...KATAKANA.map((k) => k.char), ...SMALL_KANA])
-  const kanji = KANJI_N5.map((k) => k.char)
+  // N5 + ünite kelimelerindeki N5 dışı kanjiler (kelime kartının çizim penceresi)
+  const kanji = [...KANJI_N5, ...KANJI_EK].map((k) => k.char)
 
   await build('kana', kana)
   await build('kanji', kanji)

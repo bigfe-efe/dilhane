@@ -10,6 +10,7 @@ import { CHOUKAI, MONDAI, karisikKopya, type ChoukaiQ, type MockQ } from '@/cont
 import { ChoukaiMetin, ChoukaiPlayer, MockPrompt, SecenekListesi } from '@/components/N5Soru'
 import { StrokeOrder } from '@/components/StrokeOrder'
 import { KANJI_BY_CHAR } from '@/content/ja/kanji-n5'
+import { kanjiBilgi } from '@/content/ja/kanji-ek'
 import { JaOkunus } from '@/components/JaOkunus'
 import { KelimeKanjileri, KelimeKirilimi } from '@/components/KanjiParcalari'
 import { kanaToRomaji } from '@/lib/ja-phonetic'
@@ -882,7 +883,8 @@ function KanjiKart({ ch, unit, onAc }: { ch: string; unit: Unit; onAc: (v: UnitV
  * yazarken asıl takılınan yer orası.
  */
 function KelimeSheet({ v, onClose }: { v: UnitVocab; onClose: () => void }) {
-  const kanjiler = [...new Set([...v.ja].filter((c) => KANJI_BY_CHAR.has(c)))]
+  // Bütün kanjiler (N5 dışı olanlar da: 寝, 朝…); çizim verisi yoksa bileşen kendini gizler
+  const kanjiler = [...new Set([...v.ja].filter((c) => /[一-鿿]/.test(c)))]
   // Kanji yoksa kanaya düşülüyor; uzun kelimelerde ilk altı karakter yeter
   const kanalar = kanjiler.length ? [] : [...new Set([...v.kana].filter((c) => /[ぁ-ゟァ-ヿ]/.test(c)))].slice(0, 6)
   const karakterler = kanjiler.length ? kanjiler : kanalar
@@ -901,7 +903,7 @@ function KelimeSheet({ v, onClose }: { v: UnitVocab; onClose: () => void }) {
           <div className="tiny faint center">Bu kelime için çizgi verisi yok.</div>
         ) : (
           karakterler.map((ch) => {
-            const k = KANJI_BY_CHAR.get(ch)
+            const k = kanjiBilgi(ch)
             return (
               <div key={ch} className="stack-sm">
                 <div className="row">
@@ -932,7 +934,8 @@ function KelimeSheet({ v, onClose }: { v: UnitVocab; onClose: () => void }) {
                     )}
                   </div>
                 </div>
-                <StrokeOrder char={ch} height={240} autoPlay loop compact />
+                {/* Bir kez çizer; tekrar izlemek için Oynat */}
+                <StrokeOrder char={ch} height={240} autoPlay compact />
               </div>
             )
           })
