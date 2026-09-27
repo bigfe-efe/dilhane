@@ -16,6 +16,7 @@ import { KelimeKanjileri, KelimeKirilimi } from '@/components/KanjiParcalari'
 import { kanaToRomaji } from '@/lib/ja-phonetic'
 import { yeniKelimeler } from '@/lib/yeni-kelime'
 import { ekAlistirma, eskiSekme, genkiDersleri, kitapSayfalari, type Sayfa, type SayfaTur } from '@/content/ja/unit-kitap'
+import { cevapDogruMu, sayfaSorulari, type PekSoru } from '@/content/ja/unit-pekistirme'
 import { unitVocabIds } from '@/content'
 import { cardId, db, ensureCards } from '@/db/db'
 import { useUnit } from '@/db/hooks'
@@ -32,7 +33,14 @@ import { useUnit } from '@/db/hooks'
 /** Ünite kaydını oluşturur ya da günceller — her yerde aynı varsayılanlarla. */
 async function kaydet(
   unitId: string,
-  patch: Partial<{ homework: string[]; pages: string[]; testBest: number; testAt: number; status: 'in-progress' | 'completed' }>,
+  patch: Partial<{
+    homework: string[]
+    pages: string[]
+    quiz: Record<string, { v: string; ok: boolean }>
+    testBest: number
+    testAt: number
+    status: 'in-progress' | 'completed'
+  }>,
 ) {
   const mevcut = await db.units.get(unitId)
   await db.units.put({
@@ -148,6 +156,8 @@ export default function UnitPage() {
         {sayfa.tur === 'test' && <Test unit={unit} best={prog?.testBest ?? 0} />}
         {sayfa.tur === 'n5' && <N5Pratik key={unit.id} unit={unit} />}
 
+        <Pekistir key={`${unit.id}:${sayfa.id}`} unit={unit} sayfa={sayfa} kayit={prog?.quiz ?? {}} />
+
         {/* Öğrenci üniteyi iki gecede çalışıyor: öğrenme günü bitince söyle */}
         {gunBitti && (
           <div className="card stack-sm kitap-gun-sonu">
@@ -196,6 +206,180 @@ export default function UnitPage() {
         </Sheet>
       )}
     </>
+  )
+}
+
+// ————————————————————————— Pekiştirme —————————————————————————
+//
+// Sayfanın sonunda kısa sorular (içerik: content/ja/unit-pekistirme.ts).
+// Her soru bir kez cevaplanır ve kilitlenir: doğruysa "Doğru", yanlışsa
+// doğrusu ve açıklaması. Cevaplar ünite kaydında; sayfaya dönünce sonuç
+// görünür, soru yeniden sorulmaz. İsteyen "Yeniden çöz" ile temizler.
+
+type PekKayit = { v: string; ok: boolean }
+
+async function kaydetQuiz(unitId: string, degisen: Record<string, PekKayit | null>) {
+  const mevcut = await db.units.get(unitId)
+  const quiz = { ...(mevcut?.quiz ?? {}) }
+  for (const [k, v] of Object.entries(degisen)) {
+    if (v) quiz[k] = v
+    else delete quiz[k]
+  }
+  await kaydet(unitId, { quiz })
+}
+
+function Pekistir({ unit, sayfa, kayit }: { unit: Unit; sayfa: Sayfa; kayit: Record<string, PekKayit> }) {
+  const sorular = sayfaSorulari(unit, sayfa)
+  if (!sorular.length) return null
+  const cevaplanan = sorular.filter((q) => kayit[q.id]).length
+  const dogru = sorular.filter((q) => kayit[q.id]?.ok).length
+  const bitti = cevaplanan === sorular.length
+
+  return (
+    <div className="card stack pk">
+      <div className="row" style={{ gap: 8 }}>
+        <Icon name="target" size={18} style={{ color: 'var(--accent)' }} />
+        <span className="card-title" style={{ flex: 1 }}>
+          Pekiştir
+        </span>
+        <span className="tiny faint tabular">
+          {bitti ? `${dogru} / ${sorular.length} doğru` : `${cevaplanan} / ${sorular.length}`}
+        </span>
+      </div>
+      {!bitti && (
+        <div className="tiny faint">
+          Bu sayfada öğrendiğini yokla. Yazmalı sorularda kana ya da romaji yazabilirsin; her soru bir kez cevaplanır.
+        </div>
+      )}
+      {sorular.map((q, i) => (
+        <PekSoruKart
+          key={q.id}
+          no={i + 1}
+          soru={q.soru}
+          kayit={kayit[q.id]}
+          onCevap={(v, ok) => void kaydetQuiz(unit.id, { [q.id]: { v, ok } })}
+        />
+      ))}
+      {bitti && (
+        <div className="row tiny" style={{ gap: 8 }}>
+          <span className="dim" style={{ flex: 1 }}>
+            {dogru === sorular.length
+              ? 'Hepsi doğru. Bu sayfa pekişti.'
+              : 'Yanlış yaptıklarının açıklamasını oku; gerekirse sayfanın başına dön.'}
+          </span>
+          <button
+            className="btn btn--sm btn--ghost"
+            onClick={() => void kaydetQuiz(unit.id, Object.fromEntries(sorular.map((q) => [q.id, null])))}
+          >
+            Yeniden çöz
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function PekSoruKart({
+  no,
+  soru,
+  kayit,
+  onCevap,
+}: {
+  no: number
+  soru: PekSoru
+  kayit?: PekKayit
+  onCevap: (v: string, ok: boolean) => void
+}) {
+  const [girdi, setGirdi] = useState('')
+  const cevaplandi = !!kayit
+
+  const metin = (
+    <div className="pk-metin">
+      <span className="pk-no">{no}</span>
+      <span>{soru.s}</span>
+    </div>
+  )
+
+  if (soru.t === 'sec') {
+    return (
+      <div className="pk-soru">
+        {metin}
+        <div className="pk-siklar">
+          {soru.o.map((o, i) => {
+            const durum = !cevaplandi ? '' : i === soru.d ? ' is-dogru' : o === kayit.v ? ' is-yanlis' : ' is-soluk'
+            return (
+              <button key={o} className={`pk-sik${durum}`} disabled={cevaplandi} onClick={() => onCevap(o, i === soru.d)}>
+                {o}
+              </button>
+            )
+          })}
+        </div>
+        {kayit && <PekGeri ok={kayit.ok} dogru={soru.o[soru.d]} aciklama={soru.a} />}
+      </div>
+    )
+  }
+
+  const gonder = () => {
+    const v = girdi.trim()
+    if (v) onCevap(v, cevapDogruMu(v, soru.d))
+  }
+  // Doğru cevabın romajisi: kabul edilenlerden kana olanından
+  const kana = soru.d.find((d) => /^[぀-ヿー]+$/.test(d))
+  return (
+    <div className="pk-soru">
+      {metin}
+      {kayit ? (
+        <div className={`pk-verilen${kayit.ok ? ' is-dogru' : ' is-yanlis'}`}>
+          Cevabın: <b className="ja">{kayit.v}</b>
+        </div>
+      ) : (
+        <form
+          className="pk-yaz"
+          onSubmit={(e) => {
+            e.preventDefault()
+            gonder()
+          }}
+        >
+          <input
+            className="field ja"
+            value={girdi}
+            onChange={(e) => setGirdi(e.target.value)}
+            placeholder="kana ya da romaji"
+            autoCapitalize="off"
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
+          />
+          <button className="btn btn--primary" type="submit" disabled={!girdi.trim()}>
+            Kontrol et
+          </button>
+        </form>
+      )}
+      {kayit && (
+        <PekGeri
+          ok={kayit.ok}
+          dogru={soru.d.join(' / ') + (kana ? ` (${kanaToRomaji(kana)})` : '')}
+          aciklama={soru.a}
+        />
+      )}
+    </div>
+  )
+}
+
+function PekGeri({ ok, dogru, aciklama }: { ok: boolean; dogru: string; aciklama: string }) {
+  if (ok)
+    return (
+      <div className="feedback feedback--ok small">
+        <b>Doğru.</b>
+      </div>
+    )
+  return (
+    <div className="feedback feedback--bad small stack-sm">
+      <div>
+        <b>Doğrusu:</b> <span className="ja">{dogru}</span>
+      </div>
+      <div>{aciklama}</div>
+    </div>
   )
 }
 

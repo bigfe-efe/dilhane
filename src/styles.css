@@ -4008,3 +4008,27 @@ ul.tight li {
 .uvk-romaji { color: var(--accent); }
 .uvk-alt { color: var(--text-faint); font-size: 0.72rem; }
 .uvk-ozel { font-size: 0.75rem; color: var(--warn); }
+
+/* ————— Ünite kitabı: pekiştirme soruları ————— */
+.pk { border-color: var(--accent-line); }
+.pk-soru { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+.pk-metin { display: flex; gap: 10px; align-items: baseline; font-size: 1rem; line-height: 1.5; overflow-wrap: anywhere; }
+.pk-no {
+  flex: none; width: 22px; height: 22px; border-radius: 50%; display: inline-grid; place-items: center;
+  font-size: 0.72rem; background: var(--bg-elev-2); color: var(--text-dim);
+}
+.pk-siklar { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 6px; }
+.pk-sik {
+  text-align: left; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg-elev-2);
+  color: inherit; font: inherit; font-size: 1rem; cursor: pointer; overflow-wrap: anywhere;
+}
+.pk-sik:hover:not(:disabled) { border-color: var(--accent); }
+.pk-sik:disabled { cursor: default; }
+.pk-sik.is-dogru { border-color: var(--ok); background: var(--ok-dim); }
+.pk-sik.is-yanlis { border-color: var(--bad); background: var(--bad-dim); }
+.pk-sik.is-soluk { opacity: 0.55; }
+.pk-yaz { display: flex; gap: 8px; }
+.pk-yaz .field { flex: 1; min-width: 0; font-size: 1.05rem; }
+.pk-verilen { font-size: 0.95rem; }
+.pk-verilen.is-dogru b { color: var(--ok); }
+.pk-verilen.is-yanlis b { color: var(--bad); text-decoration: line-through; }

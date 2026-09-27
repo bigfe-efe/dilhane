@@ -92,6 +92,8 @@ export interface UnitProgress {
   homework: string[]
   /** Okundu işaretlenen kitap sayfaları (unit-kitap.ts sayfa kimlikleri) */
   pages?: string[]
+  /** Pekiştirme cevapları: soru kimliği → verilen cevap ve doğru mu */
+  quiz?: Record<string, { v: string; ok: boolean }>
   /** En iyi ünite testi yüzdesi */
   testBest: number
   testAt?: number
