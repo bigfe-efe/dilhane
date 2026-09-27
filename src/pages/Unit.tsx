@@ -5,6 +5,7 @@ import { Sheet, SpeakBtn, TopBar } from '@/components/ui'
 import { Icon } from '@/components/icons'
 import { ExerciseRunner } from '@/components/ExerciseRunner'
 import { UNIT_BY_ID, unitKanji, type Unit, type UnitGrammar, type UnitVocab } from '@/content/ja/units'
+import { cumledekiKelime, kelimeOrnegi } from '@/content/ja/units/kelime-ornekleri'
 import { CHOUKAI, MONDAI, karisikKopya, type ChoukaiQ, type MockQ } from '@/content/ja/n5-mock'
 import { ChoukaiMetin, ChoukaiPlayer, MockPrompt, SecenekListesi } from '@/components/N5Soru'
 import { StrokeOrder } from '@/components/StrokeOrder'
@@ -274,6 +275,7 @@ const REHBER: Record<SayfaTur, { baslik: string; adimlar: string[]; not?: string
       'Her kelimeyi dinle (▶) ve iki kez sesli tekrar et.',
       'Deftere yaz: yazılışı, okunuşu, anlamı. Yıldızlı olanlar en sık kullanılanlar.',
       'Kanjili kelimede altındaki satıra bak: 先 önce + 生 hayat gibi, kelimeyi parçalarından tanı.',
+      'Kartın altındaki örnek cümleyi dinle ve sesli oku. Kelime cümlede renkli; cümle yalnızca şimdiye kadar öğrendiğin kelimelerle kurulu.',
       'Sayfanın başındaki “Tekrara ekle”ye bas. Kalıcı ezberi tekrar kartları yapar, her gün birkaç dakika.',
     ],
     not: 'Amaç bu sayfada hepsini ezberlemek değil: sonraki sayfalardaki örneklerde görünce tanıyabilmek. Kelimeler dilbilgisinden ÖNCE geliyor, örnekleri takılmadan okuyabilesin diye.',
@@ -680,6 +682,7 @@ function Kelime({ unit }: { unit: Unit }) {
                   <KanjiAnlamlari ja={v.ja} kana={v.kana} />
                   {v.star && <Yildiz label="Çok kullanılır" />}
                   {v.note && <div className="tiny dim">{v.note}</div>}
+                  <KelimeOrnegi unitId={unit.id} kelime={v.ja} />
                 </JaOkunus>
               </div>
               {/* Ses düğmesi kartın kendi tıklamasını tetiklemesin */}
@@ -693,6 +696,32 @@ function Kelime({ unit }: { unit: Unit }) {
       <div className="tiny faint">Karta dokunursan kanjilerin çizim sırası açılır.</div>
 
       {acik && <KelimeSheet v={acik} onClose={() => setAcik(null)} />}
+    </div>
+  )
+}
+
+/**
+ * Kelime kartındaki örnek cümle: kelime cümlede renkli. Cümleler yalnızca o
+ * üniteye kadar görülmüş kelime ve dilbilgisiyle yazıldı (kelime-ornekleri.ts).
+ * Tıklama karta geçmesin: kart çizim sırasını açıyor.
+ */
+function KelimeOrnegi({ unitId, kelime }: { unitId: string; kelime: string }) {
+  const o = kelimeOrnegi(unitId, kelime)
+  if (!o) return null
+  const parca = cumledekiKelime(o.ja, kelime)
+  return (
+    <div className="unit-vocab-ornek" onClick={(e) => e.stopPropagation()}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <JaOkunus
+          ja={o.ja}
+          kana={o.kana}
+          tr={o.tr}
+          latin={o.latin}
+          jaClass="unit-vocab-ornek-ja"
+          vurgu={parca ? [parca] : undefined}
+        />
+      </div>
+      <SpeakBtn text={o.ja} lang="ja" size="sm" reading={o.kana} />
     </div>
   )
 }

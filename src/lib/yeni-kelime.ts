@@ -11,7 +11,8 @@ import { KANJI_BY_CHAR } from '@/content/ja/kanji-n5'
 // cümlenin hemen altında anlamıyla veriliyor.
 //
 // "Görülmüş" kanji: bu ve önceki ünitelerin N5 kanjileri + kelime
-// listelerinde geçen kanjiler (kitapta kelime sayfası dilbilgisinden önce).
+// listelerinde ve dilbilgisi kalıplarında geçen kanjiler (kitapta kelime
+// sayfası dilbilgisinden önce).
 
 export interface YeniKelime {
   ja: string
@@ -30,6 +31,8 @@ const GORULEN = new Map<string, Set<string>>()
   for (const u of UNITS) {
     for (const k of UNITE_KANJI[u.id] ?? '') acc.add(k)
     for (const v of u.vocab) for (const k of kanjiler(v.ja)) acc.add(k)
+    // Dilbilgisi kalıbının kendisi de öğretilmiş sayılır: 〜枚, 上/下/中
+    for (const g of u.grammar) for (const k of kanjiler(g.pattern)) acc.add(k)
     GORULEN.set(u.id, new Set(acc))
   }
 }

@@ -3978,3 +3978,13 @@ ul.tight li {
   overflow-wrap: anywhere;
 }
 .kitap-kalip-etiket { color: var(--accent); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; }
+
+/* Kelime kartında örnek cümle */
+.unit-vocab-ornek {
+  display: flex; align-items: flex-start; gap: 8px; margin-top: 10px; padding-top: 8px;
+  border-top: 1px dashed var(--line); cursor: default;
+}
+.unit-vocab-ornek .jo-romaji { font-size: 0.85rem; }
+.unit-vocab-ornek .jo-kana { font-size: 0.9rem; }
+.unit-vocab-ornek .jo-tr { font-size: 0.9rem; color: var(--text-dim); }
+.unit-vocab-ornek-ja { font-size: 1.1rem; font-weight: 500; line-height: 1.5; overflow-wrap: anywhere; }
