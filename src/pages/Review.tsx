@@ -9,6 +9,7 @@ import { leechLevel, previewInterval, review, type Rating } from '@/lib/srs'
 import { GRAMMAR_BY_ID, VOCAB_BY_ID } from '@/content'
 import { KANA_BY_CHAR } from '@/content/ja/kana'
 import { KANJI_BY_CHAR } from '@/content/ja/kanji-n5'
+import { shuffle } from '@/lib/shuffle'
 
 // Dört düğme "kartı ne kadar iyi hatırladın" sorusunun cevabıdır; sistem bir
 // sonraki gösterim zamanını buna göre ayarlar. Düğmenin altındaki süre, o
@@ -46,6 +47,22 @@ const RATING_HELP: { label: string; when: string; effect: string }[] = [
 
 const SESSION_SIZE = 30
 
+/**
+ * Kartları karışık sıraya koyar; aynı kelimenin iki yönü (日本 → Japonya ve
+ * Japonya → 日本) arka arkaya gelmesin — ikincisi birincinin cevabını hemen
+ * gösterirdi. Eşlerin yan yana düşmediği bir düzen bulunana kadar yeniden
+ * karıştırır (her düzen eşit olasılıklı kalsın diye düzeltme yapılmıyor).
+ * Hiç bulunamazsa son karışık düzen kullanılır.
+ */
+function karisikSira(kartlar: Card[]): Card[] {
+  let sira = shuffle(kartlar)
+  for (let deneme = 0; deneme < 200; deneme++) {
+    if (sira.every((c, i) => i === 0 || c.refId !== sira[i - 1].refId)) return sira
+    sira = shuffle(kartlar)
+  }
+  return sira
+}
+
 export default function ReviewPage() {
   const [queue, setQueue] = useState<Card[] | null>(null)
   const [idx, setIdx] = useState(0)
@@ -57,16 +74,20 @@ export default function ReviewPage() {
   const load = useCallback(async () => {
     const now = Date.now()
     const all = await db.cards.toArray()
-    const due = all
+    const secilen = all
       .filter((c) => !c.suspended && c.due <= now)
-      // Öğrenme aşamasındakiler önce, sonra en uzun bekleyenler
+      // Oturuma HANGİ kartların gireceği: öğrenme aşamasındakiler önce, sonra
+      // en uzun bekleyenler, sonra yeni kartlar eklendikleri sırayla.
       .sort((a, b) => {
         const pa = a.phase === 'new' ? 2 : a.phase === 'review' ? 1 : 0
         const pb = b.phase === 'new' ? 2 : b.phase === 'review' ? 1 : 0
         return pa - pb || a.due - b.due
       })
       .slice(0, SESSION_SIZE)
-    setQueue(due)
+    // Gösterim SIRASI ise karışık. Önceden seçim sırası aynen gösteriliyordu:
+    // birlikte eklenen kartlar (katakana ア イ ウ エ オ) hep ezberlenen sırayla
+    // geliyor, öğrenci kartı değil sırayı hatırlıyordu.
+    setQueue(karisikSira(secilen))
     setIdx(0)
     setRevealed(false)
     shownAt.current = Date.now()
