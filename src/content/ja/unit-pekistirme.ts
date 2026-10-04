@@ -37,8 +37,15 @@ export interface Soru {
  * yazılabilsin diye は/わ, へ/え, を/お eşitlenir (iki tarafa da uygulanıyor).
  */
 function normal(s: string): string {
-  let t = s.normalize('NFKC').toLowerCase().replace(/[\s。、.,!?！？「」'’\-~〜]/g, '')
-  if (/[a-z]/.test(t)) t = toHiragana(t)
+  // Romaji KELİME KELİME çevrilir: boşluklar önce atılsaydı "hon o" →
+  // "hono" → ほの olurdu (ん + お yerine の).
+  const t = s
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/[。、.,!?！？「」'’\-~〜]/g, '')
+    .split(/\s+/)
+    .map((p) => (/[a-z]/.test(p) ? toHiragana(p) : p))
+    .join('')
   return t
     .replace(/[ァ-ヶ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x60))
     .replace(/は/g, 'わ')

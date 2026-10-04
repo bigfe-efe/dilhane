@@ -54,6 +54,8 @@ const ornek: [string, string[], boolean][] = [
   ['o', ['を'], true],
   ['desu', ['です'], true],
   ['masu', ['です'], false],
+  ['hon o kudasai', ['ほんをください'], true],
+  ['asagohan o tabemasen', ['朝ご飯を食べません', 'あさごはんをたべません'], true],
 ]
 for (const [g, d, beklenen] of ornek) if (cevapDogruMu(g, d) !== beklenen) bildir(`cevapDogruMu("${g}", ${d}) ≠ ${beklenen}`)
 

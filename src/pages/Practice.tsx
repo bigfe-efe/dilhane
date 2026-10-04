@@ -51,6 +51,19 @@ const GROUPS: Group[] = [
     ],
   },
   {
+    // Ünitelerin dışında cümle kurma: öğrenci bir cümleyi olumsuz, geçmiş,
+    // soru yapmayı ve gündelik konuşmanın iskeletini tek yerde görmek istedi.
+    id: 'cumle',
+    title: 'Cümle kur',
+    note: 'Bir cümleyi olumlu, olumsuz, geçmiş, soru ve kibar/sade hâllerine çevir. Zamirler ve her gün kullanılan kalıp cümleler.',
+    items: [
+      { to: '/cumle?b=donustur', glyph: '文', title: 'Cümleyi çevir', sub: 'Olumlu ↔ olumsuz, geniş · geçmiş · şu an, soru, kibar ↔ sade' },
+      { to: '/cumle?b=zamirler', glyph: '彼', title: 'Zamirler', sub: 'Ben, sen, o, biz — ne zaman söylenir, ne zaman düşer; soru kelimeleri' },
+      { to: '/cumle?b=gunluk', glyph: '話', title: 'Günlük cümleler', sub: 'Selamlaşma, teşekkür, tanışma, dükkân, tepkiler' },
+      { to: '/cumle?b=alistirma', glyph: '練', title: 'Çevirme alıştırması', sub: '10 soru: cümleyi olumsuz, geçmiş yap; anlamını seç' },
+    ],
+  },
+  {
     // Dinleme sınavda ayrı barajlı bölüm; uygulamada hiç karşılığı yoktu.
     id: 'dinleme',
     title: 'Dinleme',

@@ -4032,3 +4032,33 @@ ul.tight li {
 .pk-verilen { font-size: 0.95rem; }
 .pk-verilen.is-dogru b { color: var(--ok); }
 .pk-verilen.is-yanlis b { color: var(--bad); text-decoration: line-through; }
+
+/* ————— Cümle kur ————— */
+.cm-secim { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; }
+.cm-cumle {
+  display: grid; gap: 1px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--bg-elev-2); color: inherit; font: inherit; text-align: left; cursor: pointer; min-width: 0;
+}
+.cm-cumle .ja { font-size: 1.15rem; font-weight: 600; overflow-wrap: anywhere; }
+.cm-cumle .tiny { color: var(--text-faint); }
+.cm-cumle:hover { border-color: var(--accent); }
+.cm-cumle.is-on { border-color: var(--accent); background: var(--accent-soft); }
+.cm-sonuc { border-color: var(--accent-line); }
+.cm-ja { font-size: clamp(1.5rem, 4.2vw, 2rem); font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
+.cm-latin { font-size: 1rem; }
+.cm-latin b { color: var(--warn); }
+.cm-tr { font-size: 1.05rem; margin-top: 4px; }
+.cm-dugmeler { display: flex; flex-wrap: wrap; gap: 8px; }
+.cm-secici { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.cm-secici button {
+  padding: 7px 12px; background: none; border: none; border-left: 1px solid var(--line); color: var(--text-dim);
+  font: inherit; font-size: 0.88rem; cursor: pointer;
+}
+.cm-secici button:first-child { border-left: none; }
+.cm-secici button.is-on { background: var(--accent); color: #fff; font-weight: 600; }
+.cm-kural { font-size: 0.9rem; padding: 8px 12px; border-radius: 10px; background: var(--warn-soft); }
+.cm-hucre { border: 1px solid transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.cm-hucre:hover { border-color: var(--accent-line); }
+.cm-hucre.is-on { border-color: var(--accent); background: var(--accent-soft); }
+.cm-bicim { display: grid; gap: 1px; flex: none; width: 96px; }
+.cm-bicim .ja { font-size: 1.15rem; font-weight: 600; color: var(--warn); }
