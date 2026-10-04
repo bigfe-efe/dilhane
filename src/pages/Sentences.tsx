@@ -4,6 +4,28 @@ import { Chips, SpeakBtn, TopBar } from '@/components/ui'
 import { JaOkunus } from '@/components/JaOkunus'
 import { shuffle } from '@/lib/shuffle'
 import { cevapDogruMu } from '@/content/ja/unit-pekistirme'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { Icon } from '@/components/icons'
+import { db, setSetting } from '@/db/db'
+import {
+  CUMLE_BAGLAMA,
+  CUMLE_TURLERI,
+  DERECE,
+  FIIL_GRUPLARI,
+  ISIM_BAGLAMA,
+  ISKELET,
+  KELIME_TURLERI,
+  RU_GORUNUMLU_U,
+  SIFAT_KULLANIMI,
+  SIFAT_TUZAKLARI,
+  SIKLIK,
+  TEMEL_SIRA,
+  TURKCEDEN_FARKLAR,
+  U_FIIL_SONLARI,
+  YAPI_KURALLARI,
+  ZIT_CIFTLER,
+  type Baglac,
+} from '@/content/ja/dil-temeli'
 import {
   DONUSUM,
   DONUSUM_KURALI,
@@ -20,17 +42,24 @@ import {
   type Satir,
 } from '@/content/ja/cumle-kur'
 
-// Cümle kur — ünitelerin dışında, başvuru + alıştırma sayfası.
+// Dilin temeli — ünitelerin dışında, başvuru + alıştırma sayfası.
 //
-// Dört bölüm: bir cümleyi olumlu/olumsuz, zaman, soru ve kibar/sade hâllerine
-// çeviren araç; zamirler; günlük kalıp cümleler; alıştırma. İçerik ve
-// gerekçesi content/ja/cumle-kur.ts içinde.
+// Üniteler konuya göre ilerliyor; burası dilin iskeleti. Bölümler öğrenme
+// sırasıyla: temel sıra (yol haritası), cümle yapısı, kelime türleri ve fiil
+// grupları, zamirler, cümleyi çevirme (olumlu/olumsuz, zaman, soru,
+// kibar/sade), sıfatlar, bağlaçlar, günlük cümleler, alıştırma.
+// İçerik ve gerekçesi: content/ja/dil-temeli.ts ve content/ja/cumle-kur.ts.
 
-type Bolum = 'donustur' | 'zamirler' | 'gunluk' | 'alistirma'
+type Bolum = 'sira' | 'yapi' | 'turler' | 'zamirler' | 'donustur' | 'sifat' | 'baglac' | 'gunluk' | 'alistirma'
 
 const BOLUMLER: { id: Bolum; label: string }[] = [
-  { id: 'donustur', label: 'Cümleyi çevir' },
+  { id: 'sira', label: 'Temel sıra' },
+  { id: 'yapi', label: 'Cümle yapısı' },
+  { id: 'turler', label: 'Kelime türleri' },
   { id: 'zamirler', label: 'Zamirler' },
+  { id: 'donustur', label: 'Cümleyi çevir' },
+  { id: 'sifat', label: 'Sıfatlar' },
+  { id: 'baglac', label: 'Bağlaçlar' },
   { id: 'gunluk', label: 'Günlük cümleler' },
   { id: 'alistirma', label: 'Alıştırma' },
 ]
@@ -38,13 +67,18 @@ const BOLUMLER: { id: Bolum; label: string }[] = [
 export default function SentencesPage() {
   const [params, setParams] = useSearchParams()
   const istenen = params.get('b') as Bolum | null
-  const bolum: Bolum = BOLUMLER.some((b) => b.id === istenen) ? istenen! : 'donustur'
+  const bolum: Bolum = BOLUMLER.some((b) => b.id === istenen) ? istenen! : 'sira'
 
   return (
     <>
-      <TopBar title="Cümle kur" sub="Olumlu, olumsuz, zaman, soru · zamirler · günlük cümleler" back="/calis" />
+      <TopBar title="Dilin temeli" sub="Cümle yapısı, kelime türleri, zamirler, çekim, sıfatlar, bağlaçlar" back="/calis" />
       <div className="page stack-lg lang-ja">
         <Chips items={BOLUMLER} value={bolum} onChange={(b) => setParams({ b }, { replace: true })} />
+        {bolum === 'sira' && <Sira />}
+        {bolum === 'yapi' && <Yapi />}
+        {bolum === 'turler' && <Turler />}
+        {bolum === 'sifat' && <Sifatlar />}
+        {bolum === 'baglac' && <Baglaclar />}
         {bolum === 'donustur' && <Donustur />}
         {bolum === 'zamirler' && <Zamirler />}
         {bolum === 'gunluk' && <Gunluk />}
@@ -84,6 +118,410 @@ function CumleSatiri({ s, onEk }: { s: Satir; onEk?: ReactNode }) {
         </span>
       )}
       <SpeakBtn text={s.ja} lang="ja" size="sm" reading={s.kana ?? s.ja} />
+    </div>
+  )
+}
+
+
+// ————————————————————————— Temel sıra —————————————————————————
+
+const SIRA_ANAHTAR = 'temel-sira'
+
+function Sira() {
+  const kayit = useLiveQuery(() => db.settings.get(SIRA_ANAHTAR), [])
+  const biten = new Set<string>(Array.isArray(kayit?.value) ? (kayit.value as string[]) : [])
+  const cevir = (id: string) => {
+    const yeni = new Set(biten)
+    if (yeni.has(id)) yeni.delete(id)
+    else yeni.add(id)
+    void setSetting(SIRA_ANAHTAR, [...yeni])
+  }
+
+  return (
+    <div className="stack-lg">
+      <div className="card card--pad-lg stack-sm">
+        <div className="card-title">Önce iskelet, sonra ayrıntı</div>
+        <div className="small">
+          Üniteler konuya göre ilerliyor: tanışma, alışveriş, saatler. Dilin iskeleti ise burada: cümle nasıl kurulur,
+          kelime türleri neler, bir cümle nasıl olumsuz ya da geçmiş yapılır. Aşağıdaki sıra, İngilizce öğrenirken
+          izlenen sıranın Japoncaya uyarlanmış hâli. Her adımın yanında uygulamada nerede olduğu yazıyor; bitirdiğini
+          işaretle.
+        </div>
+        <div className="tiny faint">
+          {biten.size} / {TEMEL_SIRA.length} adım tamam. İlk üç adım bir oturumda okunur; gerisi ünitelerle birlikte ilerler.
+        </div>
+      </div>
+
+      <div className="stack-sm">
+        {TEMEL_SIRA.map((a, i) => {
+          const ok = biten.has(a.id)
+          return (
+            <div key={a.id} className={`card dt-adim${ok ? ' is-done' : ''}`}>
+              <button
+                className={`unit-check${ok ? ' is-on' : ''}`}
+                onClick={() => cevir(a.id)}
+                aria-pressed={ok}
+                aria-label={ok ? 'Tamamlandı işaretini kaldır' : 'Tamamlandı olarak işaretle'}
+              >
+                {ok ? <Icon name="check" size={14} /> : i + 1}
+              </button>
+              <div className="stack-sm" style={{ flex: 1, minWidth: 0, gap: 4 }}>
+                <div className="row-wrap" style={{ gap: 8 }}>
+                  <span className="card-title">{a.baslik}</span>
+                  <span className="tiny faint">İngilizcede: {a.ingilizce}</span>
+                </div>
+                <div className="small dim">{a.ozet}</div>
+                <div className="row-wrap" style={{ gap: 6 }}>
+                  {a.yerler.map((y) => (
+                    <Link key={y.to} to={y.to} className="btn btn--sm btn--ghost">
+                      {y.ad} ›
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ————————————————————————— Cümle yapısı —————————————————————————
+
+function Yapi() {
+  const [kapali, setKapali] = useState<string[]>([])
+  const acik = ISKELET.filter((t) => !kapali.includes(t.id))
+  const tr = acik.map((t) => t.tr).join(' ')
+
+  return (
+    <div className="stack-lg">
+      <div className="card card--pad-lg stack-sm">
+        <div className="card-title">Japonca cümle, Türkçe cümle gibi kurulur</div>
+        <div className="small">
+          Kelime sırası neredeyse aynı: yüklem sonda, niteleyen önde, ekler kelimenin arkasında. Türkçe bilen biri için
+          en büyük kolaylık bu. İngilizce sırayla (özne, fiil, nesne) düşünme; Türkçe düşün.
+        </div>
+      </div>
+
+      <Bolumcuk baslik="Cümlenin iskeleti" alt="Her taş bir soruya cevap verir. Taşa dokun: cümleden çıkar ya da girer. Yüklem (son taş) hep kalır.">
+        <div className="dt-taslar">
+          {ISKELET.map((t) => {
+            const on = !kapali.includes(t.id)
+            return (
+              <button
+                key={t.id}
+                className={`dt-tas${on ? ' is-on' : ''}${t.sabit ? ' is-sabit' : ''}`}
+                disabled={t.sabit}
+                aria-pressed={on}
+                onClick={() => setKapali((k) => (k.includes(t.id) ? k.filter((x) => x !== t.id) : [...k, t.id]))}
+              >
+                <span className="dt-tas-soru">{t.soru}</span>
+                <span className="ja dt-tas-ja">{t.ja}</span>
+                <span className="dt-tas-latin">{t.latin}</span>
+                <span className="dt-tas-tr">{t.tr}</span>
+              </button>
+            )
+          })}
+        </div>
+        <div className="card stack-sm cm-sonuc">
+          <div className="row" style={{ alignItems: 'flex-start', gap: 10 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="ja cm-ja">{acik.map((t) => t.ja).join('')}。</div>
+              <div className="jo-romaji cm-latin">{acik.map((t) => t.latin).join(' ')}.</div>
+              <div className="ja jo-kana">{acik.map((t) => t.kana).join('')}。</div>
+              <div className="jo-tr cm-tr">{tr.charAt(0).toLocaleUpperCase('tr') + tr.slice(1)}.</div>
+            </div>
+            <SpeakBtn text={acik.map((t) => t.ja).join('') + '。'} lang="ja" reading={acik.map((t) => t.kana).join('') + '。'} />
+          </div>
+          <div className="tiny faint">
+            Sıra kalıbı: ne zaman → kim → kiminle → nerede → neyi → yüklem. Türkçesi de aynı sırada okunuyor.
+          </div>
+        </div>
+      </Bolumcuk>
+
+      <Bolumcuk baslik="Beş temel kural">
+        {YAPI_KURALLARI.map((r) => (
+          <div key={r.baslik} className={`card stack-sm${r.star ? ' is-star' : ''}`}>
+            <div className="card-title">
+              {r.star && <span className="tb-star">★ </span>}
+              {r.baslik}
+            </div>
+            <div className="small">{r.govde}</div>
+            {r.ornekler?.map((o) => <CumleSatiri key={o.ja} s={o} />)}
+          </div>
+        ))}
+      </Bolumcuk>
+
+      <Bolumcuk baslik="Dört cümle türü" alt="Yüklem ne ise cümle odur: isim, sıfat, fiil ya da var/yok. N5’teki her cümle bu dördünden biri.">
+        <div className="stack-sm">
+          {CUMLE_TURLERI.map((c) => (
+            <CumleSatiri
+              key={c.tur}
+              s={c}
+              onEk={
+                <div className="cm-bicim" style={{ width: 132 }}>
+                  <span className="small" style={{ fontWeight: 600 }}>
+                    {c.tur}
+                  </span>
+                  <span className="ja tiny dim">{c.kalip}</span>
+                </div>
+              }
+            />
+          ))}
+        </div>
+      </Bolumcuk>
+
+      <Bolumcuk baslik="Türkçeden farklı olanlar" alt="Yapı aynı ama şu altı nokta başta şaşırtır.">
+        <div className="cols-2">
+          {TURKCEDEN_FARKLAR.map((f) => (
+            <div key={f.baslik} className="card stack-sm">
+              <div className="card-title">{f.baslik}</div>
+              <div className="small">{f.govde}</div>
+            </div>
+          ))}
+        </div>
+      </Bolumcuk>
+    </div>
+  )
+}
+
+// ————————————————————————— Kelime türleri —————————————————————————
+
+function FiilSatiri({ f }: { f: { sozluk: string; masu: string; kana: string; latin: string; tr: string } }) {
+  return (
+    <div className="tb-row">
+      <span className="tb-ja ja" style={{ minWidth: 150 }}>
+        {f.sozluk} → {f.masu}
+      </span>
+      <span className="tb-read">
+        <span className="tb-latin">{f.latin}</span>
+        <span className="ja tiny dim">{f.kana}</span>
+      </span>
+      <span className="tb-tr">{f.tr}</span>
+    </div>
+  )
+}
+
+function Turler() {
+  return (
+    <div className="stack-lg">
+      <Bolumcuk baslik="Kelime türleri" alt="Bir kelimenin türünü bilmek, onu nasıl çekeceğini ve cümlede nereye koyacağını söyler.">
+        <div className="stack-sm">
+          {KELIME_TURLERI.map((k) => (
+            <CumleSatiri
+              key={k.tur}
+              s={{ ...k.ornek, not: k.aciklama }}
+              onEk={
+                <div className="cm-bicim">
+                  <span className="small" style={{ fontWeight: 600 }}>
+                    {k.tur}
+                  </span>
+                  <span className="ja tiny dim">{k.japonca}</span>
+                </div>
+              }
+            />
+          ))}
+        </div>
+      </Bolumcuk>
+
+      <Bolumcuk
+        baslik="Fiil grupları"
+        alt="Bir fiilin ます, ない, て, た biçimlerinin nasıl kurulacağı grubuna bağlı. Yeni bir fiil öğrenirken ilk bakacağın şey bu."
+      >
+        {FIIL_GRUPLARI.map((g) => (
+          <div key={g.ad} className="card stack-sm">
+            <div className="row" style={{ gap: 8 }}>
+              <span className="card-title">{g.ad}</span>
+              <span className="ja tiny dim">{g.japonca}</span>
+            </div>
+            <div className="small">{g.kural}</div>
+            <div className="tb-table">
+              {g.ornekler.map((f) => (
+                <FiilSatiri key={f.sozluk} f={f} />
+              ))}
+            </div>
+          </div>
+        ))}
+
+        <div className="card stack-sm is-star">
+          <div className="card-title">
+            <span className="tb-star">★ </span>Tuzak: る ile biten ama u-fiil olanlar
+          </div>
+          <div className="small">
+            -iru / -eru ile bittikleri hâlde u-fiil gibi çekilirler: る düşmez, り olur. Sınav bunları sever.
+          </div>
+          <div className="tb-table">
+            {RU_GORUNUMLU_U.map((f) => (
+              <FiilSatiri key={f.sozluk} f={f} />
+            ))}
+          </div>
+          <div className="tiny dim">
+            Tersine, ます biçiminden gruba bakarken: ます’tan önceki ses “e” ise ru-fiildir (食べます). “i” ise çoğunlukla
+            u-fiildir (行きます), ama birkaç ru-fiil de böyle biter: 起きます, 見ます, います, かります, できます.
+          </div>
+        </div>
+
+        <div className="card stack-sm">
+          <div className="card-title">u-fiilde son hece nasıl değişir</div>
+          <div className="small">Sözlük biçiminin son hecesi “u” sırasından “i” sırasına geçer, sonra ます gelir.</div>
+          <div className="tb-table">
+            {U_FIIL_SONLARI.map((u) => (
+              <div key={u.son} className="tb-row">
+                <span className="ja tb-ja" style={{ minWidth: 110 }}>
+                  {u.son} → {u.masu}
+                </span>
+                <span className="tb-read" style={{ minWidth: 170 }}>
+                  <span className="ja tb-kana">{u.ornek}</span>
+                  <span className="tb-latin">{u.latin}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="tiny faint">
+          Her fiilin bütün biçimleri: <Link to="/verbs">Fiil ve sıfat çekim tabloları</Link>. Bir cümleyi çevirmek:{' '}
+          <Link to="/cumle?b=donustur">Cümleyi çevir</Link>.
+        </div>
+      </Bolumcuk>
+    </div>
+  )
+}
+
+// ————————————————————————— Sıfatlar —————————————————————————
+
+function Sifatlar() {
+  return (
+    <div className="stack-lg">
+      <div className="card card--pad-lg stack-sm">
+        <div className="card-title">İki tür sıfat var</div>
+        <div className="small">
+          <b>い-sıfat</b> い ile biter ve kendisi çekilir (高い → 高くない). <b>な-sıfat</b> isim gibi davranır: です ile
+          çekilir, isimden önce な alır (しずかな町). Hangi türden olduğunu bilmeden olumsuzunu ya da geçmişini
+          kuramazsın; o yüzden her yeni sıfatı türüyle birlikte öğren.
+        </div>
+      </div>
+
+      <Bolumcuk baslik="Altı kullanım, yan yana" alt="Solda い-sıfat (高い), sağda な-sıfat (しずか).">
+        {SIFAT_KULLANIMI.map((k) => (
+          <div key={k.baslik} className="card stack-sm">
+            <div className="card-title">{k.baslik}</div>
+            <div className="small dim">{k.govde}</div>
+            <div className="cols-2">
+              <CumleSatiri s={k.i} onEk={<span className="dt-etiket">い</span>} />
+              <CumleSatiri s={k.na} onEk={<span className="dt-etiket">な</span>} />
+            </div>
+          </div>
+        ))}
+      </Bolumcuk>
+
+      <div className="card stack-sm is-star">
+        <div className="card-title">
+          <span className="tb-star">★ </span>Tuzaklar
+        </div>
+        <ul className="tight small">
+          {SIFAT_TUZAKLARI.map((t) => (
+            <li key={t}>{t}</li>
+          ))}
+        </ul>
+      </div>
+
+      <Bolumcuk baslik="Zıt çiftler" alt="Sıfatları çift çift öğrenmek ikisini birden pekiştirir. （な） yazanlar な-sıfat.">
+        <div className="stack-sm">
+          {ZIT_CIFTLER.map((c) => (
+            <div key={c.a.ja} className="dt-cift">
+              <ZitKelime s={c.a} />
+              <span className="dt-ok">↔</span>
+              <ZitKelime s={c.b} />
+            </div>
+          ))}
+        </div>
+      </Bolumcuk>
+
+      <Bolumcuk baslik="Ne kadar?" alt="Derece zarfları sıfatın önüne gelir.">
+        <div className="stack-sm">
+          {DERECE.map((d) => (
+            <CumleSatiri key={d.ja} s={d} />
+          ))}
+        </div>
+      </Bolumcuk>
+
+      <div className="tiny faint">
+        Sıfat cümlesini olumsuz, geçmiş ve soru yapmak: <Link to="/cumle?b=donustur">Cümleyi çevir</Link> (高い, いい, しずか,
+        好き).
+      </div>
+    </div>
+  )
+}
+
+function ZitKelime({ s }: { s: Satir }) {
+  return (
+    <div className="dt-zit">
+      <span className="ja dt-zit-ja">{s.ja}</span>
+      <span className="dt-zit-alt">
+        <span className="tb-latin">{s.latin}</span> · {s.tr}
+      </span>
+    </div>
+  )
+}
+
+// ————————————————————————— Bağlaçlar —————————————————————————
+
+function Baglaclar() {
+  const satir = (b: Baglac) => (
+    <CumleSatiri
+      key={b.kelime}
+      s={{ ...b, not: b.nerede }}
+      onEk={
+        <div className="cm-bicim">
+          <span className="ja">{b.kelime}</span>
+          <span className="tiny dim">{b.anlam}</span>
+        </div>
+      }
+    />
+  )
+  return (
+    <div className="stack-lg">
+      <div className="card-sub">
+        Tek tek cümle kurabildikten sonraki adım: iki şeyi “ve” ile, iki cümleyi “ama” ya da “çünkü” ile bağlamak.
+      </div>
+
+      <Bolumcuk baslik="İsimleri bağlamak" alt="Dikkat: と yalnızca isimleri bağlar; iki cümleyi “ve” diye bağlamak için kullanılmaz.">
+        <div className="stack-sm">{ISIM_BAGLAMA.map(satir)}</div>
+      </Bolumcuk>
+
+      <Bolumcuk baslik="Cümleleri bağlamak" alt="Kimi cümlenin başına, kimi ilk cümlenin sonuna gelir; yeri her satırda yazıyor.">
+        <div className="stack-sm">{CUMLE_BAGLAMA.map(satir)}</div>
+        <div className="card stack-sm is-star">
+          <div className="card-title">
+            <span className="tb-star">★ </span>から’nın yeri Türkçenin tersi gibi görünür
+          </div>
+          <div className="small">
+            Türkçede “gitmiyorum, <b>çünkü</b> meşgulüm” dersin: çünkü sebebin başında. Japoncada から sebebin{' '}
+            <b>sonunda</b> durur ve sebep önce söylenir: 忙しいです<b>から</b>、行きません. “Meşgul olduğum <b>için</b>{' '}
+            gitmiyorum” diye düşünürsen sıra tam oturur.
+          </div>
+        </div>
+      </Bolumcuk>
+
+      <Bolumcuk baslik="Ne sıklıkla?" alt="Sıklık zarfı fiilden önce gelir. Son ikisi fiili OLUMSUZ ister.">
+        <div className="stack-sm">
+          {SIKLIK.map((s) => (
+            <CumleSatiri
+              key={s.kelime}
+              s={s}
+              onEk={
+                <div className="cm-bicim">
+                  <span className="ja">{s.kelime}</span>
+                  <span className="dt-cubuk" aria-hidden>
+                    <span style={{ width: `${s.oran}%` }} />
+                  </span>
+                </div>
+              }
+            />
+          ))}
+        </div>
+      </Bolumcuk>
     </div>
   )
 }

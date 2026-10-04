@@ -4062,3 +4062,34 @@ ul.tight li {
 .cm-hucre.is-on { border-color: var(--accent); background: var(--accent-soft); }
 .cm-bicim { display: grid; gap: 1px; flex: none; width: 96px; }
 .cm-bicim .ja { font-size: 1.15rem; font-weight: 600; color: var(--warn); }
+
+/* ————— Dilin temeli ————— */
+.dt-adim { display: flex; gap: 12px; align-items: flex-start; }
+.dt-adim .unit-check { font-size: 0.8rem; color: var(--text-dim); }
+.dt-adim.is-done { border-color: var(--ok); background: var(--ok-dim); }
+.dt-taslar { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 6px; }
+.dt-tas {
+  display: grid; gap: 1px; padding: 8px 10px; border-radius: 10px; border: 1px dashed var(--line);
+  background: none; color: var(--text-faint); font: inherit; text-align: left; cursor: pointer; min-width: 0;
+}
+.dt-tas.is-on { border-style: solid; border-color: var(--accent-line); background: var(--accent-soft); color: inherit; }
+.dt-tas.is-sabit { border-color: var(--warn); background: var(--warn-soft); cursor: default; }
+.dt-tas:not(.is-on) .dt-tas-ja { text-decoration: line-through; }
+.dt-tas-soru { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-faint); }
+.dt-tas-ja { font-size: 1.15rem; font-weight: 600; overflow-wrap: anywhere; }
+.dt-tas-latin { font-size: 0.8rem; color: var(--accent); }
+.dt-tas-tr { font-size: 0.85rem; }
+.dt-etiket {
+  flex: none; width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center;
+  background: var(--bg-elev); border: 1px solid var(--line); font-weight: 700; color: var(--warn);
+}
+.dt-cift {
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; padding: 8px 10px;
+  border-radius: 10px; background: var(--bg-elev-2);
+}
+.dt-ok { color: var(--text-faint); }
+.dt-zit { display: grid; gap: 1px; min-width: 0; }
+.dt-zit-ja { font-size: 1.2rem; font-weight: 600; overflow-wrap: anywhere; }
+.dt-zit-alt { font-size: 0.82rem; color: var(--text-dim); overflow-wrap: anywhere; }
+.dt-cubuk { display: block; height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; margin-top: 4px; }
+.dt-cubuk > span { display: block; height: 100%; background: var(--accent); }

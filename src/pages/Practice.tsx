@@ -35,6 +35,26 @@ interface Group {
 
 const GROUPS: Group[] = [
   {
+    // Ünitelerin dışında dilin iskeleti. Öğrenci "temelleri öğrenmeden
+    // detaya giriyormuşum gibi" hissetti: üniteler konuya göre ilerliyor,
+    // cümle yapısı / kelime türleri / çekim hiçbir yerde bir arada değildi.
+    // Sıra öğrenme sırası; ilk kart yol haritası.
+    id: 'cumle',
+    title: 'Dilin temeli',
+    note: 'Dilin iskeleti, öğrenme sırasıyla: cümle nasıl kurulur, kelime türleri, zamirler, olumlu–olumsuz–geçmiş–soru, sıfatlar, bağlaçlar. Ünitelerde takıldığında dönüp bakacağın yer.',
+    items: [
+      { to: '/cumle?b=sira', glyph: '道', title: 'Temel sıra', sub: 'Hangi temel, hangi sırayla, uygulamada nerede — işaretleyerek ilerle' },
+      { to: '/cumle?b=yapi', glyph: '文', title: 'Cümle yapısı', sub: 'Kelime sırası, cümlenin taşları, dört cümle türü' },
+      { to: '/cumle?b=turler', glyph: '品', title: 'Kelime türleri', sub: 'İsim, fiil, sıfat, ek — ve fiil grupları: ru, u, düzensiz' },
+      { to: '/cumle?b=zamirler', glyph: '彼', title: 'Zamirler', sub: 'Ben, sen, o, biz — ne zaman söylenir, ne zaman düşer; soru kelimeleri' },
+      { to: '/cumle?b=donustur', glyph: '変', title: 'Cümleyi çevir', sub: 'Olumlu ↔ olumsuz, geniş · geçmiş · şu an, soru, kibar ↔ sade' },
+      { to: '/cumle?b=sifat', glyph: '形', title: 'Sıfatlar', sub: 'い ve な sıfatları: altı kullanım, tuzaklar, zıt çiftler' },
+      { to: '/cumle?b=baglac', glyph: '接', title: 'Bağlaçlar', sub: 'Ve, ama, çünkü, ondan sonra — ve sıklık: her zaman, bazen, hiç' },
+      { to: '/cumle?b=gunluk', glyph: '話', title: 'Günlük cümleler', sub: 'Selamlaşma, teşekkür, tanışma, dükkân, tepkiler' },
+      { to: '/cumle?b=alistirma', glyph: '練', title: 'Çevirme alıştırması', sub: '10 soru: cümleyi olumsuz, geçmiş yap; anlamını seç' },
+    ],
+  },
+  {
     // Kanji tablosu dışındaki temel her şey. Başa kondu: sayı, saat ve
     // tanışma her ünitede ve sınavın her bölümünde geçiyor.
     id: 'temel',
@@ -48,19 +68,6 @@ const GROUPS: Group[] = [
       { to: '/temel?b=tanitim', glyph: '私', title: 'Kendini tanıt', sub: 'Ad, yaş, okul — ve watashi ne zaman söylenir' },
       { to: '/temel?b=ekler', glyph: 'は', title: 'Ekler (助詞)', sub: 'は・が・を・の・に・で… Türkçe karşılıkları ve örnekleri' },
       { to: '/temel?b=cekim', glyph: 'ない', title: 'Olumlu · olumsuz', sub: 'ます・ません・ました… cümle sonunu tanı, Türkçe karşılıklarıyla' },
-    ],
-  },
-  {
-    // Ünitelerin dışında cümle kurma: öğrenci bir cümleyi olumsuz, geçmiş,
-    // soru yapmayı ve gündelik konuşmanın iskeletini tek yerde görmek istedi.
-    id: 'cumle',
-    title: 'Cümle kur',
-    note: 'Bir cümleyi olumlu, olumsuz, geçmiş, soru ve kibar/sade hâllerine çevir. Zamirler ve her gün kullanılan kalıp cümleler.',
-    items: [
-      { to: '/cumle?b=donustur', glyph: '文', title: 'Cümleyi çevir', sub: 'Olumlu ↔ olumsuz, geniş · geçmiş · şu an, soru, kibar ↔ sade' },
-      { to: '/cumle?b=zamirler', glyph: '彼', title: 'Zamirler', sub: 'Ben, sen, o, biz — ne zaman söylenir, ne zaman düşer; soru kelimeleri' },
-      { to: '/cumle?b=gunluk', glyph: '話', title: 'Günlük cümleler', sub: 'Selamlaşma, teşekkür, tanışma, dükkân, tepkiler' },
-      { to: '/cumle?b=alistirma', glyph: '練', title: 'Çevirme alıştırması', sub: '10 soru: cümleyi olumsuz, geçmiş yap; anlamını seç' },
     ],
   },
   {
