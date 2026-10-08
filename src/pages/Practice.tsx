@@ -80,6 +80,16 @@ const GROUPS: Group[] = [
     ],
   },
   {
+    // Ünitelerdeki birer metnin dışında okuma pratiği: kısa, ünite düzeyine
+    // göre yazılmış metinler; romaji ve Türkçe gizlenebiliyor.
+    id: 'okuma',
+    title: 'Okuma',
+    note: 'Kısa ve basit metinler, bitirdiğin ünitenin düzeyinde. Romaji, kana ve Türkçeyi ayrı ayrı kapatıp okumayı dene.',
+    items: [
+      { to: '/okuma', glyph: '読', title: 'Okuma alıştırmaları', sub: '17 kısa metin · satıra dokununca açılır · sonunda üç soru' },
+    ],
+  },
+  {
     id: 'kanji',
     title: 'Kanji',
     note: 'N5’in 106 kanjisi. Kartlarla öğren, tabloda göz gezdir.',

@@ -4093,3 +4093,18 @@ ul.tight li {
 .dt-zit-alt { font-size: 0.82rem; color: var(--text-dim); overflow-wrap: anywhere; }
 .dt-cubuk { display: block; height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; margin-top: 4px; }
 .dt-cubuk > span { display: block; height: 100%; background: var(--accent); }
+
+/* ————— Okuma alıştırmaları ————— */
+.ok-kart { display: flex; align-items: center; gap: 12px; }
+.ok-kart.is-ileri { opacity: 0.6; }
+.ok-baslik { display: block; font-size: 1.15rem; font-weight: 600; overflow-wrap: anywhere; }
+.ok-alt { display: block; font-size: 0.82rem; color: var(--text-dim); }
+.ok-okundu { background: var(--ok-dim); border-color: var(--ok); color: var(--ok); }
+.ok-satir { flex: 1; min-width: 0; border-radius: 8px; }
+.ok-satir.is-tiklanir { cursor: pointer; }
+.ok-satir.is-tiklanir:hover { background: var(--bg-elev-2); }
+.ok-satir:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ok-kim {
+  flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; margin-top: 6px;
+  font-size: 0.72rem; font-weight: 700; background: var(--bg-elev-2); color: var(--text-dim);
+}
