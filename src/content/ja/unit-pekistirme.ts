@@ -1,4 +1,3 @@
-import { toHiragana, toRomaji } from 'wanakana'
 import { KANJI_BY_CHAR } from './kanji-n5'
 import { kanjiBilgi } from './kanji-ek'
 import { UNITS, unitKanji, type Unit, type UnitVocab } from './units'
@@ -29,59 +28,9 @@ export interface Soru {
   soru: PekSoru
 }
 
-// ————————————————————————— Cevap denetimi —————————————————————————
-
-/**
- * Yazılan cevabı karşılaştırılabilir hâle getirir: romaji → hiragana,
- * katakana → hiragana, boşluk ve noktalama atılır; uzun ünlüler ve iki
- * yolla yazılabilen ekler tek biçime indirilir. Aynı işlem beklenen cevaba
- * da uygulanıyor, yani bu bir "eşdeğerlik" tanımı.
- *
- * ÖLÇÜT: ekranda doğru cevap diye gösterilen romajiyi yazan öğrenci doğru
- * sayılmalı. scripts/check-pekistirme.ts bunu bütün yazmalı sorularda dener.
- */
-const UNLU: Record<string, string> = { a: 'あ', i: 'い', u: 'う', e: 'え', o: 'お' }
-/** Kananın ünlüsü: こ → o, きょ'nun ょ'su → o */
-const unlu = (kana: string): string => toRomaji(kana).slice(-1)
-
-function normal(s: string): string {
-  const t = s
-    // ō, ū gibi uzatma çizgili harfler: çift ünlü (kōhī → koohii)
-    .normalize('NFD')
-    .replace(/([aiueo])\u0304/gi, '$1$1')
-    .normalize('NFKC')
-    .toLowerCase()
-    .replace(/[’‘]/g, "'")
-    .replace(/[。、.,!?！？「」~〜]/g, '')
-    // Romaji KELİME KELİME çevrilir: boşluklar önce atılsaydı "hon o" →
-    // "hono" → ほの olurdu (ん + お yerine の). Kesme işareti (sen'en) ve
-    // tire (ko-hi-) çeviriciye bırakılır: ん'yi ve ー'yi onlar belirler.
-    .split(/\s+/)
-    .map((p) => (/[a-z]/.test(p) ? toHiragana(p) : p))
-    .join('')
-    .replace(/'/g, '')
-    .replace(/[ァ-ヶ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x60))
-
-  // Uzun ünlüler tek biçime indirilir; yoksa コーヒー için "koohii" (こおひい)
-  // ya da がっこう için "gakkoo" yanlış sayılırdı:
-  //   ー → önceki ünlü · o + う → o + お · e + い → e + え
-  let sonuc = ''
-  for (const c of t) {
-    const onceki = sonuc.slice(-1)
-    const v = onceki ? unlu(onceki) : ''
-    if (c === 'ー' && UNLU[v]) sonuc += UNLU[v]
-    else if (c === 'う' && v === 'o') sonuc += 'お'
-    else if (c === 'い' && v === 'e') sonuc += 'え'
-    else sonuc += c
-  }
-  // Ekler iki yolla da yazılabilsin (は/わ, へ/え, を/お); ぢ/じ ve づ/ず aynı ses
-  return sonuc.replace(/は/g, 'わ').replace(/へ/g, 'え').replace(/を/g, 'お').replace(/ぢ/g, 'じ').replace(/づ/g, 'ず')
-}
-
-export function cevapDogruMu(girdi: string, dogrular: string[]): boolean {
-  const g = normal(girdi)
-  return !!g && dogrular.some((d) => normal(d) === g)
-}
+// Cevap denetimi (kana ↔ romaji eşdeğerliği) ortak modülde: alıştırmalar ve
+// ünite testleri de aynı kabulü kullanıyor.
+export { cevapDogruMu } from '@/lib/answer'
 
 // ————————————————————————— Tohumlu rastgelelik —————————————————————————
 

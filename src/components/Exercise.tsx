@@ -7,7 +7,7 @@ import { speak } from '@/lib/tts'
 import { shuffle } from '@/lib/shuffle'
 import { RecognitionError, listenOnce, scoreAgainst, scoreLabel, startRecording, sttAvailable } from '@/lib/stt'
 import { db } from '@/db/db'
-import { acceptsJa, asKana, HAS_KANA } from '@/lib/answer'
+import { acceptsJa, acceptsTr, asKana, HAS_KANA } from '@/lib/answer'
 
 // Cevap denetimi ortak modülde: kanji testi de aynı kabulü kullanıyor.
 const accepts = acceptsJa
@@ -458,9 +458,11 @@ function Translate({
 }) {
   const [val, setVal] = useState('')
 
+  // Türkçeye çeviride cevap ana dilde ve çok biçimli: esnek karşılaştırma
+  const turkceye = ex.direction === 'to-tr'
   const check = () => {
     if (!val.trim() || done !== null) return
-    finish(accepts(val, ex.answers))
+    finish(turkceye ? acceptsTr(val, ex.answers) : accepts(val, ex.answers))
   }
 
   return (
@@ -486,10 +488,22 @@ function Translate({
         </button>
       ) : (
         <div className={`feedback ${done ? 'feedback--ok' : 'feedback--bad'}`}>
-          Kabul edilen cevap: <span className="ja bold">{ex.answers[0]}</span>
+          {turkceye ? 'Örnek çeviri' : 'Kabul edilen cevap'}: <span className="ja bold">{ex.answers[0]}</span>
           {ex.answers.length > 1 && (
             <div className="tiny" style={{ marginTop: 4, opacity: 0.8 }}>
-              Diğer kabul edilenler: {ex.answers.slice(1).join(' · ')}
+              {turkceye ? 'Şunlar da olur' : 'Diğer kabul edilenler'}: {ex.answers.slice(1).join(' · ')}
+            </div>
+          )}
+          {/* Türkçe çevirinin bütün doğru biçimleri önceden yazılamaz; anlamı
+              aynı olan cevabı öğrenci kendisi doğru sayabilir. */}
+          {turkceye && !done && (
+            <div className="stack-sm" style={{ marginTop: 10 }}>
+              <div className="small">
+                Çevirin aynı anlama geliyorsa doğrudur; farklı kelimelerle yazmış olabilirsin.
+              </div>
+              <button className="btn btn--sm" style={{ justifySelf: 'start' }} onClick={() => finish(true)}>
+                Anlam aynıydı, doğru say
+              </button>
             </div>
           )}
         </div>
