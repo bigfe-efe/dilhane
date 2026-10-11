@@ -9,7 +9,15 @@
 
 export type PekSoru =
   | { t: 'sec'; s: string; o: string[]; d: number; a: string }
-  | { t: 'yaz'; s: string; d: string[]; a: string }
+  | {
+      t: 'yaz'
+      s: string
+      /** Kabul edilen cevaplar */
+      d: string[]
+      a: string
+      /** Yanlışta gösterilecek doğru cevap; verilmezse `d` ve romajisi */
+      g?: string
+    }
 
 const sec = (s: string, o: string[], d: number, a: string): PekSoru => ({ t: 'sec', s, o, d, a })
 const yaz = (s: string, d: string[], a: string): PekSoru => ({ t: 'yaz', s, d, a })

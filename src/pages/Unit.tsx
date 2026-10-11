@@ -360,7 +360,7 @@ function PekSoruKart({
       {kayit && (
         <PekGeri
           ok={kayit.ok}
-          dogru={soru.d.join(' / ') + (kana ? ` (${kanaToRomaji(kana)})` : '')}
+          dogru={soru.g ?? soru.d.join(' / ') + (kana ? ` (${kanaToRomaji(kana)})` : '')}
           aciklama={soru.a}
         />
       )}
@@ -1003,6 +1003,16 @@ function Alistirma({ unit }: { unit: Unit }) {
 
 /** "い-きる" → "い(きる)": tireden sonrası okurigana */
 const kunGoster = (k: string) => k.replace(/^-/, '…').replace(/-(.+)$/, '($1)')
+/**
+ * Kun okunuşunun romajisi. "みっ-" gibi küçük っ ile bitenlerde っ tek başına
+ * çevrilince kayboluyordu ("mi-"). N5 verisinde bunların hepsi sayaç つ'den
+ * önce gelir (三つ mittsu, 六つ muttsu), yani ikilenen ses t: "mit-".
+ */
+const kunRomaji = (o: string): string => {
+  const m = o.match(/^(.*)っ(-?)$/)
+  if (m) return `${kanaToRomaji(m[1])}t${m[2]}`
+  return kunGoster(kanaToRomaji(o.replace(/-/g, '|')).replace(/\|/g, '-'))
+}
 const katakanadanHiragana = (s: string) => s.replace(/[ァ-ヶ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x60))
 
 /**
@@ -1049,7 +1059,7 @@ function KanjiKart({ ch, unit, onAc }: { ch: string; unit: Unit; onAc: (v: UnitV
                   <span key={o}>
                     {i > 0 && ' · '}
                     <span className="ja">{kunGoster(o)}</span>{' '}
-                    <span className="kk-romaji">{kunGoster(kanaToRomaji(o.replace(/-/g, '|')).replace(/\|/g, '-'))}</span>
+                    <span className="kk-romaji">{kunRomaji(o)}</span>
                   </span>
                 ))}
               </div>

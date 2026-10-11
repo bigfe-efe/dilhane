@@ -9,11 +9,32 @@ import { GRAMER_SORULARI } from '../src/content/ja/units/gramer-sorulari'
 import { cevapDogruMu, sayfaSorulari, tekrarSorulari } from '../src/content/ja/unit-pekistirme'
 import { kitapSayfalari } from '../src/content/ja/unit-kitap'
 import { yeniKelimeler } from '../src/lib/yeni-kelime'
+import { kanaToRomaji } from '../src/lib/ja-phonetic'
+import type { PekSoru } from '../src/content/ja/units/gramer-sorulari'
 
 const ayrinti = process.argv.includes('-v')
 let hata = 0
 let toplam = 0
 const bildir = (m: string) => (hata++, console.log(m))
+
+/**
+ * Ekranda "Doğrusu" diye gösterilen romajiyi yazan öğrenci doğru sayılmalı.
+ * (三つ sorusunda みっ "mi" diye gösteriliyor, "mi" yazınca yanlış deniyordu;
+ * コーヒー için "koohii" de kabul edilmiyordu.) Arayüzdeki gösterimin aynısı
+ * kurulur ve parantez içindeki romaji cevap olarak denenir.
+ */
+const gorulenHatalar = new Set<string>()
+function gosterilenKabulMu(yer: string, soru: PekSoru) {
+  if (soru.t !== 'yaz') return
+  const kana = soru.d.find((d) => /^[぀-ヿー]+$/.test(d))
+  if (!kana) return void bildir(`${yer}: kana cevabı yok — ${soru.s}`)
+  const gosterilen = soru.g ?? `${soru.d.join(' / ')} (${kanaToRomaji(kana)})`
+  const romaji = gosterilen.match(/\(([^)]+)\)\s*$/)?.[1]
+  if (!romaji) return void bildir(`${yer}: gösterimde romaji yok — ${gosterilen}`)
+  if (cevapDogruMu(romaji, soru.d)) return
+  const m = `${yer}: gösterilen "${romaji}" yazılınca yanlış sayılıyor (${soru.d.join(' / ')}) — ${soru.s}`
+  if (!gorulenHatalar.has(m)) (gorulenHatalar.add(m), bildir(m))
+}
 
 for (const u of UNITS) {
   const basliklar = new Set(u.grammar.map((g) => g.title))
@@ -32,6 +53,7 @@ for (const u of UNITS) {
         if (!soru.d.length) bildir(`${yer}: kabul edilen cevap yok`)
         for (const d of soru.d) if (!cevapDogruMu(d, soru.d)) bildir(`${yer}: "${d}" kendisiyle eşleşmiyor`)
       }
+      gosterilenKabulMu(yer, soru)
       const metin = [soru.s, soru.a, ...(soru.t === 'sec' ? soru.o : soru.d)].join(' ')
       const yeni = yeniKelimeler(metin, u.id)
       if (yeni.length) bildir(`${yer}: görülmemiş kanji ${yeni.map((w) => w.ja).join(' ')} — ${soru.s}`)
@@ -60,6 +82,7 @@ for (const u of UNITS) {
             if (new Set(soru.o).size !== soru.o.length) bildir(`${u.id} tekrar: tekrarlı şık — ${soru.s}`)
             if (soru.o.length < 3) bildir(`${u.id} tekrar: şık az — ${soru.s}`)
           } else if (!soru.d.length || !soru.d.every((d) => cevapDogruMu(d, soru.d))) bildir(`${u.id} tekrar: cevap bozuk — ${soru.s}`)
+          gosterilenKabulMu(`${u.id} tekrar`, soru)
           const yeni = yeniKelimeler([soru.s, soru.a, ...(soru.t === 'sec' ? soru.o : soru.d)].join(' '), u.id)
           if (yeni.length) bildir(`${u.id} tekrar: görülmemiş kanji ${yeni.map((w) => w.ja).join(' ')} — ${soru.s}`)
         }
@@ -81,6 +104,27 @@ const ornek: [string, string[], boolean][] = [
   ['o', ['を'], true],
   ['desu', ['です'], true],
   ['masu', ['です'], false],
+  // Küçük っ ile biten parça okunuşu: üçü de kabul
+  ['mi', ['みっ', 'み', 'mit'], true],
+  ['mit', ['みっ', 'み', 'mit'], true],
+  ['みっ', ['みっ', 'み', 'mit'], true],
+  // Uzun ünlüler: çizgi, çift ünlü, tire ve uzatma işaretli harf
+  ['koohii', ['コーヒー'], true],
+  ['ko-hi-', ['コーヒー'], true],
+  ['kōhī', ['コーヒー'], true],
+  ['こーひー', ['コーヒー'], true],
+  ['supootsu', ['スポーツ'], true],
+  ['gakkou', ['がっこう'], true],
+  ['gakkoo', ['がっこう'], true],
+  ['sensei', ['せんせい'], true],
+  ['sensee', ['せんせい'], true],
+  // ん + ünlü: kesme işaretiyle
+  ["sen'en", ['せんえん'], true],
+  ['senen', ['せんえん'], false],
+  // Farklı kelimeler birbirine karışmasın
+  ['koko', ['こうこう'], false],
+  ['obasan', ['おばあさん'], false],
+  ['kite', ['きって'], false],
   ['hon o kudasai', ['ほんをください'], true],
   ['asagohan o tabemasen', ['朝ご飯を食べません', 'あさごはんをたべません'], true],
 ]

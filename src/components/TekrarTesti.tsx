@@ -31,6 +31,7 @@ interface Cevap {
 
 const dogruMetin = (q: TekrarSorusu): string => {
   if (q.soru.t === 'sec') return q.soru.o[q.soru.d]
+  if (q.soru.g) return q.soru.g
   const kana = q.soru.d.find((d) => /^[぀-ヿー]+$/.test(d))
   return q.soru.d.join(' / ') + (kana ? ` (${kanaToRomaji(kana)})` : '')
 }

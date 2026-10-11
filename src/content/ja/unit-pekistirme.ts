@@ -1,10 +1,10 @@
-import { toHiragana } from 'wanakana'
+import { toHiragana, toRomaji } from 'wanakana'
 import { KANJI_BY_CHAR } from './kanji-n5'
 import { kanjiBilgi } from './kanji-ek'
 import { UNITS, unitKanji, type Unit, type UnitVocab } from './units'
 import { GRAMER_SORULARI, type PekSoru } from './units/gramer-sorulari'
 import { cumledekiKelime, kelimeOrnegi } from './units/kelime-ornekleri'
-import { kelimeAyir } from '@/lib/kanji-ayir'
+import { kelimeAyir, parcaRomaji } from '@/lib/kanji-ayir'
 import { kanaToRomaji } from '@/lib/ja-phonetic'
 import { gorulenKanji } from '@/lib/yeni-kelime'
 import type { Sayfa } from './unit-kitap'
@@ -33,24 +33,49 @@ export interface Soru {
 
 /**
  * Yazılan cevabı karşılaştırılabilir hâle getirir: romaji → hiragana,
- * katakana → hiragana, boşluk ve noktalama atılır. Ekler iki yolla da
- * yazılabilsin diye は/わ, へ/え, を/お eşitlenir (iki tarafa da uygulanıyor).
+ * katakana → hiragana, boşluk ve noktalama atılır; uzun ünlüler ve iki
+ * yolla yazılabilen ekler tek biçime indirilir. Aynı işlem beklenen cevaba
+ * da uygulanıyor, yani bu bir "eşdeğerlik" tanımı.
+ *
+ * ÖLÇÜT: ekranda doğru cevap diye gösterilen romajiyi yazan öğrenci doğru
+ * sayılmalı. scripts/check-pekistirme.ts bunu bütün yazmalı sorularda dener.
  */
+const UNLU: Record<string, string> = { a: 'あ', i: 'い', u: 'う', e: 'え', o: 'お' }
+/** Kananın ünlüsü: こ → o, きょ'nun ょ'su → o */
+const unlu = (kana: string): string => toRomaji(kana).slice(-1)
+
 function normal(s: string): string {
-  // Romaji KELİME KELİME çevrilir: boşluklar önce atılsaydı "hon o" →
-  // "hono" → ほの olurdu (ん + お yerine の).
   const t = s
+    // ō, ū gibi uzatma çizgili harfler: çift ünlü (kōhī → koohii)
+    .normalize('NFD')
+    .replace(/([aiueo])\u0304/gi, '$1$1')
     .normalize('NFKC')
     .toLowerCase()
-    .replace(/[。、.,!?！？「」'’\-~〜]/g, '')
+    .replace(/[’‘]/g, "'")
+    .replace(/[。、.,!?！？「」~〜]/g, '')
+    // Romaji KELİME KELİME çevrilir: boşluklar önce atılsaydı "hon o" →
+    // "hono" → ほの olurdu (ん + お yerine の). Kesme işareti (sen'en) ve
+    // tire (ko-hi-) çeviriciye bırakılır: ん'yi ve ー'yi onlar belirler.
     .split(/\s+/)
     .map((p) => (/[a-z]/.test(p) ? toHiragana(p) : p))
     .join('')
-  return t
+    .replace(/'/g, '')
     .replace(/[ァ-ヶ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x60))
-    .replace(/は/g, 'わ')
-    .replace(/へ/g, 'え')
-    .replace(/を/g, 'お')
+
+  // Uzun ünlüler tek biçime indirilir; yoksa コーヒー için "koohii" (こおひい)
+  // ya da がっこう için "gakkoo" yanlış sayılırdı:
+  //   ー → önceki ünlü · o + う → o + お · e + い → e + え
+  let sonuc = ''
+  for (const c of t) {
+    const onceki = sonuc.slice(-1)
+    const v = onceki ? unlu(onceki) : ''
+    if (c === 'ー' && UNLU[v]) sonuc += UNLU[v]
+    else if (c === 'う' && v === 'o') sonuc += 'お'
+    else if (c === 'い' && v === 'e') sonuc += 'え'
+    else sonuc += c
+  }
+  // Ekler iki yolla da yazılabilsin (は/わ, へ/え, を/お); ぢ/じ ve づ/ず aynı ses
+  return sonuc.replace(/は/g, 'わ').replace(/へ/g, 'え').replace(/を/g, 'お').replace(/ぢ/g, 'じ').replace(/づ/g, 'ず')
 }
 
 export function cevapDogruMu(girdi: string, dogrular: string[]): boolean {
@@ -180,6 +205,32 @@ function kanjiKelimeleri(u: Unit, ch: string): KanjiKelimesi[] {
     .map((w) => ({ ja: w.term, kana: w.reading, tr: w.tr }))
 }
 
+/**
+ * "Bu kelimede şu kanji nasıl okunur?" sorusu.
+ *
+ * Okunuş küçük っ ile bitiyorsa (三つ: みっ) üç cevap da kabul edilir: みっ,
+ * み ve kelime içindeki romajisi "mit". Küçük っ kendi başına söylenen bir
+ * ses değil; yalnızca "mi" yazan öğrenci yanlış sayılmamalı.
+ */
+function okunusSorusu(w: KanjiKelimesi, ch: string): PekSoru | null {
+  const parcalar = kelimeAyir(w.ja, w.kana)
+  if (parcalar.ozel) return null
+  const i = parcalar.parcalar.findIndex((p) => p.ch === ch && p.okunus)
+  if (i < 0) return null
+  const okunus = parcalar.parcalar[i].okunus!
+  const romaji = parcaRomaji(parcalar.parcalar, i)
+  const kucukTsu = okunus.endsWith('っ') && okunus.length > 1
+  return {
+    t: 'yaz',
+    s: `「${w.ja}」 (${w.tr}) kelimesinde ${ch} nasıl okunur?`,
+    d: kucukTsu ? [okunus, okunus.slice(0, -1), romaji] : [okunus],
+    g: `${okunus} (${romaji})`,
+    a:
+      `${w.ja} ${w.kana} (${kanaToRomaji(w.kana)}): ${ch} burada ${okunus} (${romaji}).` +
+      (kucukTsu ? ' Küçük っ kendi başına okunmaz, sonraki sesi ikiler.' : ''),
+  }
+}
+
 function kanjiSorulari(u: Unit): Soru[] {
   const kanjiler = unitKanji(u.id)
   if (kanjiler.length < 2) return []
@@ -238,13 +289,7 @@ function kanjiSorulari(u: Unit): Soru[] {
       return !a.ozel && a.parcalar.some((p) => p.ch === k4 && p.okunus) && w.ja.length > 1
     })
     if (!w4) continue
-    const p = kelimeAyir(w4.ja, w4.kana).parcalar.find((x) => x.ch === k4)!
-    sorular.push({
-      t: 'yaz',
-      s: `「${w4.ja}」 (${w4.tr}) kelimesinde ${k4} nasıl okunur?`,
-      d: [p.okunus!],
-      a: `${w4.ja} ${w4.kana}: ${k4} burada ${p.okunus} (${kanaToRomaji(p.okunus!)}).`,
-    })
+    sorular.push(okunusSorusu(w4, k4)!)
     break
   }
   return sorular.map((soru, i) => ({ id: `kanji:${i}`, soru }))
@@ -358,12 +403,7 @@ function kanjiSorusu(u: Unit, ch: string): PekSoru | null {
     case 'yazilis':
       return { t: 'sec', s: `${w.kana} (${w.tr}) nasıl yazılır?`, ...siklar(w.ja, kelimeHavuz.map((x) => x.ja), r), a: `${w.kana} → ${w.ja}.` }
     case 'okunus':
-      return {
-        t: 'yaz',
-        s: `「${w.ja}」 (${w.tr}) kelimesinde ${ch} nasıl okunur?`,
-        d: [parca!.okunus!],
-        a: `${w.ja} ${w.kana}: ${ch} burada ${parca!.okunus} (${kanaToRomaji(parca!.okunus!)}).`,
-      }
+      return okunusSorusu(w, ch) ?? anlam()
     default:
       return anlam()
   }

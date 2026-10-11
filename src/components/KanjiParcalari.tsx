@@ -1,5 +1,5 @@
 import { Fragment } from 'react'
-import { kelimeAyir } from '@/lib/kanji-ayir'
+import { kelimeAyir, parcaRomaji } from '@/lib/kanji-ayir'
 import { kanaToRomaji, romajiWords } from '@/lib/ja-phonetic'
 import { kanjiBilgi, n5Kanji } from '@/content/ja/kanji-ek'
 import { UNIT_BY_ID, kanjiUnit } from '@/content/ja/units'
@@ -28,7 +28,8 @@ const anlam = (kelime: string, ch: string, varsayilan: string) => KELIME_ANLAMI[
 /** Kelime + altında kanji kanji dökümü. `vurgu`: üzerinde durulan kanji */
 export function KelimeKirilimi({ ja, kana, tr, vurgu }: { ja: string; kana: string; tr?: string; vurgu?: string }) {
   const a = kelimeAyir(ja, kana)
-  const kanjiler = a.parcalar.filter((p) => p.kanji || p.okunus)
+  // Romaji kelime içindeki konuma göre (küçük っ için), süzmeden önce hesaplanır
+  const kanjiler = a.parcalar.map((p, i) => ({ ...p, romaji: parcaRomaji(a.parcalar, i) })).filter((p) => p.kanji || p.okunus)
   return (
     <div className="kk-kelime-satir">
       <div className="row" style={{ gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
@@ -47,7 +48,7 @@ export function KelimeKirilimi({ ja, kana, tr, vurgu }: { ja: string; kana: stri
               {i > 0 && <span className="kk-arti">+</span>}
               <span className={`kk-parca${p.ch === vurgu ? ' is-on' : ''}`}>
                 <b className="ja">{p.ch}</b>
-                {p.okunus && <span className="kk-ok">{kanaToRomaji(p.okunus)}</span>}
+                {p.okunus && <span className="kk-ok">{p.romaji}</span>}
                 {p.kanji && <span className="kk-an">{anlam(ja, p.ch, p.kanji.meaningsTr[0])}</span>}
               </span>
             </Fragment>
@@ -60,6 +61,16 @@ export function KelimeKirilimi({ ja, kana, tr, vurgu }: { ja: string; kana: stri
 
 /** "い-きる" → "い(きる)": tireden sonrası okurigana */
 const kunGoster = (k: string) => k.replace(/^-/, '…').replace(/-(.+)$/, '($1)')
+/**
+ * Kun okunuşunun romajisi. "みっ-" gibi küçük っ ile bitenlerde っ tek başına
+ * çevrilince kayboluyordu ("mi-"). N5 verisinde bunların hepsi sayaç つ'den
+ * önce gelir (三つ mittsu, 六つ muttsu), yani ikilenen ses t: "mit-".
+ */
+const kunRomaji = (o: string): string => {
+  const m = o.match(/^(.*)っ(-?)$/)
+  if (m) return `${kanaToRomaji(m[1])}t${m[2]}`
+  return kunGoster(kanaToRomaji(o.replace(/-/g, '|')).replace(/\|/g, '-'))
+}
 const hiraganaya = (s: string) => s.replace(/[ァ-ヶ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x60))
 const KANJI_KARAKTER = /[\u4e00-\u9fff々]/
 
@@ -71,19 +82,21 @@ const KANJI_KARAKTER = /[\u4e00-\u9fff々]/
  */
 export function KelimeKanjileri({ ja, kana }: { ja: string; kana: string }) {
   const a = kelimeAyir(ja, kana)
-  const parcalar = a.parcalar.filter((p) => KANJI_KARAKTER.test(p.ch) && p.ch !== '々')
+  const parcalar = a.parcalar
+    .map((p, i) => ({ ...p, romaji: parcaRomaji(a.parcalar, i) }))
+    .filter((p) => KANJI_KARAKTER.test(p.ch) && p.ch !== '々')
   if (!parcalar.length) return null
   return (
     <div className="uvk-liste">
       {parcalar.map((p, i) => (
-        <KanjiMini key={i} ch={p.ch} okunus={a.ozel ? undefined : p.okunus} kelime={ja} />
+        <KanjiMini key={i} ch={p.ch} okunus={a.ozel ? undefined : p.okunus} romaji={p.romaji} kelime={ja} />
       ))}
       {a.ozel && <div className="uvk-ozel">Özel okunuş: kanjilerin okunuşundan kurulmaz, kelime bütün olarak okunur.</div>}
     </div>
   )
 }
 
-function KanjiMini({ ch, okunus, kelime }: { ch: string; okunus?: string; kelime: string }) {
+function KanjiMini({ ch, okunus, romaji, kelime }: { ch: string; okunus?: string; romaji: string; kelime: string }) {
   const k = kanjiBilgi(ch)
   const uid = kanjiUnit(ch)
   const unite = uid ? UNIT_BY_ID.get(uid) : undefined
@@ -95,7 +108,7 @@ function KanjiMini({ ch, okunus, kelime }: { ch: string; okunus?: string; kelime
         {okunus && (
           <div className="uvk-satir">
             <span className="uvk-etiket">burada</span>
-            <span className="ja">{okunus}</span> <span className="uvk-romaji">{kanaToRomaji(okunus)}</span>
+            <span className="ja">{okunus}</span> <span className="uvk-romaji">{romaji}</span>
           </div>
         )}
         {k && k.on.length > 0 && (
@@ -116,7 +129,7 @@ function KanjiMini({ ch, okunus, kelime }: { ch: string; okunus?: string; kelime
               <span key={o}>
                 {i > 0 && ' · '}
                 <span className="ja">{kunGoster(o)}</span>{' '}
-                <span className="uvk-romaji">{kunGoster(kanaToRomaji(o.replace(/-/g, '|')).replace(/\|/g, '-'))}</span>
+                <span className="uvk-romaji">{kunRomaji(o)}</span>
               </span>
             ))}
           </div>

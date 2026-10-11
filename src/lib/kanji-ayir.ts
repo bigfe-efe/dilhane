@@ -1,4 +1,5 @@
 import { kanjiBilgi } from '@/content/ja/kanji-ek'
+import { kanaToRomaji } from '@/lib/ja-phonetic'
 import type { KanjiChar } from '@/types'
 
 /**
@@ -118,4 +119,25 @@ export function kelimeAyir(ja: string, kana: string): KelimeAyrimi {
     parcalar: karakterler.map((ch) => ({ ch, kanji: KANJI.test(ch) ? kanjiBilgi(ch) : undefined })),
     ozel: true,
   }
+}
+
+/**
+ * Parçanın kelime İÇİNDEKİ romajisi.
+ *
+ * Küçük っ kendi başına bir ses değil, sonraki ünsüzü ikiler; tek başına
+ * romajiye çevrilince kayboluyor (みっ → "mi"). 三つ kartında 三'ün okunuşu
+ * "mi" görünüyor, soruda da "mi" yazan öğrenciye yanlış deniyordu. Burada
+ * romaji kelimenin bütününden çıkarılıyor: みっつ "mittsu" − つ "tsu" = "mit".
+ */
+export function parcaRomaji(parcalar: KanjiParcasi[], i: number): string {
+  const okunus = parcalar[i]?.okunus ?? ''
+  if (!okunus.endsWith('っ')) return kanaToRomaji(okunus)
+  const kalan = parcalar
+    .slice(i + 1)
+    .map((p) => p.okunus ?? hiragana(p.ch))
+    .join('')
+  if (!kalan) return kanaToRomaji(okunus)
+  const tam = kanaToRomaji(okunus + kalan)
+  const son = kanaToRomaji(kalan)
+  return tam.endsWith(son) ? tam.slice(0, tam.length - son.length) : kanaToRomaji(okunus)
 }
