@@ -4108,3 +4108,12 @@ ul.tight li {
   flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; margin-top: 6px;
   font-size: 0.72rem; font-weight: 700; background: var(--bg-elev-2); color: var(--text-dim);
 }
+
+/* ————— Ünite tekrar testi ————— */
+.tt-soru { font-size: 1.15rem; line-height: 1.6; overflow-wrap: anywhere; }
+.tt-nokta { cursor: default; }
+.tt-nokta.is-dogru { background: var(--ok); }
+.tt-nokta.is-yanlis { background: var(--bad); }
+.tt-nokta.is-on { background: var(--accent); }
+.tt-gecmis { gap: 10px; padding: 8px 12px; border-radius: 10px; background: var(--bg-elev-2); }
+.tt-yanlis { color: var(--bad); text-decoration: line-through; }

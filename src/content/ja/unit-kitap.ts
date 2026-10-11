@@ -15,7 +15,7 @@ import { gorulenKanji } from '@/lib/yeni-kelime'
 // Sayfalar iki güne bölünüyor: öğrenci bir üniteyi iki gecede çalışıyor.
 // 1. gün öğrenme (kelime → dilbilgisi), 2. gün kullanma (metin → test).
 
-export type SayfaTur = 'giris' | 'kelime' | 'kanji' | 'gramer' | 'kurallar' | 'metin' | 'alistirma' | 'odev' | 'test' | 'n5'
+export type SayfaTur = 'giris' | 'kelime' | 'kanji' | 'gramer' | 'kurallar' | 'metin' | 'alistirma' | 'odev' | 'test' | 'tekrar' | 'n5'
 
 export interface Sayfa {
   id: string
@@ -59,6 +59,9 @@ export function kitapSayfalari(u: Unit): Sayfa[] {
     gun: 2,
   })
   s.push({ id: 'test', tur: 'test', baslik: 'Ünite testi', alt: '%70 ile ünite biter', dakika: 10, gun: 2 })
+  // Tekrar için: her seferinde yeniden kurulan test. İsteğe bağlı; üniteyi
+  // bitirmek için gerekmez, bittikten sonra dönüp çözmek için.
+  s.push({ id: 'tekrar', tur: 'tekrar', baslik: 'Tekrar testi', alt: '10 ya da 20 soru · her seferinde yeni', dakika: 8, gun: 0 })
   if ((u.n5?.length ?? 0) + (u.choukai?.length ?? 0) > 0)
     s.push({ id: 'n5', tur: 'n5', baslik: 'N5 soruları', alt: 'İsteğe bağlı · sınav biçimi', dakika: 10, gun: 0 })
   return s

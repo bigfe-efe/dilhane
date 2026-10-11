@@ -28,6 +28,7 @@ import CountersPage from '@/pages/Counters'
 import BasicsPage from '@/pages/Basics'
 import SentencesPage from '@/pages/Sentences'
 import ReadingPage from '@/pages/Reading'
+import UnitReviewPage from '@/pages/UnitReview'
 import ListeningPage from '@/pages/Listening'
 import OfficialExamPage from '@/pages/OfficialExam'
 import UnitsPage from '@/pages/Units'
@@ -156,6 +157,7 @@ export default function App() {
         <Route path="/temel" element={<BasicsPage />} />
         <Route path="/cumle" element={<SentencesPage />} />
         <Route path="/okuma" element={<ReadingPage />} />
+        <Route path="/tekrar-testi" element={<UnitReviewPage />} />
         <Route path="/dinleme" element={<ListeningPage />} />
         <Route path="/uniteler" element={<UnitsPage />} />
         <Route path="/unite/:id" element={<UnitPage />} />

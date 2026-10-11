@@ -12,6 +12,7 @@ import { StrokeOrder } from '@/components/StrokeOrder'
 import { KANJI_BY_CHAR } from '@/content/ja/kanji-n5'
 import { kanjiBilgi } from '@/content/ja/kanji-ek'
 import { JaOkunus } from '@/components/JaOkunus'
+import { TekrarTesti } from '@/components/TekrarTesti'
 import { KelimeKanjileri, KelimeKirilimi } from '@/components/KanjiParcalari'
 import { kanaToRomaji } from '@/lib/ja-phonetic'
 import { yeniKelimeler } from '@/lib/yeni-kelime'
@@ -154,6 +155,7 @@ export default function UnitPage() {
         {sayfa.tur === 'alistirma' && <Alistirma key={unit.id} unit={unit} />}
         {sayfa.tur === 'odev' && <Odev unit={unit} yapilan={prog?.homework ?? []} />}
         {sayfa.tur === 'test' && <Test unit={unit} best={prog?.testBest ?? 0} />}
+        {sayfa.tur === 'tekrar' && <TekrarTesti key={unit.id} unit={unit} />}
         {sayfa.tur === 'n5' && <N5Pratik key={unit.id} unit={unit} />}
 
         <Pekistir key={`${unit.id}:${sayfa.id}`} unit={unit} sayfa={sayfa} kayit={prog?.quiz ?? {}} />
@@ -519,6 +521,14 @@ const REHBER: Record<SayfaTur, { baslik: string; adimlar: string[]; not?: string
       'Kitaba bakmadan çöz.',
       '%70 ve üstü: ünite biter, kelimeler ve kanjiler tekrar kartlarına girer.',
       'Altında kalırsan yanlış yaptığın konuların dilbilgisi sayfalarını tekrar oku, sonra yeniden dene.',
+    ],
+  },
+  tekrar: {
+    baslik: 'Tekrar testi — isteğe bağlı',
+    adimlar: [
+      'Üniteyi bitirmek için gerekmez. Ünite bittikten sonra, unutmadan önce dönüp çözmek için.',
+      'Her başlatışta sorular yeniden kurulur; aynı test iki kez gelmez.',
+      'Önerim: üniteyi bitirdikten 2–3 gün sonra 10 soru, bir hafta sonra “önceki üniteler de” ile 20 soru.',
     ],
   },
   n5: {

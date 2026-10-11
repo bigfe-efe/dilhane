@@ -116,6 +116,7 @@ const GROUPS: Group[] = [
     title: 'Sınav',
     note: 'Nerede olduğunu ölçer. Ayda bir deneme yeterli.',
     items: [
+      { to: '/tekrar-testi', glyph: '復', title: 'Ünite tekrar testi', sub: 'Ünite seç: 10 ya da 20 soru, her seferinde yeni; önceki üniteler de katılabilir' },
       { to: '/n5-deneme', glyph: '模', title: 'N5 deneme sınavı', sub: 'Gerçek biçim, süreli, bölüm bölüm sonuç' },
       { to: '/resmi-sinav', glyph: '本', title: 'Resmî örnek sınav', sub: 'jlpt.jp’nin iki seti — gerçek sınavlardan sorular' },
       { to: '/n5', glyph: '五', title: 'N5 hazırlığı', sub: 'Geri sayım, dönem planı ve tempo' },

@@ -6,7 +6,7 @@
 // Çalıştır: npx tsx --tsconfig tsconfig.json scripts/check-pekistirme.ts [-v]
 import { UNITS } from '../src/content/ja/units'
 import { GRAMER_SORULARI } from '../src/content/ja/units/gramer-sorulari'
-import { cevapDogruMu, sayfaSorulari } from '../src/content/ja/unit-pekistirme'
+import { cevapDogruMu, sayfaSorulari, tekrarSorulari } from '../src/content/ja/unit-pekistirme'
 import { kitapSayfalari } from '../src/content/ja/unit-kitap'
 import { yeniKelimeler } from '../src/lib/yeni-kelime'
 
@@ -42,6 +42,33 @@ for (const u of UNITS) {
     }
   }
 }
+// Tekrar testi: rastgele üretildiği için her ünite, boyut ve kip birçok kez denenir
+let tekrarToplam = 0
+const dagilim = new Map<string, number>()
+for (const u of UNITS) {
+  for (const adet of [10, 20]) {
+    for (const birikimli of [false, true]) {
+      for (let deneme = 0; deneme < 15; deneme++) {
+        const liste = tekrarSorulari(u.id, adet, birikimli)
+        if (liste.length !== adet) bildir(`${u.id} tekrar(${adet}, ${birikimli}): ${liste.length} soru üretildi`)
+        if (!birikimli && liste.some((x) => x.unite !== u.id)) bildir(`${u.id} tekrar: başka üniteden soru`)
+        for (const { soru, konu } of liste) {
+          tekrarToplam++
+          dagilim.set(konu, (dagilim.get(konu) ?? 0) + 1)
+          if (soru.t === 'sec') {
+            if (soru.d < 0 || soru.d >= soru.o.length) bildir(`${u.id} tekrar: doğru indeks geçersiz — ${soru.s}`)
+            if (new Set(soru.o).size !== soru.o.length) bildir(`${u.id} tekrar: tekrarlı şık — ${soru.s}`)
+            if (soru.o.length < 3) bildir(`${u.id} tekrar: şık az — ${soru.s}`)
+          } else if (!soru.d.length || !soru.d.every((d) => cevapDogruMu(d, soru.d))) bildir(`${u.id} tekrar: cevap bozuk — ${soru.s}`)
+          const yeni = yeniKelimeler([soru.s, soru.a, ...(soru.t === 'sec' ? soru.o : soru.d)].join(' '), u.id)
+          if (yeni.length) bildir(`${u.id} tekrar: görülmemiş kanji ${yeni.map((w) => w.ja).join(' ')} — ${soru.s}`)
+        }
+      }
+    }
+  }
+}
+console.log(`Tekrar testi: ${tekrarToplam} üretilmiş soru denetlendi (${[...dagilim].map(([k, n]) => `${k} %${Math.round((n / tekrarToplam) * 100)}`).join(', ')}).`)
+
 // Romaji girdisi denetimi
 const ornek: [string, string[], boolean][] = [
   ['okimashita', ['起きました', 'おきました'], true],

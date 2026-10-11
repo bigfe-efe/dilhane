@@ -257,7 +257,157 @@ export function sayfaSorulari(u: Unit, s: Sayfa): Soru[] {
   if (s.tur === 'kanji') return kanjiSorulari(u)
   if (s.tur === 'gramer') {
     const g = u.grammar[s.gramer!]
-    return (GRAMER_SORULARI[u.id]?.[g.title] ?? []).map((soru, i) => ({ id: `${s.id}:${i}`, soru }))
+    // Şıklar soru kimliğine bağlı tohumla karıştırılır: elle yazılan sorularda
+    // doğru cevap çoğunlukla ilk şıktaydı. Sıra her açılışta aynı kalır.
+    return (GRAMER_SORULARI[u.id]?.[g.title] ?? []).map((soru, i) => {
+      const id = `${s.id}:${i}`
+      return { id, soru: sikKaristir(soru, tohum(`${u.id}:${id}`)) }
+    })
   }
   return []
+}
+
+// ————————————————————————— Tekrar testi —————————————————————————
+//
+// Ünite sonu testinden ayrı, tekrar için: ünitenin dilbilgisi, kelime ve
+// kanjilerinden HER SEFERİNDE yeniden kurulan 10 ya da 20 soru. Kelime ve
+// kanji soruları ünite verisinden üretiliyor; dilbilgisi soruları elle
+// yazılmış havuzdan geliyor. "Birikimli" seçenekte önceki üniteler de karışır
+// (yarısı bu üniteden).
+
+export interface TekrarSorusu {
+  soru: PekSoru
+  /** Sorunun geldiği ünite */
+  unite: string
+  konu: 'Dilbilgisi' | 'Kelime' | 'Kanji'
+}
+
+const rastgele = () => Math.random()
+const birini = <T>(liste: T[]): T => liste[Math.floor(Math.random() * liste.length)]
+
+/** Şıklı sorunun şıklarını karıştırır, doğru indeksi yeniden hesaplar */
+function sikKaristir(soru: PekSoru, r: () => number): PekSoru {
+  if (soru.t !== 'sec') return soru
+  const dogru = soru.o[soru.d]
+  const o = karistir(soru.o, r)
+  return { ...soru, o, d: o.indexOf(dogru) }
+}
+
+/** Bir kelime için rastgele türde bir soru */
+function kelimeSorusu(u: Unit, v: UnitVocab): PekSoru {
+  const r = rastgele
+  const o = kelimeOrnegi(u.id, v.ja)
+  const aciklama = kelimeAciklama(u.id, v)
+  const turler = ['anlam', 'anlam', 'ters', 'ters']
+  // Uzun kalıpları (よろしくおねがいします) yazdırmak yorucu; kısa kelimelerde
+  if (ilkOkunus(v.kana).length <= 7) turler.push('uret')
+  if (KANJI.test(v.ja)) turler.push('oku', 'oku')
+  if (o) {
+    turler.push('cumle')
+    if (!v.ja.startsWith('〜') && cumledekiKelime(o.ja, v.ja) === v.ja) turler.push('bosluk', 'bosluk')
+  }
+  switch (birini(turler)) {
+    case 'ters':
+      return { t: 'sec', s: `“${v.tr}” Japoncada hangisi?`, ...siklar(v.ja, u.vocab.map((x) => x.ja), r), a: aciklama }
+    case 'uret':
+      return { t: 'yaz', s: `“${v.tr}” Japoncada nasıl söylenir?`, d: [...new Set([v.ja, ...okunuslar(v.kana)])], a: aciklama }
+    case 'oku':
+      return { t: 'yaz', s: `「${v.ja}」 nasıl okunur? (${v.tr})`, d: [...new Set(okunuslar(v.kana))], a: aciklama }
+    case 'bosluk': {
+      const havuz = u.vocab.map((x) => x.ja).filter((j) => !o!.ja.includes(j))
+      return { t: 'sec', s: `${o!.ja.replace(v.ja, '＿＿')}  (${o!.tr})`, ...siklar(v.ja, havuz, r), a: `${o!.ja} — ${o!.tr}` }
+    }
+    case 'cumle': {
+      const havuz = u.vocab.map((x) => kelimeOrnegi(u.id, x.ja)?.tr).filter((x): x is string => !!x)
+      return { t: 'sec', s: `「${o!.ja}」 ne demek?`, ...siklar(o!.tr, havuz, r), a: `${o!.ja} (${o!.latin}) — ${o!.tr}` }
+    }
+    default:
+      return { t: 'sec', s: `「${v.ja}」 ne demek?`, ...siklar(v.tr, u.vocab.map((x) => x.tr), r), a: aciklama }
+  }
+}
+
+/** Bir kanji için rastgele türde bir soru; kurulamıyorsa null */
+function kanjiSorusu(u: Unit, ch: string): PekSoru | null {
+  const r = rastgele
+  const b = kanjiBilgi(ch)
+  if (!b) return null
+  const kelimeler = kanjiKelimeleri(u, ch)
+  const onceki = UNITS.slice(0, UNITS.findIndex((x) => x.id === u.id) + 1)
+  const kelimeHavuz = onceki
+    .flatMap((x) => x.vocab)
+    .filter((v) => KANJI.test(v.ja))
+    .map((v) => ({ ja: v.ja, kana: ilkOkunus(v.kana) }))
+  const anlam = (): PekSoru => {
+    const havuz = [...unitKanji(u.id), ...KANJI_BY_CHAR.keys()].map((c) => kanjiBilgi(c)?.meaningsTr[0]).filter((x): x is string => !!x)
+    return { t: 'sec', s: `${ch} kanjisinin anlamı?`, ...siklar(b.meaningsTr[0], havuz, r), a: `${ch}: ${b.meaningsTr.join(', ')}.` }
+  }
+  if (!kelimeler.length) return anlam()
+  const w = birini(kelimeler)
+  const turler = ['anlam', 'okuma', 'yazilis']
+  const ayrim = kelimeAyir(w.ja, w.kana)
+  const parca = !ayrim.ozel && w.ja.length > 1 ? ayrim.parcalar.find((p) => p.ch === ch && p.okunus) : undefined
+  if (parca) turler.push('okunus')
+  switch (birini(turler)) {
+    case 'okuma':
+      return {
+        t: 'sec',
+        s: `「${w.ja}」 nasıl okunur?`,
+        ...siklar(w.kana, kelimeHavuz.map((x) => x.kana), r),
+        a: `${w.ja} ${w.kana} (${kanaToRomaji(w.kana)}) = ${w.tr}.`,
+      }
+    case 'yazilis':
+      return { t: 'sec', s: `${w.kana} (${w.tr}) nasıl yazılır?`, ...siklar(w.ja, kelimeHavuz.map((x) => x.ja), r), a: `${w.kana} → ${w.ja}.` }
+    case 'okunus':
+      return {
+        t: 'yaz',
+        s: `「${w.ja}」 (${w.tr}) kelimesinde ${ch} nasıl okunur?`,
+        d: [parca!.okunus!],
+        a: `${w.ja} ${w.kana}: ${ch} burada ${parca!.okunus} (${kanaToRomaji(parca!.okunus!)}).`,
+      }
+    default:
+      return anlam()
+  }
+}
+
+/** `once` listesinden önce al, yetmezse `sonra`dan tamamla */
+function tamamla<T>(once: T[], sonra: T[], adet: number): T[] {
+  const a = once.slice(0, adet)
+  return a.length < adet ? [...a, ...sonra.slice(0, adet - a.length)] : a
+}
+
+export function tekrarSorulari(unitId: string, adet: number, birikimli: boolean): TekrarSorusu[] {
+  const sira = UNITS.findIndex((x) => x.id === unitId)
+  if (sira < 0) return []
+  const hedef = UNITS[sira]
+  const eskiler = birikimli ? UNITS.slice(0, sira) : []
+  const r = rastgele
+
+  // Her konu için: bu üniteden ve önceki ünitelerden karışık adaylar
+  const gramer = (us: Unit[]) =>
+    karistir(us.flatMap((u) => Object.values(GRAMER_SORULARI[u.id] ?? {}).flat().map((soru) => ({ u, soru }))), r)
+  const kelime = (us: Unit[]) => karistir(us.flatMap((u) => u.vocab.map((v) => ({ u, v }))), r)
+  const kanji = (us: Unit[]) => karistir(us.flatMap((u) => [...unitKanji(u.id)].map((ch) => ({ u, ch }))), r)
+
+  // Birikimlide her konunun yarısı bu üniteden, yarısı öncekilerden
+  const pay = (n: number) => (eskiler.length ? Math.ceil(n / 2) : n)
+  const sec = <T>(bu: T[], eski: T[], n: number): T[] => {
+    const a = bu.slice(0, pay(n))
+    return tamamla([...a, ...eski.slice(0, n - a.length)], bu.slice(a.length), n)
+  }
+
+  const nGramer = Math.round(adet * 0.4)
+  const nKanji = Math.round(adet * 0.2)
+  const sonuc: TekrarSorusu[] = []
+
+  for (const { u, soru } of sec(gramer([hedef]), gramer(eskiler), nGramer))
+    sonuc.push({ soru: sikKaristir(soru, r), unite: u.id, konu: 'Dilbilgisi' })
+  for (const { u, ch } of sec(kanji([hedef]), kanji(eskiler), nKanji)) {
+    const soru = kanjiSorusu(u, ch)
+    if (soru) sonuc.push({ soru, unite: u.id, konu: 'Kanji' })
+  }
+  // Kalanı kelime doldurur (dilbilgisi ya da kanji eksik kaldıysa onu da kapatır)
+  for (const { u, v } of sec(kelime([hedef]), kelime(eskiler), adet - sonuc.length))
+    sonuc.push({ soru: kelimeSorusu(u, v), unite: u.id, konu: 'Kelime' })
+
+  return karistir(sonuc, r)
 }
