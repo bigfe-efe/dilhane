@@ -189,7 +189,7 @@ export const N5_SORULARI: Record<string, { okuma: MockQ[]; dinleme: ChoukaiQ[] }
         'やすい (ucuz) = たかくない (pahalı değil).',
       ),
       q('u4-n6', 'bunpou1', 'すみません、りんごを 三つ __。', ['ください', 'あります', 'です', 'います'], 0, 'İsteme: 〜を ください.'),
-      q('u4-n7', 'bunpou2', 'コーヒーを ＿ ＿ ★ ＿ ください。', ['二つ', 'と', 'ケーキを', '一つ'], 2, 'Doğru sıra: 二つ → と → ケーキを → 一つ. ★: ケーキを.', 'コーヒーを 二つと ケーキを 一つ ください。'),
+      q('u4-n7', 'bunpou2', 'コーヒーを ＿ ＿ ★ ＿ ください。', ['二つ', 'と', 'ケーキを', '一つ'], 2, 'Doğru sıra: 二つ → と → ケーキを → 一つ (“iki kahve ve bir pasta lütfen”). Sayı kendi nesnesinin ekinden sonra gelir, と iki şeyi bağlar. ★ üçüncü boşlukta: ケーキを. (二つ ile 一つ yer değiştirse de ★ değişmez.)', 'コーヒーを 二つと ケーキを 一つ ください。'),
     ],
     dinleme: [
       c(

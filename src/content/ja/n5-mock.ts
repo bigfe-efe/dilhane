@@ -100,7 +100,10 @@ export const MONDAI: Record<MondaiId, { section: SectionId; no: number; title: s
     no: 2,
     title: 'Cümle kurma',
     jp: '文の文法2（文の組み立て）',
-    howto: 'Cümleyi doğru sıraya diz; ★ ile işaretli yere hangi parça gelir?',
+    // Öğrenci bu türü şıklardan birini "doğru cevap" sanarak çözüyordu; dördünün
+    // de cümleye girdiği açıkça yazılıyor.
+    howto:
+      'Dört şıkkın DÖRDÜ de cümleye girer: her boşluğa biri. Önce kafanda ya da kâğıtta doğru sıraya diz, sonra yalnızca ★ işaretli boşluğa düşen parçayı seç.',
   },
   bunshou: {
     section: 'bunpou-dokkai',
