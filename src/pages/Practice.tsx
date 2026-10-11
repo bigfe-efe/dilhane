@@ -66,7 +66,7 @@ const GROUPS: Group[] = [
       { to: '/temel?b=saat', glyph: '時', title: 'Saat', sub: 'Saat, dakika, buçuk, çeyrek, 午前・午後' },
       { to: '/temel?b=kosoado', glyph: 'こ', title: 'Bu · şu · o', sub: 'これ・この・ここ — eşya ve canlı farkıyla' },
       { to: '/temel?b=tanitim', glyph: '私', title: 'Kendini tanıt', sub: 'Ad, yaş, okul — ve watashi ne zaman söylenir' },
-      { to: '/temel?b=ekler', glyph: 'は', title: 'Ekler (助詞)', sub: 'は・が・を・の・に・で… Türkçe karşılıkları ve örnekleri' },
+      { to: '/temel?b=ekler', glyph: 'は', title: 'Ekler (助詞)', sub: 'は・が・を・の・に・で… hangi ek neye göre seçilir, Türkçe karşılıkları, alıştırma' },
       { to: '/temel?b=cekim', glyph: 'ない', title: 'Olumlu · olumsuz', sub: 'ます・ません・ました… cümle sonunu tanı, Türkçe karşılıklarıyla' },
     ],
   },

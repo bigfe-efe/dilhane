@@ -4117,3 +4117,13 @@ ul.tight li {
 .tt-nokta.is-on { background: var(--accent); }
 .tt-gecmis { gap: 10px; padding: 8px 12px; border-radius: 10px; background: var(--bg-elev-2); }
 .tt-yanlis { color: var(--bad); text-decoration: line-through; }
+
+/* Ekler: hangi eki seçeceğim */
+.ek-secim-sol { display: grid; gap: 2px; flex: none; width: 170px; }
+.ek-secim-ek { font-size: 1.5rem; font-weight: 700; color: var(--warn); }
+.ek-soru-ja { font-size: clamp(1.4rem, 4vw, 1.8rem); font-weight: 600; line-height: 1.5; overflow-wrap: anywhere; }
+.ek-siklar { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.ek-siklar .pk-sik { text-align: center; font-size: 1.4rem; font-weight: 600; }
+@media (max-width: 520px) {
+  .ek-secim-sol { width: 118px; }
+}

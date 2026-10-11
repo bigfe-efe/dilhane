@@ -476,3 +476,147 @@ export const EK_CIFTLERI: { baslik: string; ekler: string[]; kural: string; orne
     ],
   },
 ]
+
+// ————————————————————— Hangi eki seçeceğim? —————————————————————
+//
+// Yukarıdaki kartlar ekleri TEK TEK anlatıyor. Öğrenci 4. ünitede
+// ペンが三本あります ve 切手を五枚ください cümlelerini görünce tersini sordu:
+// "が, を, は neye göre yazılıyor?" Yani ekten anlama değil, cümleden eke.
+// İki yol var ve ikisi birlikte kullanılır:
+//   1) Kelime cümlede hangi SORUYA cevap veriyor (neyi? nerede? kiminle?)
+//   2) YÜKLEM hangi eki istiyor (あります → が, ください → を)
+
+/** 1. yol: kelimenin cevap verdiği soruya göre */
+export const EK_SORUYA_GORE: { soru: string; ek: string; okunus: string; ornek: Ornek; not?: string }[] = [
+  { soru: 'Neyden bahsediyoruz? (konu)', ek: 'は', okunus: 'wa', ornek: { ja: '私は学生です。', kana: 'わたしはがくせいです。', latin: 'watashi wa gakusei desu.', tr: 'Ben öğrenciyim.' } },
+  { soru: 'Ne var? Kim var? Kim yapıyor? (özne)', ek: 'が', okunus: 'ga', ornek: { ja: 'ペンがあります。', kana: 'ぺんがあります。', latin: 'pen ga arimasu.', tr: 'Kalem var.' } },
+  { soru: 'Neyi? Kimi? (nesne)', ek: 'を', okunus: 'o', ornek: { ja: '切手をください。', kana: 'きってをください。', latin: 'kitte o kudasai.', tr: 'Pul verin lütfen.' } },
+  { soru: 'Kimin? Neyin?', ek: 'の', okunus: 'no', ornek: { ja: '私の本', kana: 'わたしのほん', latin: 'watashi no hon', tr: 'benim kitabım' } },
+  { soru: 'Nerede? (bir şey DURUYOR, var)', ek: 'に', okunus: 'ni', ornek: { ja: 'つくえの上にあります。', kana: 'つくえのうえにあります。', latin: 'tsukue no ue ni arimasu.', tr: 'Masanın üstünde (duruyor).' } },
+  { soru: 'Nerede? (bir şey YAPILIYOR)', ek: 'で', okunus: 'de', ornek: { ja: '家で食べます。', kana: 'いえでたべます。', latin: 'ie de tabemasu.', tr: 'Evde yerim.' } },
+  { soru: 'Nereye?', ek: 'へ / に', okunus: 'e / ni', ornek: { ja: '学校へ行きます。', kana: 'がっこうへいきます。', latin: 'gakkou e ikimasu.', tr: 'Okula giderim.' } },
+  {
+    soru: 'Ne zaman? (saat, gün, tarih)',
+    ek: 'に',
+    okunus: 'ni',
+    ornek: { ja: '七時に起きます。', kana: 'しちじにおきます。', latin: 'shichiji ni okimasu.', tr: 'Yedide kalkarım.' },
+    not: '今日, 明日, 毎日 gibi kelimeler ek almaz.',
+  },
+  { soru: 'Kiminle?', ek: 'と', okunus: 'to', ornek: { ja: '友だちと行きます。', kana: 'ともだちといきます。', latin: 'tomodachi to ikimasu.', tr: 'Arkadaşımla giderim.' } },
+  { soru: 'Neyle? (araç)', ek: 'で', okunus: 'de', ornek: { ja: 'バスで行きます。', kana: 'ばすでいきます。', latin: 'basu de ikimasu.', tr: 'Otobüsle giderim.' } },
+  { soru: 'Nereden? Ne zamandan?', ek: 'から', okunus: 'kara', ornek: { ja: '九時から働きます。', kana: 'くじからはたらきます。', latin: 'kuji kara hatarakimasu.', tr: 'Dokuzdan itibaren çalışırım.' } },
+  { soru: 'Nereye kadar? Ne zamana kadar?', ek: 'まで', okunus: 'made', ornek: { ja: '五時まで働きます。', kana: 'ごじまではたらきます。', latin: 'goji made hatarakimasu.', tr: 'Beşe kadar çalışırım.' } },
+  {
+    soru: '“de, da” (o da)',
+    ek: 'も',
+    okunus: 'mo',
+    ornek: { ja: '私も行きます。', kana: 'わたしもいきます。', latin: 'watashi mo ikimasu.', tr: 'Ben de gidiyorum.' },
+    not: 'は, が ve を eklerinin YERİNE geçer; yanlarına eklenmez.',
+  },
+]
+
+/** 2. yol: yüklem hangi eki istiyor */
+export const EK_YUKLEME_GORE: { yuklem: string; anlam: string; kural: string; ornek: Ornek; star?: boolean }[] = [
+  {
+    yuklem: 'あります・います',
+    anlam: 'var',
+    kural: 'Var olan şey が alır. Yeri söylüyorsan yer に alır.',
+    ornek: { ja: 'つくえの上にペンがあります。', kana: 'つくえのうえにぺんがあります。', latin: 'tsukue no ue ni pen ga arimasu.', tr: 'Masanın üstünde kalem var.' },
+    star: true,
+  },
+  {
+    yuklem: 'ください',
+    anlam: 'verin lütfen',
+    kural: 'İstenen şey を alır.',
+    ornek: { ja: 'コーヒーをください。', kana: 'こーひーをください。', latin: 'koohii o kudasai.', tr: 'Kahve lütfen.' },
+    star: true,
+  },
+  {
+    yuklem: '食べます・飲みます・読みます・見ます・買います',
+    anlam: 'bir şeyi yemek, içmek, okumak…',
+    kural: 'Eylemin yöneldiği şey を alır (Türkçedeki -i hâli).',
+    ornek: { ja: '本を読みます。', kana: 'ほんをよみます。', latin: 'hon o yomimasu.', tr: 'Kitap okurum.' },
+  },
+  {
+    yuklem: '行きます・来ます・帰ります',
+    anlam: 'gitmek, gelmek, dönmek',
+    kural: 'Yer へ ya da に; araç で; birlikte gidilen kişi と. Nesne almazlar, yani を kullanılmaz.',
+    ornek: { ja: '友だちとバスで学校へ行きます。', kana: 'ともだちとばすでがっこうへいきます。', latin: 'tomodachi to basu de gakkou e ikimasu.', tr: 'Arkadaşımla otobüsle okula giderim.' },
+  },
+  {
+    yuklem: '好き・きらい・上手・下手・ほしい・わかります',
+    anlam: 'sevmek, becermek, istemek, anlamak',
+    kural: 'Türkçede “-i” deriz (müziğ-i severim) ama Japoncada を DEĞİL が gelir.',
+    ornek: { ja: '音楽が好きです。', kana: 'おんがくがすきです。', latin: 'ongaku ga suki desu.', tr: 'Müziği severim.' },
+    star: true,
+  },
+  {
+    yuklem: '会います',
+    anlam: 'buluşmak, görüşmek',
+    kural: 'Türkçede “arkadaşım-la” deriz ama Japoncada kişi に alır.',
+    ornek: { ja: '友だちに会います。', kana: 'ともだちにあいます。', latin: 'tomodachi ni aimasu.', tr: 'Arkadaşımla buluşacağım.' },
+    star: true,
+  },
+  {
+    yuklem: 'です',
+    anlam: '-dir',
+    kural: 'Hakkında konuşulan şey は alır; です sözünden önceki kelime ek almaz.',
+    ornek: { ja: 'これは本です。', kana: 'これはほんです。', latin: 'kore wa hon desu.', tr: 'Bu bir kitap.' },
+  },
+]
+
+/** Öğrencinin sorduğu iki cümlenin parça parça çözümü */
+export const EK_COZUMLEME: { cumle: Ornek; parcalar: { ja: string; ne: string; neden: string }[] }[] = [
+  {
+    cumle: { ja: 'ペンが三本あります。', kana: 'ぺんがさんぼんあります。', latin: 'pen ga sanbon arimasu.', tr: 'Üç kalem var.' },
+    parcalar: [
+      { ja: 'あります', ne: 'yüklem: “var”', neden: 'Önce sona bak. Yüklem あります, yani bir şeyin VAR olduğu söyleniyor.' },
+      { ja: 'ペンが', ne: 'var olan şey', neden: '“Ne var?” sorusuna cevap veren kelime が alır.' },
+      { ja: '三本', ne: 'kaç tane', neden: 'Sayı + sayaç ekten SONRA gelir ve kendisi ek almaz. 本 uzun şeylerin sayacı.' },
+    ],
+  },
+  {
+    cumle: { ja: '切手を五枚ください。', kana: 'きってをごまいください。', latin: 'kitte o gomai kudasai.', tr: 'Beş pul verin lütfen.' },
+    parcalar: [
+      { ja: 'ください', ne: 'yüklem: “verin”', neden: 'Yüklem ください, yani bir şey isteniyor.' },
+      { ja: '切手を', ne: 'istenen şey', neden: '“Neyi verin?” sorusunun cevabı nesnedir; nesne を alır.' },
+      { ja: '五枚', ne: 'kaç tane', neden: 'Yine ekten sonra ve eksiz. 枚 yassı şeylerin sayacı.' },
+    ],
+  },
+]
+
+/** "Hangi ek?" alıştırması: boşluğa gelecek ek ve nedeni */
+export interface EkSorusu {
+  /** Boşluk ＿ ile */
+  ja: string
+  latin: string
+  tr: string
+  dogru: string
+  secenekler: string[]
+  neden: string
+}
+
+export const EK_SORULARI: EkSorusu[] = [
+  { ja: 'ペン＿三本あります。', latin: 'pen ___ sanbon arimasu.', tr: 'Üç kalem var.', dogru: 'が', secenekler: ['が', 'を', 'に', 'で'], neden: 'あります (var): var olan şey が alır.' },
+  { ja: '切手＿五枚ください。', latin: 'kitte ___ gomai kudasai.', tr: 'Beş pul verin lütfen.', dogru: 'を', secenekler: ['を', 'が', 'は', 'に'], neden: 'ください (verin): istenen şey を alır.' },
+  { ja: 'コーヒー＿飲みます。', latin: 'koohii ___ nomimasu.', tr: 'Kahve içerim.', dogru: 'を', secenekler: ['を', 'が', 'に', 'で'], neden: '“Neyi içerim?” Nesne を alır.' },
+  { ja: '教室＿先生がいます。', latin: 'kyoushitsu ___ sensei ga imasu.', tr: 'Sınıfta öğretmen var.', dogru: 'に', secenekler: ['に', 'で', 'を', 'が'], neden: 'います (var): bir şeyin bulunduğu yer に alır.' },
+  { ja: '家＿日本語をべんきょうします。', latin: 'ie ___ nihongo o benkyou shimasu.', tr: 'Evde Japonca çalışırım.', dogru: 'で', secenekler: ['で', 'に', 'を', 'へ'], neden: 'Bir şey YAPILAN yer で alır (bulunulan yer に).' },
+  { ja: '学校＿行きます。', latin: 'gakkou ___ ikimasu.', tr: 'Okula giderim.', dogru: 'へ', secenekler: ['へ', 'を', 'で', 'が'], neden: '“Nereye?” Yön へ (ya da に) alır.' },
+  { ja: 'バス＿行きます。', latin: 'basu ___ ikimasu.', tr: 'Otobüsle giderim.', dogru: 'で', secenekler: ['で', 'に', 'と', 'を'], neden: '“Neyle?” Araç で alır.' },
+  { ja: '友だち＿行きます。', latin: 'tomodachi ___ ikimasu.', tr: 'Arkadaşımla giderim.', dogru: 'と', secenekler: ['と', 'で', 'に', 'を'], neden: '“Kiminle?” Birlikte olunan kişi と alır.' },
+  { ja: '七時＿起きます。', latin: 'shichiji ___ okimasu.', tr: 'Yedide kalkarım.', dogru: 'に', secenekler: ['に', 'で', 'を', 'は'], neden: 'Belirli zaman (saat, gün) に alır.' },
+  { ja: '私＿本です。', latin: 'watashi ___ hon desu.', tr: 'Benim kitabım.', dogru: 'の', secenekler: ['の', 'は', 'が', 'を'], neden: '“Kimin?” Sahiplik の ile.' },
+  { ja: '私＿学生です。', latin: 'watashi ___ gakusei desu.', tr: 'Ben öğrenciyim.', dogru: 'は', secenekler: ['は', 'を', 'に', 'の'], neden: 'です cümlesinde hakkında konuşulan şey は alır.' },
+  { ja: '音楽＿好きです。', latin: 'ongaku ___ suki desu.', tr: 'Müziği severim.', dogru: 'が', secenekler: ['が', 'を', 'に', 'で'], neden: '好き ile sevilen şey を değil が alır.' },
+  { ja: '日本語＿わかります。', latin: 'nihongo ___ wakarimasu.', tr: 'Japonca anlıyorum.', dogru: 'が', secenekler: ['が', 'を', 'に', 'と'], neden: 'わかります ile anlaşılan şey が alır.' },
+  { ja: '友だち＿会います。', latin: 'tomodachi ___ aimasu.', tr: 'Arkadaşımla buluşacağım.', dogru: 'に', secenekler: ['に', 'を', 'が', 'で'], neden: '会います ile buluşulan kişi に alır (Türkçedeki “ile”ye aldanma).' },
+  { ja: '九時＿五時まで働きます。', latin: 'kuji ___ goji made hatarakimasu.', tr: 'Dokuzdan beşe kadar çalışırım.', dogru: 'から', secenekler: ['から', 'に', 'で', 'を'], neden: 'Başlangıç から, bitiş まで.' },
+  { ja: '田中さんは学生です。私＿学生です。', latin: 'tanaka san wa gakusei desu. watashi ___ gakusei desu.', tr: 'Tanaka öğrenci. Ben de öğrenciyim.', dogru: 'も', secenekler: ['も', 'を', 'が', 'の'], neden: '“de, da” も ile; は ekinin yerine geçer.' },
+  { ja: 'りんご＿三つください。', latin: 'ringo ___ mittsu kudasai.', tr: 'Üç elma lütfen.', dogru: 'を', secenekler: ['を', 'が', 'の', 'で'], neden: 'ください: istenen şey を; sayı (三つ) ekten sonra gelir.' },
+  { ja: 'かばんの中＿さいふがあります。', latin: 'kaban no naka ___ saifu ga arimasu.', tr: 'Çantanın içinde cüzdan var.', dogru: 'に', secenekler: ['に', 'で', 'を', 'は'], neden: 'あります: bulunduğu yer に.' },
+  { ja: 'だれ＿来ますか。', latin: 'dare ___ kimasu ka.', tr: 'Kim geliyor?', dogru: 'が', secenekler: ['が', 'は', 'を', 'に'], neden: 'Soru kelimesi özneyse は değil が alır.' },
+  { ja: '新しいけいたい＿ほしいです。', latin: 'atarashii keitai ___ hoshii desu.', tr: 'Yeni bir telefon istiyorum.', dogru: 'が', secenekler: ['が', 'を', 'に', 'の'], neden: 'ほしい ile istenen şey が alır.' },
+  { ja: '日本語＿先生です。', latin: 'nihongo ___ sensei desu.', tr: 'Japonca öğretmeni.', dogru: 'の', secenekler: ['の', 'を', 'で', 'に'], neden: 'İki ismi bağlayan の: Japonca(nın) öğretmeni.' },
+  { ja: '駅＿パンを買います。', latin: 'eki ___ pan o kaimasu.', tr: 'İstasyonda ekmek alırım.', dogru: 'で', secenekler: ['で', 'に', 'へ', 'が'], neden: 'Satın almak bir eylem; yapıldığı yer で.' },
+]

@@ -3,7 +3,16 @@ import { JaOkunus } from '@/components/JaOkunus'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Chips, SpeakBtn, TopBar } from '@/components/ui'
 import { kanaToRomaji } from '@/lib/ja-phonetic'
-import { EKLER, EK_CIFTLERI, type Ek } from '@/content/ja/ekler'
+import {
+  EKLER,
+  EK_CIFTLERI,
+  EK_COZUMLEME,
+  EK_SORULARI,
+  EK_SORUYA_GORE,
+  EK_YUKLEME_GORE,
+  type Ek,
+  type EkSorusu,
+} from '@/content/ja/ekler'
 import { CEKIM_TABLOSU, CUMLE_SONLARI, SUTUNLAR, TANIMA_KURALLARI, type Hucre } from '@/content/ja/cekimler'
 import { shuffle } from '@/lib/shuffle'
 import { UNIT_BY_ID } from '@/content/ja/units'
@@ -755,6 +764,8 @@ function Ekler() {
         </div>
       </div>
 
+      <EkSecimi />
+
       <Bolumcuk baslik="Hızlı tablo" alt="Bir eke dokun, ayrıntısına git.">
         <div className="ek-tablo">
           {EKLER.map((e) => (
@@ -806,6 +817,248 @@ function Ekler() {
       </Bolumcuk>
     </div>
   )
+}
+
+/**
+ * "Hangi eki seçeceğim?" — cümleden eke giden yol.
+ *
+ * Aşağıdaki kartlar ekten anlama gidiyor (が ne demek). Öğrenci tersini
+ * sordu: ペンが三本あります cümlesinde neden が, 切手を五枚ください'da neden
+ * を? Cevap iki adım: kelimenin cevap verdiği soru ve yüklemin istediği ek.
+ */
+function EkSecimi() {
+  return (
+    <>
+      <Bolumcuk
+        baslik="Hangi eki seçeceğim?"
+        alt="Ek rastgele seçilmez: kelimenin cümledeki GÖREVİ belirler. İki soruyla bulursun."
+      >
+        <div className="card card--pad-lg stack-sm is-star">
+          <div className="card-title">İki adım</div>
+          <ol className="kitap-rehber-adim">
+            <li>
+              <b>Sona bak: yüklem ne?</b> あります (var), ください (verin), 行きます (gitmek)… Yüklem hangi ekleri
+              isteyeceğini büyük ölçüde belirler.
+            </li>
+            <li>
+              <b>Kelime hangi soruya cevap veriyor?</b> Neyi? Ne var? Nerede? Kiminle? Her sorunun bir eki var;
+              Türkçedeki hâl ekleri gibi.
+            </li>
+          </ol>
+          <div className="tiny faint">
+            Türkçede “pul<b>u</b> ver”, “okul<b>a</b> git”, “ev<b>de</b> ye” derken yaptığın şeyin aynısı; yalnızca ek
+            ayrı bir hece olarak yazılıyor.
+          </div>
+        </div>
+
+        <div className="tb-sub">Senin iki cümlen, parça parça</div>
+        {EK_COZUMLEME.map((c) => (
+          <div key={c.cumle.ja} className="card stack-sm">
+            <div className="unit-ex">
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <JaOkunus ja={c.cumle.ja} kana={c.cumle.kana} latin={c.cumle.latin} tr={c.cumle.tr} jaClass="unit-ex-ja" vurgu={['が', 'を']} vurguLatin={['ga', 'o']} />
+              </div>
+              <SpeakBtn text={c.cumle.ja} lang="ja" size="sm" reading={c.cumle.kana} />
+            </div>
+            <div className="tb-table">
+              {c.parcalar.map((x) => (
+                <div key={x.ja} className="tb-row">
+                  <span className="ja tb-ja" style={{ minWidth: 96 }}>
+                    {x.ja}
+                  </span>
+                  <span className="tb-tr" style={{ minWidth: 120, fontWeight: 600 }}>
+                    {x.ne}
+                  </span>
+                  <span className="tb-not">{x.neden}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </Bolumcuk>
+
+      <Bolumcuk baslik="1. Soruya göre" alt="Kelimeye Türkçe soruyu sor; cevabı ek olarak tak.">
+        <div className="stack-sm">
+          {EK_SORUYA_GORE.map((r) => (
+            <div key={r.soru} className="unit-ex">
+              <div className="ek-secim-sol">
+                <span className="small" style={{ fontWeight: 600 }}>
+                  {r.soru}
+                </span>
+                <span>
+                  <span className="ja ek-secim-ek">{r.ek}</span> <span className="tb-latin">{r.okunus}</span>
+                </span>
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <JaOkunus ja={r.ornek.ja} kana={r.ornek.kana} latin={r.ornek.latin} tr={r.ornek.tr} jaClass="unit-ex-ja">
+                  {r.not && <div className="tiny dim">{r.not}</div>}
+                </JaOkunus>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Bolumcuk>
+
+      <Bolumcuk
+        baslik="2. Yükleme göre"
+        alt="Bazı yüklemler hep aynı eki ister. ★ olanlar Türkçeden farklı; en çok hata bunlarda yapılır."
+      >
+        <div className="stack-sm">
+          {EK_YUKLEME_GORE.map((r) => (
+            <div key={r.yuklem} className={`card stack-sm${r.star ? ' is-star' : ''}`}>
+              <div className="row-wrap" style={{ gap: 8 }}>
+                <span className="ja card-title">{r.yuklem}</span>
+                <span className="small dim">{r.anlam}</span>
+                {r.star && <Yildiz />}
+              </div>
+              <div className="small">{r.kural}</div>
+              <div className="unit-ex">
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <JaOkunus ja={r.ornek.ja} kana={r.ornek.kana} latin={r.ornek.latin} tr={r.ornek.tr} jaClass="unit-ex-ja" />
+                </div>
+                <SpeakBtn text={r.ornek.ja} lang="ja" size="sm" reading={r.ornek.kana} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </Bolumcuk>
+
+      <Bolumcuk baslik="Yazılışı: neden は, を, へ?" alt="Üç ek, okunduğu gibi değil, eski yazımdaki hâliyle yazılır.">
+        <div className="tb-table">
+          <div className="tb-row">
+            <span className="ja tb-ja">は</span>
+            <span className="tb-read">
+              <span className="tb-latin">wa</span>
+            </span>
+            <span className="tb-not">Ek olarak “wa” okunur. Kelime içinde normal “ha”: はな (hana, çiçek).</span>
+          </div>
+          <div className="tb-row">
+            <span className="ja tb-ja">を</span>
+            <span className="tb-read">
+              <span className="tb-latin">o</span>
+            </span>
+            <span className="tb-not">
+              Yalnızca ek olarak kullanılır; hiçbir kelimenin içinde geçmez. を gördüğün yerde önündeki kelime nesnedir.
+            </span>
+          </div>
+          <div className="tb-row">
+            <span className="ja tb-ja">へ</span>
+            <span className="tb-read">
+              <span className="tb-latin">e</span>
+            </span>
+            <span className="tb-not">Ek olarak “e” okunur. Kelime içinde normal “he”: へや (heya, oda).</span>
+          </div>
+        </div>
+        <div className="tiny faint">
+          Diğer ekler (が, の, に, で, と, も) okunduğu gibi yazılır. Japonca klavyede は için “ha”, を için “wo”, へ için
+          “he” yazarsın. Uygulamadaki yazmalı sorularda ikisi de kabul edilir: “wa” da “ha” da.
+        </div>
+      </Bolumcuk>
+
+      <Bolumcuk baslik="Hangi ek? — alıştırma" alt="Her seferinde 10 soru. Önce yükleme bak, sonra kelimeye soruyu sor.">
+        <EkTesti />
+      </Bolumcuk>
+    </>
+  )
+}
+
+function EkTesti() {
+  const [tur, setTur] = useState(0)
+  const [sorular, setSorular] = useState<(EkSorusu & { siklar: string[] })[]>(() => ekSorulariKur())
+  const [i, setI] = useState(0)
+  const [secilen, setSecilen] = useState<string | null>(null)
+  const [dogru, setDogru] = useState(0)
+
+  const yeniden = () => {
+    setSorular(ekSorulariKur())
+    setTur(tur + 1)
+    setI(0)
+    setSecilen(null)
+    setDogru(0)
+  }
+
+  if (i >= sorular.length) {
+    return (
+      <div className="card card--pad-lg center stack-sm">
+        <div style={{ fontSize: '2rem', fontWeight: 700 }}>
+          {dogru} / {sorular.length}
+        </div>
+        <div className="small dim">
+          {dogru >= 8 ? 'Ek seçimi oturmuş.' : 'Yanlışların çoğu “Yükleme göre” tablosundaki ★ satırlardan gelir; oraya bir göz at.'}
+        </div>
+        <button className="btn btn--primary" onClick={yeniden}>
+          Yeni 10 soru
+        </button>
+      </div>
+    )
+  }
+
+  const q = sorular[i]
+  return (
+    <div className="card card--pad-lg stack" key={`${tur}-${i}`}>
+      <div className="row tiny faint">
+        <span>Boşluğa hangi ek gelir?</span>
+        <div className="spacer" />
+        <span className="tabular">
+          {i + 1} / {sorular.length}
+        </span>
+      </div>
+      <div>
+        <div className="ja ek-soru-ja">{q.ja}</div>
+        <div className="jo-romaji">{q.latin}</div>
+        <div className="jo-tr">{q.tr}</div>
+      </div>
+      <div className="pk-siklar ek-siklar">
+        {q.siklar.map((o) => {
+          const durum = !secilen ? '' : o === q.dogru ? ' is-dogru' : o === secilen ? ' is-yanlis' : ' is-soluk'
+          return (
+            <button
+              key={o}
+              className={`pk-sik ja${durum}`}
+              disabled={!!secilen}
+              onClick={() => {
+                setSecilen(o)
+                if (o === q.dogru) setDogru((d) => d + 1)
+              }}
+            >
+              {o}
+            </button>
+          )
+        })}
+      </div>
+      {secilen &&
+        (secilen === q.dogru ? (
+          <div className="feedback feedback--ok small">
+            <b>Doğru.</b> {q.neden}
+          </div>
+        ) : (
+          <div className="feedback feedback--bad small stack-sm">
+            <div>
+              <b>Doğrusu:</b> <span className="ja">{q.dogru}</span> — <span className="ja">{q.ja.replace('＿', q.dogru)}</span>
+            </div>
+            <div>{q.neden}</div>
+          </div>
+        ))}
+      {secilen && (
+        <button
+          className="btn btn--primary btn--block"
+          onClick={() => {
+            setI(i + 1)
+            setSecilen(null)
+          }}
+        >
+          {i + 1 >= sorular.length ? 'Sonucu gör' : 'Sonraki'}
+        </button>
+      )}
+    </div>
+  )
+}
+
+/** Havuzdan 10 soru; şıklar her seferinde karışık */
+function ekSorulariKur() {
+  return shuffle(EK_SORULARI)
+    .slice(0, 10)
+    .map((q) => ({ ...q, siklar: shuffle(q.secenekler) }))
 }
 
 function EkKart({ e }: { e: Ek }) {

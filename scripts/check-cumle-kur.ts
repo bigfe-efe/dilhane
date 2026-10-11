@@ -3,6 +3,7 @@
 // Çalıştır: npx tsx --tsconfig tsconfig.json scripts/check-cumle-kur.ts
 import { DONUSUM, GUNLUK, SORU_KELIMELERI, ZAMAN_KELIMELERI, ZAMIRLER, ZAMIR_EKLERI, ZAMIR_KURALLARI, type Bicim, type Satir } from '../src/content/ja/cumle-kur'
 import { cevapDogruMu } from '../src/content/ja/unit-pekistirme'
+import { EK_COZUMLEME, EK_SORULARI, EK_SORUYA_GORE, EK_YUKLEME_GORE } from '../src/content/ja/ekler'
 import {
   CUMLE_BAGLAMA,
   CUMLE_TURLERI,
@@ -72,6 +73,24 @@ CUMLE_BAGLAMA.forEach((x) => satir('bağlaç', x))
 SIKLIK.forEach((x) => satir('sıklık', x))
 DERECE.forEach((x) => satir('derece', x))
 if (new Set(TEMEL_SIRA.map((x) => x.id)).size !== TEMEL_SIRA.length) bildir('temel sıra: tekrarlı kimlik')
+
+// Ekler: "hangi eki seçeceğim" tabloları ve alıştırması
+EK_SORUYA_GORE.forEach((r) => satir('ek-soru', { ...r.ornek, latin: r.ornek.latin ?? '' }))
+EK_YUKLEME_GORE.forEach((r) => satir('ek-yüklem', { ...r.ornek, latin: r.ornek.latin ?? '' }))
+EK_COZUMLEME.forEach((c) => {
+  satir('ek-çözümleme', { ...c.cumle, latin: c.cumle.latin ?? '' })
+  if (c.parcalar.map((x) => x.ja).some((x) => !c.cumle.ja.includes(x))) bildir(`ek-çözümleme: parça cümlede yok — ${c.cumle.ja}`)
+})
+for (const q of EK_SORULARI) {
+  toplam++
+  if (q.ja.split('＿').length !== 2) bildir(`ek sorusu: tek boşluk olmalı — ${q.ja}`)
+  if (q.latin.split('___').length !== 2) bildir(`ek sorusu: romajide tek boşluk olmalı — ${q.latin}`)
+  if (!q.secenekler.includes(q.dogru)) bildir(`ek sorusu: doğru cevap şıklarda yok — ${q.ja}`)
+  if (new Set(q.secenekler).size !== q.secenekler.length || q.secenekler.length !== 4) bildir(`ek sorusu: şıklar bozuk — ${q.ja}`)
+  // Boşluk doldurulunca romaji ile yazılış aynı sesi vermeli
+  const okunus: Record<string, string> = { は: 'wa', を: 'o', へ: 'e', が: 'ga', の: 'no', に: 'ni', で: 'de', と: 'to', も: 'mo', から: 'kara' }
+  if (!okunus[q.dogru]) bildir(`ek sorusu: okunuşu bilinmeyen ek ${q.dogru}`)
+}
 
 console.log(`${toplam} satır denetlendi.`)
 if (hata) {
